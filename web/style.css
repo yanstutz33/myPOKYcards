@@ -1,0 +1,304 @@
+/* YAMI-TCG — HUD de leitura de cartas.
+   Tema Pokémon por vocabulário visual: proporção de carta, cantos de moldura,
+   cores de tipo como semântica. Sem marca, logo ou arte oficial.
+   Committed a um visual escuro: é uma tela de câmera. */
+
+:root {
+  --ground:      #06080C;
+  --surface:     #10151E;
+  --surface-2:   #1A2130;
+  --line:        #263041;
+
+  --ink:         #E9EFF7;
+  --ink-soft:    #97A3B6;
+
+  --scan:        #3FE0D0;   /* ciano de varredura — a única cor forte */
+
+  --ok:          #6FD69A;
+  --warn:        #E9B457;
+  --crit:        #F0788A;
+
+  --font-ui:   "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --font-data: ui-monospace, "SF Mono", Consolas, "Roboto Mono", monospace;
+
+  --card-ratio: 0.716;      /* 63mm / 88mm */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  overscroll-behavior: none;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ---------------------------------------------------------- barra de topo */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  background: var(--ground);
+  border-bottom: 1px solid var(--line);
+  z-index: 3;
+}
+
+.brand {
+  font-family: var(--font-data);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--scan);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  letter-spacing: 0.04em;
+}
+
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+  flex: none;
+}
+.dot.on   { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.dot.err  { background: var(--crit); }
+
+/* ------------------------------------------------------------ visor */
+.stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A moldura é a referência de enquadramento E a região que vira hash.
+   O recorte usa exatamente estas medidas — se mudar aqui, muda o match. */
+.frame {
+  position: relative;
+  height: min(72%, 62vh);
+  aspect-ratio: var(--card-ratio);
+  border-radius: 12px;
+  box-shadow: 0 0 0 100vmax rgba(4, 6, 10, 0.62);
+  z-index: 1;
+}
+
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(63, 224, 208, 0.35);
+}
+
+.corner {
+  position: absolute;
+  width: 26px; height: 26px;
+  border: 2.5px solid var(--scan);
+}
+.corner.tl { top: -1px; left: -1px;  border-right: 0; border-bottom: 0; border-radius: 12px 0 0 0; }
+.corner.tr { top: -1px; right: -1px; border-left: 0;  border-bottom: 0; border-radius: 0 12px 0 0; }
+.corner.bl { bottom: -1px; left: -1px;  border-right: 0; border-top: 0; border-radius: 0 0 0 12px; }
+.corner.br { bottom: -1px; right: -1px; border-left: 0;  border-top: 0; border-radius: 0 0 12px 0; }
+
+/* Linha de varredura: sinal de que está lendo, não enfeite. Some quando pausa. */
+.sweep {
+  position: absolute;
+  left: 6px; right: 6px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--scan), transparent);
+  opacity: 0.85;
+  animation: sweep 2.4s ease-in-out infinite;
+}
+@keyframes sweep {
+  0%, 100% { top: 6%; }
+  50%      { top: 94%; }
+}
+.stage.paused .sweep { display: none; }
+
+.hint {
+  position: absolute;
+  bottom: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  background: rgba(6, 8, 12, 0.75);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------- painel inferior */
+.sheet {
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 0.85rem 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  max-height: 46dvh;
+  overflow-y: auto;
+  z-index: 3;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.sheet-title {
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.timing {
+  font-family: var(--font-data);
+  font-size: 0.66rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.results { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.hit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.8rem;
+  align-items: center;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: 8px;
+}
+.hit.top { border-left-color: var(--scan); }
+
+.hit-name {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.hit-meta {
+  grid-column: 1;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.7rem;
+}
+
+.hit-conf {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  text-align: right;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+.hit-conf b { display: block; font-size: 1.15rem; font-weight: 600; }
+.hit-conf small { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--ink-soft); text-transform: uppercase; }
+
+.tag {
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  background: rgba(63, 224, 208, 0.12);
+  color: var(--scan);
+}
+.tag.lang { background: rgba(233, 180, 87, 0.14); color: var(--warn); }
+
+/* "Sem dados" é um estado de primeira classe, não um vazio. */
+.nodata {
+  padding: 0.7rem 0.85rem;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.nodata b { color: var(--ink); font-weight: 600; }
+
+.empty {
+  padding: 1.4rem 0.5rem;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.actions { display: flex; gap: 0.6rem; }
+
+button {
+  flex: 1;
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+button.primary {
+  background: var(--scan);
+  border-color: var(--scan);
+  color: #04211F;
+  font-weight: 600;
+}
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+.fatal {
+  margin: auto;
+  padding: 1.2rem;
+  max-width: 34ch;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  z-index: 2;
+}
+.fatal b { display: block; color: var(--crit); margin-bottom: 0.4rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sweep { animation: none; top: 50%; }
+}

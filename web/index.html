@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06080C">
+  <title>YAMI-TCG · Leitor de cartas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <span class="brand">YAMI · TCG</span>
+    <span class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">carregando índice…</span>
+    </span>
+  </header>
+
+  <main class="stage" id="stage">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="frame" id="frame">
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+      <div class="sweep"></div>
+    </div>
+    <p class="hint" id="hint">Encaixe a carta inteira na moldura</p>
+  </main>
+
+  <section class="sheet">
+    <div class="sheet-head">
+      <span class="sheet-title">Candidatos</span>
+      <span class="timing" id="timing"></span>
+    </div>
+
+    <div class="results" id="results">
+      <p class="empty">Aponte a câmera para uma carta.<br>
+        O leitor mostra os três candidatos mais prováveis.</p>
+    </div>
+
+    <div class="actions">
+      <button id="toggle" class="primary" disabled>Iniciar câmera</button>
+      <button id="freeze" disabled>Congelar</button>
+    </div>
+  </section>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

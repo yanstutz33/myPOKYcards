@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>YAMI-TCG · Autoteste do matcher</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 0.3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.5rem; max-width:70ch; }
+    table { border-collapse:collapse; width:100%; max-width:900px; font-size:0.9rem; }
+    th,td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid #263041; }
+    th { font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:0.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    #verdict { margin-top:1.5rem; padding:1rem 1.2rem; border-radius:8px; max-width:900px;
+               border:1px solid #263041; background:#10151E; }
+  </style>
+</head>
+<body>
+  <h1>Autoteste do matcher</h1>
+  <p class="sub">
+    Prova que o hash calculado em JavaScript bate com o hash calculado em Python.
+    Se a conversão para cinza, a DCT ou a ordem dos bits divergirem, o índice
+    inteiro vira ruído — e o sintoma seria "reconhecimento ruim", não um erro.
+    Cada imagem abaixo deveria voltar como o próprio <code>card_id</code>, em
+    primeiro lugar e com confiança altíssima.
+  </p>
+  <table id="out">
+    <thead><tr><th>Esperado</th><th>Top-1 devolvido</th><th>Confiança</th><th>Posição</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">rodando…</div>
+
+<script type="module">
+import { capture } from "./capture.js";
+
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+
+const load = (src) => new Promise((res, rej) => {
+  const i = new Image();
+  i.onload = () => res(i); i.onerror = () => rej(new Error("falhou: " + src));
+  i.src = src;
+});
+
+(async () => {
+  const worker = new Worker("matcher.worker.js");
+  const [bin, cards, manifest] = await Promise.all([
+    fetch("data/index.bin").then(r => r.arrayBuffer()),
+    fetch("data/cards.json").then(r => r.json()),
+    fetch("test/manifest.json").then(r => r.json()),
+  ]);
+
+  await new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "ready") res(); };
+    worker.postMessage({ type: "load", buffer: bin }, [bin]);
+  });
+
+  const match = (payload) => new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "result") res(e.data); };
+    worker.postMessage({ type: "match", seq: 0, k: 5, ...payload });
+  });
+
+  let acertos = 0, piorConf = 1;
+  const diags = [];
+  for (const item of manifest) {
+    const img = await load("test/" + item.file);
+    const snap = capture(img);
+    const out = await match(snap);
+
+    const row = cards.ids.indexOf(item.card_id);
+    const diag = await new Promise((res) => {
+      worker.onmessage = (e) => { if (e.data.type === "diag") res(e.data); };
+      worker.postMessage({ type: "diag", row, ...snap });
+    });
+    diags.push(diag.perField);
+    const ids = out.results.map(r => cards.ids[r.i]);
+    const pos = ids.indexOf(item.card_id);
+    const acertou = pos === 0;
+    if (acertou) { acertos++; piorConf = Math.min(piorConf, out.results[0].confidence); }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><code>${item.card_id}</code></td>
+      <td><code>${ids[0]}</code></td>
+      <td>${(out.results[0].confidence * 100).toFixed(1)}%</td>
+      <td>${pos < 0 ? "fora do top-5" : "top-" + (pos + 1)}</td>
+      <td class="${acertou ? "ok" : "bad"}">${acertou ? "OK" : "FALHOU"}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  const total = manifest.length;
+  const nomes = ["phash", "dhash", "ahash", "dhash_r", "dhash_g", "dhash_b"];
+  const media = nomes.map((n, f) =>
+    `${n}: ${(diags.reduce((s, d) => s + d[f], 0) / diags.length).toFixed(1)}`);
+  const perfeito = acertos === total && piorConf > 0.99;
+  verdict.innerHTML = `<p style="margin:0 0 0.8rem;color:#97A3B6">
+      Bits divergentes por hash (de 64, média): <code>${media.join(" · ")}</code>
+    </p>` + (perfeito
+    ? `<span class="ok">PORTE CORRETO.</span> ${acertos}/${total} em top-1,
+       pior confiança ${(piorConf * 100).toFixed(2)}%. Uma imagem idêntica à
+       indexada tem que voltar praticamente em 100% — e voltou.`
+    : `<span class="bad">DIVERGÊNCIA.</span> ${acertos}/${total} em top-1,
+       pior confiança ${(piorConf * 100).toFixed(2)}%. A mesma imagem que gerou
+       o índice deveria bater quase exato; não bateu, então o hash em JS não é
+       equivalente ao do Python.`);
+})().catch(e => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>

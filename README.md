@@ -84,6 +84,21 @@ python pipeline/build_hash_index.py --workers 16
 python pipeline/match.py --selftest --sample 40
 ```
 
+Para a tela de leitura, exporte o índice para o navegador e sirva `web/`:
+
+```bash
+python pipeline/export_web_index.py
+```
+
+```bash
+python -m http.server 8137 --directory web
+```
+
+`index.bin` são 1,39 MB (48 bytes por carta) e `cards.json.gz` 0,35 MB — o
+leitor roda offline depois do primeiro carregamento. Abra
+`/selftest.html` para conferir o porte do hash, ou `/index.html?demo` para
+ver a interface sem câmera.
+
 Ambos os builds são resumíveis e idempotentes: o mesmo repo de entrada
 produz o mesmo banco, e rodar de novo só pega o que falta.
 
@@ -93,12 +108,31 @@ produz o mesmo banco, e rodar de novo só pega o que falta.
 sqlite3 data/cards.db "SELECT c.card_id, c.rarity FROM card_names n JOIN cards c USING(card_id) WHERE n.lang='pt' AND n.name LIKE '%Charizard%' LIMIT 10"
 ```
 
+**Fase 3 (tela de leitura) — funcional.**
+
+Busca em 30.283 cartas em **14 ms**, num Web Worker, sem rede. A tela mostra
+os três candidatos com confiança — nunca um resultado único, porque o dado
+não sustenta essa certeza.
+
+O ponto delicado foi portar o hash de Python para JavaScript. Uma imagem
+idêntica à indexada voltava com 84% de confiança em vez de ~100%: o
+`drawImage` do canvas não reamostra como o LANCZOS do Pillow, e o `dHash`,
+que compara pixels vizinhos numa grade 9×8, divergia 10 bits de 64.
+`web/capture.js` replica o reamostrador do Pillow; a divergência caiu para
+0,0 bit e a confiança para 99,5–100%. `selftest.html` guarda essa
+verificação — é a diferença entre "reconhecimento meia-boca" e um bug
+invisível.
+
 ## Estrutura
 
 ```
-pipeline/ingest_tcgdex.py   catálogo TCGdex (MIT) -> SQLite
-data/cards.db               catálogo gerado (não versionar)
-.claude/agents/             equipe de agentes (na raiz do workspace)
+pipeline/ingest_tcgdex.py     catálogo TCGdex (MIT) -> SQLite
+pipeline/build_hash_index.py  imagens -> hashes perceptuais
+pipeline/match.py             busca + autoteste de acurácia
+pipeline/export_web_index.py  bancos -> índice binário do navegador
+web/                          tela de leitura (câmera, worker, HUD)
+data/                         bancos gerados (não versionado)
+.claude/agents/               equipe de 12 agentes de domínio
 ```
 
 ## Equipe de agentes

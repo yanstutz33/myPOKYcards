@@ -6,6 +6,11 @@ data/*.db-shm
 data/*.log
 data/*.err
 
+# Índice exportado para o navegador e imagens de teste: derivados dos bancos
+# acima, gerados por export_web_index.py. ~4 MB que mudam a cada rebuild.
+web/data/
+web/test/
+
 # Credenciais de API (Scrydex, afiliados de marketplace). Nunca versionar.
 .env
 .env.*
