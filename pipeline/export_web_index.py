@@ -104,7 +104,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     rows = conn.execute(
         f"""SELECT h.card_id, h.lang, {', '.join('h.' + f for f in FIELDS)},
                    c.region, c.set_id, c.local_id, c.rarity, c.variants_json,
-                   c.names_json, s.names_json, h.src_url
+                   c.names_json, s.names_json, h.src_url, c.types_json
             FROM hashes h
             JOIN cat.cards c ON c.card_id = h.card_id
             JOIN cat.sets  s ON s.set_id  = c.set_id
@@ -165,6 +165,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
             sorted(card_names.keys()),
             caminho,
             grupo_de.get(card_id, -1),
+            json.loads(r[16] or "[]"),
         ])
 
     (out_dir / "index.bin").write_bytes(buf)
@@ -175,7 +176,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         "count": len(ids),
         "fields": list(FIELDS),
         "schema": ["nome", "set", "numero", "raridade", "regiao", "variantes",
-                   "idiomas", "caminho_arte", "grupo"],
+                   "idiomas", "caminho_arte", "grupo", "tipos"],
         "cdn": CDN,
         "ids": ids,
         "meta": meta,

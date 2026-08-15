@@ -35,6 +35,8 @@ OBRIGATORIOS = [
     ("matcher.worker.js", 3_000),
     ("capture.js", 3_000),
     ("style.css", 3_000),
+    ("tema.css", 2_000),
+    ("tema.js", 500),
     ("painel.html", 500),
     ("colecao.html", 500),
     ("colecao.js", 1_000),

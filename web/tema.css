@@ -1,0 +1,204 @@
+/* YAMI-TCG — camada temática.
+   ------------------------------------------------------------------
+   O tema Pokémon aqui é DIRIGIDO POR DADO, não decoração: a cor de cada
+   resultado vem do tipo de energia da própria carta, e o brilho holográfico
+   só aparece em raridade que de fato é holográfica. Carta comum fica sóbria.
+
+   Nada de marca, logo, mascote ou arte oficial — só o vocabulário visual:
+   paleta de tipos, geometria de carta e o brilho de foil. */
+
+:root {
+  /* Cores de tipo. Tons escolhidos para funcionar sobre fundo escuro e
+     manter contraste de texto AA — as cores "de caixa" dos jogos são
+     claras demais e sumiriam. */
+  --t-grass:     #4FBE7B;
+  --t-fire:      #F2703F;
+  --t-water:     #4B9EE8;
+  --t-lightning: #F0C33C;
+  --t-psychic:   #B771D9;
+  --t-fighting:  #C96A3E;
+  --t-darkness:  #6C7A99;
+  --t-metal:     #9AA7B4;
+  --t-dragon:    #C9A227;
+  --t-fairy:     #E87BB0;
+  --t-colorless: #B9C2CE;
+
+  --tipo: var(--scan);          /* padrão; sobrescrito por carta */
+}
+
+/* Cada resultado recebe --tipo via style inline, e tudo aqui deriva dele. */
+.hit {
+  border-left-color: color-mix(in srgb, var(--tipo) 55%, var(--line));
+  transition: border-color 160ms ease;
+}
+.hit.top {
+  border-left-color: var(--tipo);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--tipo) 22%, transparent),
+              0 8px 24px -14px var(--tipo);
+}
+.hit.top .hit-name { color: color-mix(in srgb, var(--tipo) 30%, var(--ink)); }
+.hit-conf b { color: var(--tipo); }
+
+/* --- pastilhas de energia ------------------------------------------- */
+.tipos { display: inline-flex; gap: 0.25rem; vertical-align: middle; }
+.energia {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--cor);
+  /* O anel interno evoca o disco de energia sem copiar símbolo algum. */
+  box-shadow: inset 0 0 0 2px rgba(6, 8, 12, 0.55),
+              inset 0 0 0 3px color-mix(in srgb, var(--cor) 70%, transparent);
+}
+
+/* --- brilho holográfico ---------------------------------------------
+   Só em cartas cuja raridade é de fato foil. Aplicar em tudo tiraria o
+   sinal: o brilho existe para dizer "esta é rara", não para enfeitar. */
+.hit.foil {
+  position: relative;
+  overflow: hidden;
+}
+.hit.foil::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    color-mix(in srgb, var(--tipo) 16%, transparent) 45%,
+    rgba(255, 255, 255, 0.10) 50%,
+    color-mix(in srgb, var(--tipo) 16%, transparent) 55%,
+    transparent 70%);
+  background-size: 260% 100%;
+  animation: foil 5.5s ease-in-out infinite;
+}
+@keyframes foil {
+  0%, 100% { background-position: 130% 0; }
+  50%      { background-position: -30% 0; }
+}
+
+/* --- selo de raridade ------------------------------------------------ */
+.selo-raridade {
+  font-family: var(--font-data);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--tipo) 16%, transparent);
+  color: var(--tipo);
+  border: 1px solid color-mix(in srgb, var(--tipo) 35%, transparent);
+}
+
+/* --- moldura de leitura ---------------------------------------------- */
+/* Quando o leitor trava numa carta, a moldura assume a cor do tipo dela:
+   confirma o acerto sem precisar ler texto. */
+.stage.travado .corner { border-color: var(--tipo); }
+.stage.travado .frame::after {
+  border-color: color-mix(in srgb, var(--tipo) 60%, transparent);
+  box-shadow: 0 0 22px -4px var(--tipo);
+}
+
+/* Selo de "capturado": some sozinho, não pede toque para sair do caminho. */
+.travado-selo {
+  position: absolute;
+  top: 0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(6, 8, 12, 0.85);
+  border: 1px solid var(--tipo);
+  color: var(--tipo);
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  animation: surge 260ms ease-out;
+}
+@keyframes surge {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* --- miniatura da carta lida ----------------------------------------- */
+/* Serve para o usuário conferir que o leitor pegou a carta certa sem
+   precisar manter a câmera apontada. A arte vem do CDN de origem. */
+.miniatura {
+  grid-row: 1 / span 3;
+  grid-column: 0;
+  width: 58px;
+  aspect-ratio: 0.716;
+  border-radius: 5px;
+  object-fit: cover;
+  background: var(--ground);
+  border: 1px solid color-mix(in srgb, var(--tipo) 40%, var(--line));
+}
+.hit.com-mini {
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0.15rem 0.75rem;
+}
+.hit.com-mini .hit-name,
+.hit.com-mini .hit-meta,
+.hit.com-mini .precos,
+.hit.com-mini .preco-vazio,
+.hit.com-mini .guardar,
+.hit.com-mini .grupo,
+.hit.com-mini .graded { grid-column: 2 / -1; }
+.hit.com-mini .hit-conf { grid-column: 3; grid-row: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hit.foil::before { animation: none; }
+  .travado-selo { animation: none; }
+}
+
+/* --- graduação -------------------------------------------------------- */
+.graded {
+  grid-column: 1 / -1;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+}
+.graded summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.graded summary strong { color: var(--tipo); }
+.graded summary:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+.graded-nota {
+  margin: 0.55rem 0 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.graded-slots {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+.slot {
+  flex: 1 1 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--line);
+  border-radius: 6px;
+}
+.slot-nome {
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--ink);
+}
+.slot-vazio { font-size: 0.68rem; color: var(--ink-soft); }

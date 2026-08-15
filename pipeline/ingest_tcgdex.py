@@ -38,6 +38,10 @@ _THIRDPARTY_RE = re.compile(r"(?P<src>cardmarket|tcgplayer)\s*:\s*(?P<id>\d+)")
 # dexId e o numero na Pokedex. Independe de idioma, entao e a unica chave
 # que liga a mesma especie entre a impressao inglesa e a japonesa.
 _DEXID_RE = re.compile(r"dexId:\s*\[([\d,\s]*)\]")
+# Tipos de energia. Alimentam a cor da interface — o tema visual sai do
+# dado da carta, nao de decoracao escolhida a esmo.
+_TYPES_RE = re.compile(r"types:\s*\[(.*?)\]", re.DOTALL)
+_TYPE_ITEM_RE = re.compile(r'"([^"]+)"')
 _VARIANT_TYPE_RE = re.compile(r"type\s*:\s*['\"](?P<t>[\w-]+)['\"]")
 _RELEASE_SCALAR_RE = re.compile(r"""^\s*releaseDate\s*:\s*["'](?P<v>[\d-]+)["']""", re.MULTILINE)
 
@@ -123,7 +127,11 @@ def parse_card(path: Path) -> dict:
     m = _DEXID_RE.search(src)
     dex = ",".join(x.strip() for x in m.group(1).split(",") if x.strip()) if m else None
 
+    mt = _TYPES_RE.search(src)
+    tipos = _TYPE_ITEM_RE.findall(mt.group(1)) if mt else []
+
     return {
+        "types": tipos,
         "dex_id": dex or None,
         "local_id": str(s.get("localId") or path.stem),
         "names": b.get("name", {}),
@@ -172,6 +180,7 @@ CREATE TABLE IF NOT EXISTS cards (
     illustrator   TEXT,
     category      TEXT,
     dex_id        TEXT,             -- numero(s) na Pokedex; chave entre idiomas
+    types_json    TEXT,             -- tipos de energia; dirigem a cor da UI
     hp            INTEGER,
     regulation_mark TEXT,
     variants_json TEXT,
@@ -318,11 +327,12 @@ def build(repo: Path, out: Path, langs: set[str] | None = None) -> None:
 
             card_id = f"{set_id}-{cd['local_id']}"
             conn.execute(
-                "INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     card_id, set_id, cd["local_id"], region,
                     cd["rarity"], cd["illustrator"], cd["category"],
-                    cd["dex_id"], cd["hp"], cd["regulation_mark"],
+                    cd["dex_id"], json.dumps(cd["types"]), cd["hp"],
+                    cd["regulation_mark"],
                     json.dumps(cd["variants"]),
                     cd["third_party"].get("cardmarket"),
                     cd["third_party"].get("tcgplayer"),

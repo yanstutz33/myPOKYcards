@@ -235,6 +235,31 @@ E `price_history` passou a acumular série temporal: a tabela `prices` é
 sobrescrita a cada coleta, então sem ela nenhuma tendência existiria. Já são
 67.856 pontos em 20.331 cartas.
 
+**Fase 6 (tema e travamento) — funcional.**
+
+O tema Pokémon é **dirigido por dado**, não decoração: a cor de cada
+resultado vem do tipo de energia da própria carta (11 tipos, 34.589
+atribuições no catálogo), e o brilho holográfico só aparece em raridade que
+de fato é foil. Carta comum sai sóbria — é isso que faz o brilho significar
+algo quando aparece. Nada de marca, logo ou arte oficial.
+
+**Não é mais preciso segurar a câmera apontada.** Quando o mesmo candidato
+aparece no topo em 3 leituras seguidas com confiança acima de 90%, o leitor
+trava sozinho: moldura e selo assumem a cor do tipo, e o resultado fica na
+tela até você tocar em "Ler outra". Três leituras, não uma — um frame
+borrado durante o movimento pode acertar por acaso e travaria na carta
+errada.
+
+**Graduação (PSA 10, GBA).** Nenhuma fonte pública cota carta graduada:
+PSA existe só em serviço pago (~US$ 10/mês) e GBA, MGS e Capy são
+graduadoras brasileiras novas demais para ter índice — verificado, não
+suposto. Os campos ficam visivelmente vazios em vez de preenchidos com
+multiplicador estimado.
+
+O que dá para dizer com o dado que temos é **se vale graduar**: abaixo de
+~US$ 50 raw, o custo da graduação e do frete costuma comer o ganho. É
+orientação de decisão, rotulada como tal, não preço inventado.
+
 ## Estrutura
 
 ```
@@ -249,7 +274,7 @@ pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
-web/                          leitor, coleção e painel
+web/                          leitor, coleção e painel (tema.css/tema.js = camada temática)
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```

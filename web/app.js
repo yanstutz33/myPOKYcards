@@ -10,6 +10,7 @@
 
 import { capture } from "./capture.js";
 import * as colecao from "./colecao.js";
+import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -27,6 +28,11 @@ const els = {
 const CARD_RATIO = 0.716;   // 63mm / 88mm — igual ao CSS
 const INTERVAL_MS = 450;    // ritmo de leitura; abaixo disso só aquece o celular
 const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
+// Trava sozinho quando o MESMO candidato vem no topo em N leituras seguidas
+// com confiança alta. Uma leitura só não basta: um frame borrado durante o
+// movimento pode acertar por acaso e travar na carta errada.
+const TRAVA_CONF = 0.90;
+const TRAVA_FRAMES = 3;
 
 let worker = null;
 let catalog = null;
@@ -36,6 +42,8 @@ let stream = null;
 let running = false;
 let frozen = false;
 let seq = 0;
+let ultimoTopo = null;
+let repeticoes = 0;
 
 function setStatus(text, state) {
   els.statusText.textContent = text;
@@ -83,6 +91,7 @@ function onWorkerMessage(ev) {
     if (msg.seq !== seq) return;           // resultado de frame vencido
     els.timing.textContent = `${msg.ms.toFixed(0)} ms`;
     render(msg.results);
+    avaliarTrava(msg.results);
   }
 }
 
@@ -168,6 +177,60 @@ function tick() {
   setTimeout(tick, INTERVAL_MS);
 }
 
+/**
+ * Trava a leitura quando o resultado se estabiliza.
+ *
+ * Sem isso o usuário precisa segurar a carta na frente da câmera enquanto
+ * lê o preço — e qualquer tremida troca o resultado embaixo dos olhos dele.
+ * Exigir N leituras iguais evita travar num frame borrado que acertou por
+ * sorte durante o movimento.
+ */
+function avaliarTrava(results) {
+  const topo = results[0];
+  if (!topo || topo.confidence < TRAVA_CONF) {
+    ultimoTopo = null;
+    repeticoes = 0;
+    return;
+  }
+  const id = catalog.ids[topo.i];
+  repeticoes = id === ultimoTopo ? repeticoes + 1 : 1;
+  ultimoTopo = id;
+
+  if (repeticoes >= TRAVA_FRAMES) travar(id);
+}
+
+function travar(cardId) {
+  frozen = true;
+  repeticoes = 0;
+  els.freeze.textContent = "Ler outra";
+  els.stage.classList.add("paused", "travado");
+
+  const meta = catalog.meta[catalog.ids.indexOf(cardId)];
+  const nome = meta?.[0] || cardId;
+  // `--tipo` é definido no cartão do resultado, que fica em outra subárvore;
+  // o visor precisa da própria cópia ou a moldura e o selo saem no ciano
+  // padrão em vez da cor do tipo da carta.
+  els.stage.style.setProperty("--tipo", corDaCarta(meta?.[9]));
+  els.hint.textContent = "Toque em “Ler outra” para escanear a próxima";
+  const selo = document.createElement("div");
+  selo.className = "travado-selo";
+  selo.textContent = `✓ ${nome}`;
+  els.stage.querySelector(".travado-selo")?.remove();
+  els.stage.appendChild(selo);
+}
+
+function destravar() {
+  frozen = false;
+  ultimoTopo = null;
+  repeticoes = 0;
+  els.freeze.textContent = "Congelar";
+  els.stage.classList.remove("paused", "travado");
+  els.stage.style.removeProperty("--tipo");
+  els.stage.querySelector(".travado-selo")?.remove();
+  els.hint.textContent = "Encaixe a carta inteira na moldura";
+  tick();
+}
+
 // ---------------------------------------------------------------- resultados
 
 /**
@@ -238,18 +301,30 @@ function render(results) {
 
   els.results.innerHTML = results.map((r, i) => {
     const id = catalog.ids[r.i];
-    const [nome, set, numero, raridade, regiao, variantes, idiomas] = catalog.meta[r.i];
+    const [nome, set, numero, raridade, regiao, variantes, idiomas, caminho, , tipos]
+      = catalog.meta[r.i];
     const destaque = i === 0 && r.confidence >= CONF_ALTA && !ambiguo;
+    const cor = corDaCarta(tipos);
 
     const tags = [];
-    if (raridade) tags.push(`<span class="tag">${escapeHtml(raridade)}</span>`);
+    if (raridade) tags.push(`<span class="selo-raridade">${escapeHtml(raridade)}</span>`);
     for (const v of variantes) tags.push(`<span class="tag">${escapeHtml(v)}</span>`);
     if (idiomas.length > 1) {
       tags.push(`<span class="tag lang">${idiomas.length} idiomas</span>`);
     }
 
-    return `<article class="hit${destaque ? " top" : ""}">
-      <h3 class="hit-name">${escapeHtml(nome)}</h3>
+    // Miniatura só no candidato do topo: nas alternativas ela competiria
+    // por atenção com a carta que o usuário está de fato conferindo.
+    const mini = i === 0 && caminho
+      ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
+             src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">`
+      : "";
+
+    return `<article class="hit${destaque ? " top" : ""}${
+        eFoil(raridade) ? " foil" : ""}${mini ? " com-mini" : ""}"
+        style="--tipo:${cor}">
+      ${mini}
+      <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
       <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>confiança</small></div>
       <div class="hit-meta">
         <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
@@ -258,6 +333,7 @@ function render(results) {
         ${tags.join("")}
       </div>
       ${precoHtml(id, regiao)}
+      ${i === 0 ? gradedHtml(id) : ""}
       ${guardarHtml(id, variantes)}
       ${i === 0 ? irmasHtml(id) : ""}
     </article>`;
@@ -294,6 +370,62 @@ function converter(valor, moeda) {
   const v = valor * t.taxa;
   const fmt = v >= 100 ? v.toFixed(0) : v.toFixed(2);
   return `<span class="brl" title="Conversão pela PTAX de ${escapeHtml(t.em || "")}. Não é o preço do mercado brasileiro.">≈ R$ ${fmt}</span>`;
+}
+
+/**
+ * Bloco de graduação (PSA 10, GBA).
+ *
+ * Estado honesto: NENHUMA fonte pública cota carta graduada de graça.
+ * PSA 10 existe em serviço pago (PokemonPriceTracker ~US$ 10/mês); GBA,
+ * MGS e Capy são graduadoras brasileiras novas demais para ter índice
+ * público — não há preço de GBA em lugar nenhum, verificado.
+ *
+ * O que dá para dizer com o dado que temos é se graduar faz sentido: a
+ * regra de bolso do mercado é que abaixo de ~US$ 50 raw o custo da
+ * graduação come o ganho. Isso é orientação de decisão, não preço
+ * inventado — e é explicitamente rotulado como tal.
+ */
+const LIMIAR_GRADUACAO_USD = 50;
+
+function gradedHtml(cardId) {
+  const mercados = prices[cardId] || [];
+  if (!mercados.length) return "";
+
+  // Referência em dólar para comparar com o limiar; sem USD, converte do
+  // que houver usando a PTAX, e diz que foi convertido.
+  const usd = mercados.find((m) => m.c === "USD");
+  let base = usd?.ref ?? null;
+  let convertido = false;
+  if (base === null) {
+    const outro = mercados[0];
+    const tOutro = fx?.taxas?.[outro.c]?.taxa;
+    const tUsd = fx?.taxas?.USD?.taxa;
+    if (tOutro && tUsd) { base = (outro.ref * tOutro) / tUsd; convertido = true; }
+  }
+  if (base === null) return "";
+
+  const vale = base >= LIMIAR_GRADUACAO_USD;
+  return `<details class="graded">
+    <summary>Vale graduar? <strong>${vale ? "provavelmente sim" : "provavelmente não"}</strong></summary>
+    <p class="graded-nota">
+      Esta carta vale <strong>US$ ${base.toFixed(2)}</strong> sem graduação${
+        convertido ? " (convertido)" : ""}. A regra de bolso do mercado é que
+      abaixo de <strong>US$ ${LIMIAR_GRADUACAO_USD}</strong> o custo da
+      graduação e do frete costuma comer o ganho — e só nota 9 ou 10
+      multiplica o valor de verdade.
+    </p>
+    <div class="graded-slots">
+      <div class="slot"><span class="slot-nome">PSA 10</span>
+        <span class="slot-vazio">sem fonte gratuita</span></div>
+      <div class="slot"><span class="slot-nome">GBA</span>
+        <span class="slot-vazio">sem índice público</span></div>
+    </div>
+    <p class="graded-nota">
+      Preço de carta graduada não tem fonte aberta: PSA existe só em serviço
+      pago, e GBA, MGS e Capy são graduadoras brasileiras novas demais para
+      ter índice. Preferimos deixar o espaço vazio a estimar por multiplicador.
+    </p>
+  </details>`;
 }
 
 function precoHtml(cardId, regiao) {
@@ -390,9 +522,13 @@ async function demo(cardId) {
       || catalog.ids.find((id) => id === "ex2-85") || catalog.ids[0];
     const img = await carregarCarta(alvo);
     els.hint.textContent = `demo · ${alvo}`;
-    els.stage.classList.add("paused");
-    seq++;
-    worker.postMessage({ type: "match", seq, k: 3, ...capture(img) });
+    const quadro = capture(img);
+    // Repete como a câmera repetiria: é isso que exercita o travamento.
+    for (let n = 0; n < TRAVA_FRAMES; n++) {
+      seq++;
+      worker.postMessage({ type: "match", seq, k: 3, ...quadro });
+      await new Promise((r) => setTimeout(r, 120));
+    }
   } catch (err) {
     els.results.innerHTML =
       `<div class="nodata"><b>Demo indisponível.</b><br>${escapeHtml(err.message)}</div>`;
@@ -425,13 +561,11 @@ els.toggle.addEventListener("click", async () => {
 });
 
 els.freeze.addEventListener("click", () => {
-  frozen = !frozen;
-  els.freeze.textContent = frozen ? "Retomar" : "Congelar";
-  els.stage.classList.toggle("paused", frozen);
-  els.hint.textContent = frozen
-    ? "Leitura pausada — resultado mantido"
-    : "Encaixe a carta inteira na moldura";
-  if (!frozen) tick();
+  if (frozen) return destravar();
+  frozen = true;
+  els.freeze.textContent = "Retomar";
+  els.stage.classList.add("paused");
+  els.hint.textContent = "Leitura pausada — resultado mantido";
 });
 
 els.results.addEventListener("click", (ev) => {
