@@ -243,6 +243,12 @@ function render(results) {
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
+// TCG Pocket é um jogo digital: as cartas existem só no app, não há mercado
+// físico. Os sets A1–A4 e B1–B2 vieram inteiros sem cotação, e isso é
+// correto, não falha de coleta.
+const RE_DIGITAL = /^[AB]\d/;
+const digital = (cardId) => RE_DIGITAL.test(cardId);
+
 /**
  * Bloco de preço de um candidato.
  *
@@ -254,9 +260,14 @@ function precoHtml(cardId, regiao) {
   const mercados = prices[cardId];
 
   if (!mercados || !mercados.length) {
-    const motivo = regiao === "asia"
+    // Cada ausência tem uma causa diferente, e o usuário merece saber qual.
+    // "Sem preço" sozinho parece falha do app quando muitas vezes é a
+    // natureza da carta.
+    const motivo = digital(cardId)
+      ? "Carta do TCG Pocket, que é digital — não existe mercado físico nem cotação."
+      : regiao === "asia"
       ? "Carta japonesa: Cardmarket e TCGplayer são mercados ocidentais e não a cotam. Só 2% das cartas asiáticas têm preço nessas fontes."
-      : "Ainda não coletada, ou sem cotação na fonte.";
+      : "Consultada na fonte, sem cotação registrada.";
     return `<p class="preco-vazio">Sem preço · ${escapeHtml(motivo)}</p>`;
   }
 
