@@ -33,6 +33,19 @@ const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
 // movimento pode acertar por acaso e travar na carta errada.
 const TRAVA_CONF = 0.90;
 const TRAVA_FRAMES = 3;
+// Margem entre o 1o e o 2o candidato, em bits ponderados.
+//
+// A confianca sozinha NAO distingue "achei a carta" de "a carta nao esta no
+// indice e esta e a mais parecida". Medido: com a carta ausente do indice, a
+// confianca do palpite errado fica entre 71% e 89% — faixa que se sobrepoe
+// inteiramente a de um acerto legitimo em foto degradada (83% a 99%).
+//
+// A margem separa melhor: mediana 22,6 quando a carta esta presente contra
+// 4,2 quando esta ausente. Em 12 bits, mantem 79% dos acertos e corta o
+// falso-positivo de ~100% para 25%. Nao resolve — 11.411 cartas do catalogo
+// nao tem hash, quase todas japonesas, e para elas nao existe resposta certa
+// possivel. Mas impede que o leitor TRAVE numa carta errada com ar de certeza.
+const MARGEM_MIN = 12;
 
 let worker = null;
 let catalog = null;
@@ -185,9 +198,13 @@ function tick() {
  * Exigir N leituras iguais evita travar num frame borrado que acertou por
  * sorte durante o movimento.
  */
+function margem(results) {
+  return results.length > 1 ? results[1].score - results[0].score : Infinity;
+}
+
 function avaliarTrava(results) {
   const topo = results[0];
-  if (!topo || topo.confidence < TRAVA_CONF) {
+  if (!topo || topo.confidence < TRAVA_CONF || margem(results) < MARGEM_MIN) {
     ultimoTopo = null;
     repeticoes = 0;
     return;
@@ -476,6 +493,12 @@ function precoHtml(cardId, regiao) {
  */
 function avisoDeLimite(results, ambiguo) {
   const partes = [];
+  if (margem(results) < MARGEM_MIN) {
+    partes.push(`<b>Certeza baixa.</b> O segundo candidato está quase tão
+      próximo quanto o primeiro. Isso costuma acontecer quando a carta não
+      está no índice — 11.411 cartas do catálogo não têm imagem na fonte,
+      quase todas japonesas. Confira o número impresso antes de confiar.`);
+  }
   if (ambiguo) {
     partes.push(`<b>Candidatos empatados.</b> Provavelmente a mesma arte em
       impressões diferentes — a versão japonesa e a internacional têm hash

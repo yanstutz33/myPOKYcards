@@ -46,6 +46,27 @@ ilustrador + `dex_id` com limiar 40, só ilustrador com limiar 8. E o rótulo
 correto não é "mesma arte": o maior grupo são Unown de letras diferentes.
 É "impressões que o leitor não distingue".
 
+## O limite mais sério: o leitor não sabe quando não sabe
+
+Medido em 2026-08-15, e não aparecia em nenhum teste anterior:
+
+| situação | confiança |
+|---|---|
+| carta presente no índice (imagem perfeita) | 100% |
+| carta **ausente** do índice | 71%–89% |
+| acerto legítimo em foto degradada | 83%–99% |
+
+**As faixas se sobrepõem.** A confiança absoluta não distingue "achei" de
+"a carta não está no índice e esta é a mais parecida". Como 11.411 cartas
+do catálogo não têm hash — quase todas japonesas — esse caso é comum, não
+exótico.
+
+A margem entre 1º e 2º separa melhor (mediana 22,6 presente contra 4,2
+ausente), mas não resolve: em 12 bits mantém 79% dos acertos e ainda aceita
+25% dos falsos. Use-a onde a decisão é irreversível — travar a leitura — e
+avise "certeza baixa" no resto. **Não venda isso como solução.** A solução
+de verdade é fechar a lacuna de imagens.
+
 ## O problema difícil, dito sem rodeio
 
 Hash de arte **não distingue idioma nem reprint**. Charizard base1-4 EN,
