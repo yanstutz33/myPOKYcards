@@ -86,6 +86,15 @@ def _export_prices(out_dir: Path, known_ids: set[str], prices_db: Path = Path("d
     print(f"  prices.json     : {len(raw)/1024/1024:.2f} MB  ({len(payload)} cartas)")
 
 
+def _indices_por_grupo(ids: list[str], meta: list[list]) -> dict[str, list[int]]:
+    out: dict[str, list[int]] = {}
+    for i, m in enumerate(meta):
+        g = m[8]
+        if g != -1:
+            out.setdefault(str(g), []).append(i)
+    return out
+
+
 def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -112,6 +121,16 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     buf = bytearray(MAGIC + struct.pack("<HI", VERSION, len(rows)) + b"\0" * 6)
     ids: list[str] = []
     meta: list[list] = []
+
+    # Grupos de impressoes que o reconhecimento por imagem NAO distingue.
+    # Nao e "mesma arte": inclui os Unown, que diferem so por uma letra.
+    grupo_de: dict[str, int] = {}
+    try:
+        gconn = sqlite3.connect(f"file:{hashes_db}?mode=ro", uri=True)
+        grupo_de = dict(gconn.execute("SELECT card_id, group_id FROM art_groups"))
+        gconn.close()
+    except sqlite3.OperationalError:
+        pass  # indice sem art_groups: a UI simplesmente nao mostra grupos
 
     for r in rows:
         card_id, _lang = r[0], r[1]
@@ -145,6 +164,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
             # match e ambiguo entre impressoes, em vez de fingir certeza.
             sorted(card_names.keys()),
             caminho,
+            grupo_de.get(card_id, -1),
         ])
 
     (out_dir / "index.bin").write_bytes(buf)
@@ -155,10 +175,12 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         "count": len(ids),
         "fields": list(FIELDS),
         "schema": ["nome", "set", "numero", "raridade", "regiao", "variantes",
-                   "idiomas", "caminho_arte"],
+                   "idiomas", "caminho_arte", "grupo"],
         "cdn": CDN,
         "ids": ids,
         "meta": meta,
+        # grupo -> posicoes, para a UI listar as irmas sem varrer tudo.
+        "grupos": _indices_por_grupo(ids, meta),
     }
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     (out_dir / "cards.json").write_bytes(raw)

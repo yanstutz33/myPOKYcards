@@ -45,6 +45,17 @@ mesma arte em japonês costuma ter curva própria.
    e é o `tcg-compliance` que decide o que é aceitável.
 6. Exiba **faixa e mediana**, nunca um número mágico. E sempre a data.
 
+## Armadilha já paga
+
+**Não filtre quem consultar por `tcgplayer_id`/`cardmarket_id`.** Parece
+óbvio ("só pergunta o preço de quem tem id externo") e está errado: esses
+ids vêm do repo estático, presentes em 57% das cartas, e a API de preço não
+depende deles. Numa amostra de 20 cartas internacionais sem id externo, 12
+tinham preço. O filtro excluía 10.677 cartas que nunca foram perguntadas.
+
+Proxy não é a verdade. Pergunte, e deixe o log registrar quem realmente não
+tem.
+
 ## Modelo de valor
 
 `valor_estimado` = mediana de vendas concluídas dos últimos 30d na condição

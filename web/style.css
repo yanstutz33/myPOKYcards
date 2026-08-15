@@ -354,3 +354,54 @@ button:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) {
   .sweep { animation: none; top: 50%; }
 }
+
+/* ------------------------------------- impressões indistinguíveis */
+.grupo {
+  grid-column: 1 / -1;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+}
+.grupo summary {
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--warn);
+  line-height: 1.45;
+}
+.grupo summary:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+.irmas {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.irma {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.1rem 0.7rem;
+  text-align: left;
+  min-height: 0;
+  padding: 0.5rem 0.7rem;
+  background: var(--ground);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.irma:hover { border-color: var(--scan); }
+.irma-nome { font-weight: 600; font-size: 0.85rem; }
+.irma-meta { grid-column: 1; font-size: 0.7rem; color: var(--ink-soft); }
+.irma-preco {
+  grid-row: 1 / span 2; grid-column: 2;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  align-self: center;
+}
+
+.grupo-nota {
+  margin: 0.6rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}

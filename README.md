@@ -56,8 +56,24 @@ degradações que simulam foto de celular:
 
 Quase todo erro de top-1 é a *mesma carta em outra impressão* — a versão
 japonesa sendo confundida com a inglesa (`sv09-119` ↔ `SV9-077`,
-`swsh12-054` ↔ `S11-038`). Arte idêntica, hash idêntico: nenhum algoritmo
-de imagem separa isso. O desempate é OCR do número e do símbolo de set.
+`swsh12-054` ↔ `S11-038`). Arte idêntica, hash idêntico.
+
+**Duas tentativas de resolver isso por imagem foram medidas e falharam:**
+hash de região específica (nome, tarja do número) melhorou a separação de
+14% para só 20% dos bits nos pares difíceis; e a imagem em alta resolução
+não mudou nada (51→50, 43→46, 71→72 bits) porque quem limita é a grade do
+hash, não a fonte.
+
+A ambiguidade não é ruído a filtrar — é informação real: a mesma arte
+**existe** em várias impressões, com preços diferentes. Então o sistema
+para de adivinhar e apresenta o grupo. `pipeline/build_art_groups.py`
+pré-calcula 4.867 grupos cobrindo 10.737 cartas, e a tela lista as irmãs
+com seus preços para o usuário escolher pelo número impresso.
+
+Distância de hash sozinha não agrupa: ela fundia 72 cartas distintas num
+grupo só. A regra que funciona é **chave semântica forte permite distância
+folgada, chave fraca exige distância apertada** — ilustrador + número da
+Pokédex com limiar 40, só ilustrador com limiar 8.
 
 Cuidado ao medir: amostre **aleatoriamente**. Ordenar por `card_id` põe o
 TCG Pocket (`A1-*`) primeiro, um set inteiro de arte reimpressa, e a
@@ -158,6 +174,7 @@ sqlite3 data/cards.db "SELECT c.card_id, c.rarity FROM card_names n JOIN cards c
 pipeline/ingest_tcgdex.py     catálogo TCGdex (MIT) -> SQLite
 pipeline/build_hash_index.py  imagens -> hashes perceptuais
 pipeline/match.py             busca + autoteste de acurácia
+pipeline/build_art_groups.py  impressões que o leitor não distingue
 pipeline/fetch_prices.py      preços com proveniência (TCGdex -> prices.db)
 pipeline/price_model.py       faixa, referência e idade exibíveis
 pipeline/export_web_index.py  bancos -> índice binário do navegador

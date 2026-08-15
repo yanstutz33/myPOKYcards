@@ -165,11 +165,17 @@ def pending(cards_db: Path, prices_db: Path, only_set: str | None, limit: int | 
     queima 98% das requisicoes para nada.
     """
     src = sqlite3.connect(f"file:{cards_db}?mode=ro", uri=True)
-    # Parenteses obrigatorios: AND liga mais forte que OR, e sem eles o
-    # `--set` so filtrava o segundo termo. O sintoma nao era erro, era o
-    # coletor varrer o catalogo inteiro calado.
-    q = ("SELECT card_id FROM cards "
-         "WHERE (tcgplayer_id IS NOT NULL OR cardmarket_id IS NOT NULL)")
+    # NAO filtre por tcgplayer_id/cardmarket_id.
+    #
+    # O filtro parecia obvio — "so pergunta o preco de quem tem id externo" —
+    # e estava errado. Esses ids vem do repo estatico, que os traz para 57%
+    # das cartas; a API de preco nao depende deles. Numa amostra de 20 cartas
+    # internacionais SEM id externo, 12 tinham preco (60%). O filtro excluia
+    # 10.677 cartas internacionais que nunca chegaram a ser perguntadas.
+    #
+    # Proxy nao e a verdade: pergunte, e deixe o `fetch_log` registrar quem
+    # realmente nao tem.
+    q = "SELECT card_id FROM cards WHERE 1=1"
     args: list = []
     if region:
         q += " AND region = ?"

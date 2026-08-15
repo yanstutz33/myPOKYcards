@@ -71,7 +71,8 @@ function onWorkerMessage(ev) {
   if (msg.type === "ready") {
     setStatus(`${msg.count.toLocaleString("pt-BR")} cartas`, "on");
     els.toggle.disabled = false;
-    if (new URLSearchParams(location.search).has("demo")) demo();
+    const q = new URLSearchParams(location.search);
+    if (q.has("demo")) demo(q.get("demo") || undefined);
     return;
   }
   if (msg.type === "error") return fatal(msg.message);
@@ -166,6 +167,47 @@ function tick() {
 
 // ---------------------------------------------------------------- resultados
 
+/**
+ * Impressões que o reconhecimento por imagem não separa.
+ *
+ * Não é "a mesma arte": o grupo maior são Unown de letras diferentes, que
+ * diferem só por um glifo. É literalmente "o leitor não distingue estas" —
+ * e como elas têm preços diferentes, a escolha tem que ser do usuário.
+ *
+ * O agrupamento é pré-calculado (pipeline/build_art_groups.py) usando
+ * ilustrador + número da Pokédex além da distância de hash. Distância
+ * sozinha fundia 72 cartas distintas num grupo só.
+ */
+function irmasHtml(cardId) {
+  const i = catalog.ids.indexOf(cardId);
+  const grupo = catalog.meta[i]?.[8];
+  if (grupo === undefined || grupo === -1) return "";
+
+  const irmas = (catalog.grupos?.[String(grupo)] || []).filter((j) => j !== i);
+  if (!irmas.length) return "";
+
+  const linhas = irmas.slice(0, 8).map((j) => {
+    const id = catalog.ids[j];
+    const [nome, set, numero, , regiao] = catalog.meta[j];
+    const p = prices[id]?.[0];
+    const s = p ? `${SIMBOLO[p.c] || p.c} ${p.ref.toFixed(2)}` : "sem preço";
+    return `<button class="irma" data-card="${escapeHtml(id)}">
+      <span class="irma-nome">${escapeHtml(nome)}</span>
+      <span class="irma-meta">${escapeHtml(set)} · ${escapeHtml(numero)} · ${
+        regiao === "asia" ? "JA" : "INTL"}</span>
+      <span class="irma-preco">${escapeHtml(s)}</span>
+    </button>`;
+  }).join("");
+
+  return `<details class="grupo">
+    <summary>${irmas.length + 1} impressões que o leitor não distingue —
+      confira o número e o símbolo na carta</summary>
+    <div class="irmas">${linhas}</div>
+    <p class="grupo-nota">Arte igual ou quase igual, preços diferentes.
+      Nenhum algoritmo de imagem separa estas; só o texto impresso separa.</p>
+  </details>`;
+}
+
 function render(results) {
   if (!results.length) return;
 
@@ -194,6 +236,7 @@ function render(results) {
         ${tags.join("")}
       </div>
       ${precoHtml(id, regiao)}
+      ${i === 0 ? irmasHtml(id) : ""}
     </article>`;
   }).join("") + avisoDeLimite(results, ambiguo);
 }
@@ -283,9 +326,10 @@ function carregarCarta(cardId) {
  * Serve para revisar a interface em máquina sem webcam. É um match real
  * contra o índice, não um resultado fabricado.
  */
-async function demo() {
+async function demo(cardId) {
   try {
-    const alvo = catalog.ids.find((id) => id === "ex2-85") || catalog.ids[0];
+    const alvo = (cardId && catalog.ids.includes(cardId) && cardId)
+      || catalog.ids.find((id) => id === "ex2-85") || catalog.ids[0];
     const img = await carregarCarta(alvo);
     els.hint.textContent = `demo · ${alvo}`;
     els.stage.classList.add("paused");

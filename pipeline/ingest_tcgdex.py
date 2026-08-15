@@ -35,6 +35,9 @@ _SCALAR_RE = re.compile(
     re.MULTILINE,
 )
 _THIRDPARTY_RE = re.compile(r"(?P<src>cardmarket|tcgplayer)\s*:\s*(?P<id>\d+)")
+# dexId e o numero na Pokedex. Independe de idioma, entao e a unica chave
+# que liga a mesma especie entre a impressao inglesa e a japonesa.
+_DEXID_RE = re.compile(r"dexId:\s*\[([\d,\s]*)\]")
 _VARIANT_TYPE_RE = re.compile(r"type\s*:\s*['\"](?P<t>[\w-]+)['\"]")
 _RELEASE_SCALAR_RE = re.compile(r"""^\s*releaseDate\s*:\s*["'](?P<v>[\d-]+)["']""", re.MULTILINE)
 
@@ -117,7 +120,11 @@ def parse_card(path: Path) -> dict:
     # variants ficam depois de "variants:"; thirdParty do card vive la dentro.
     vpos = src.find("variants:")
     vtail = src[vpos:] if vpos != -1 else ""
+    m = _DEXID_RE.search(src)
+    dex = ",".join(x.strip() for x in m.group(1).split(",") if x.strip()) if m else None
+
     return {
+        "dex_id": dex or None,
         "local_id": str(s.get("localId") or path.stem),
         "names": b.get("name", {}),
         "rarity": s.get("rarity"),
@@ -164,6 +171,7 @@ CREATE TABLE IF NOT EXISTS cards (
     rarity        TEXT,
     illustrator   TEXT,
     category      TEXT,
+    dex_id        TEXT,             -- numero(s) na Pokedex; chave entre idiomas
     hp            INTEGER,
     regulation_mark TEXT,
     variants_json TEXT,
@@ -182,6 +190,7 @@ CREATE TABLE IF NOT EXISTS card_names (
 
 CREATE INDEX IF NOT EXISTS idx_cards_set     ON cards(set_id);
 CREATE INDEX IF NOT EXISTS idx_cards_rarity  ON cards(rarity);
+CREATE INDEX IF NOT EXISTS idx_cards_dex     ON cards(dex_id);
 CREATE INDEX IF NOT EXISTS idx_names_lang    ON card_names(lang, name);
 """
 
@@ -309,11 +318,11 @@ def build(repo: Path, out: Path, langs: set[str] | None = None) -> None:
 
             card_id = f"{set_id}-{cd['local_id']}"
             conn.execute(
-                "INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO cards VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     card_id, set_id, cd["local_id"], region,
                     cd["rarity"], cd["illustrator"], cd["category"],
-                    cd["hp"], cd["regulation_mark"],
+                    cd["dex_id"], cd["hp"], cd["regulation_mark"],
                     json.dumps(cd["variants"]),
                     cd["third_party"].get("cardmarket"),
                     cd["third_party"].get("tcgplayer"),

@@ -23,6 +23,29 @@ Você é dono do domínio **visão** no YAMI-TCG.
 6. **Desempate** — OCR do número da carta (`025/165`) e do símbolo do set.
    É aqui que EN vs PT-BR vs JA se resolve, porque a arte é a mesma.
 
+## Duas hipóteses já testadas e REFUTADAS
+
+Não refaça estas. Ambas foram medidas em 2026-08-15:
+
+1. **Hash de região específica** (faixa do nome, tarja do número). Nos pares
+   que realmente confundem a separação foi de 14% para 20% dos bits —
+   marginal. Os pares fáceis inflavam a média e escondiam isso.
+2. **Imagem em alta resolução.** Praticamente sem efeito: 51→50, 43→46,
+   71→72 bits. Quem limita é a grade do hash, não a fonte. `low.png` e
+   `high.png` produzem o mesmo poder de discriminação.
+
+A conclusão é que a ambiguidade **não é ruído a filtrar — é informação real
+sobre o mundo**. A mesma arte existe mesmo em várias impressões, com preços
+diferentes. O sistema para de adivinhar e apresenta o grupo
+(`pipeline/build_art_groups.py`), deixando a escolha explícita.
+
+Ao agrupar, distância de hash sozinha não serve: ela fundia 72 cartas
+distintas num grupo só. A regra que funciona é **chave semântica forte
+permite distância folgada; chave fraca exige distância apertada** —
+ilustrador + `dex_id` com limiar 40, só ilustrador com limiar 8. E o rótulo
+correto não é "mesma arte": o maior grupo são Unown de letras diferentes.
+É "impressões que o leitor não distingue".
+
 ## O problema difícil, dito sem rodeio
 
 Hash de arte **não distingue idioma nem reprint**. Charizard base1-4 EN,
