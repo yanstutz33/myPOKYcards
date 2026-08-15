@@ -29,6 +29,7 @@ const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
 
 let worker = null;
 let catalog = null;
+let prices = {};
 let stream = null;
 let running = false;
 let frozen = false;
@@ -56,6 +57,9 @@ async function boot() {
     }
     const buffer = await binRes.arrayBuffer();
     catalog = await jsonRes.json();
+    // Preço é opcional por desenho: o leitor tem que funcionar sem ele, e
+    // dizer que não tem, em vez de quebrar ou mostrar zero.
+    prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
     worker.postMessage({ type: "load", buffer }, [buffer]);
   } catch (err) {
     fatal(err.message);
@@ -189,14 +193,53 @@ function render(results) {
         <code>${escapeHtml(id)}</code>
         ${tags.join("")}
       </div>
+      ${precoHtml(id, regiao)}
     </article>`;
   }).join("") + avisoDeLimite(results, ambiguo);
 }
 
+const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
+
 /**
- * Os avisos abaixo não são disclaimers de praxe — são as duas limitações que
- * o autoteste mediu: a mesma arte aparece em impressões de idiomas
- * diferentes, e ainda não existe camada de preço.
+ * Bloco de preço de um candidato.
+ *
+ * Nunca renderiza número sem moeda, variante, fonte e idade — preço sem
+ * proveniência é pior que preço nenhum, porque parece confiável. Ausência é
+ * um estado explícito com motivo, jamais zero.
+ */
+function precoHtml(cardId, regiao) {
+  const mercados = prices[cardId];
+
+  if (!mercados || !mercados.length) {
+    const motivo = regiao === "asia"
+      ? "Carta japonesa: Cardmarket e TCGplayer são mercados ocidentais e não a cotam. Só 2% das cartas asiáticas têm preço nessas fontes."
+      : "Ainda não coletada, ou sem cotação na fonte.";
+    return `<p class="preco-vazio">Sem preço · ${escapeHtml(motivo)}</p>`;
+  }
+
+  const linhas = mercados.map((m) => {
+    const s = SIMBOLO[m.c] || m.c + " ";
+    const faixa = m.faixa
+      ? `<span class="faixa">${s} ${m.faixa[0].toFixed(2)}–${m.faixa[1].toFixed(2)}</span>`
+      : "";
+    const velho = m.idade != null && m.idade > 7;
+    const idade = m.idade == null ? "sem data"
+      : m.idade < 1 ? "hoje"
+      : `há ${Math.round(m.idade)} d`;
+    return `<div class="preco-linha${velho ? " velho" : ""}">
+      <span class="preco-val">${s} ${m.ref.toFixed(2)}</span>
+      ${faixa}
+      <span class="preco-src">${escapeHtml(m.v)} · ${escapeHtml(m.f)} · ${idade}</span>
+    </div>`;
+  }).join("");
+
+  return `<div class="precos">${linhas}</div>`;
+}
+
+/**
+ * Os avisos abaixo não são disclaimers de praxe — são limitações medidas:
+ * a mesma arte aparece em impressões de idiomas diferentes, e nenhuma fonte
+ * aberta cota carta em BRL ou JPY.
  */
 function avisoDeLimite(results, ambiguo) {
   const partes = [];
@@ -205,8 +248,9 @@ function avisoDeLimite(results, ambiguo) {
       impressões diferentes — a versão japonesa e a internacional têm hash
       quase idêntico. Confira o número e o símbolo da expansão na carta.`);
   }
-  partes.push(`<b>Sem dados de preço ainda.</b> O leitor identifica a carta;
-    a camada de cotação em BRL, USD e JPY é a próxima etapa.`);
+  partes.push(`<b>Preço em moeda estrangeira, sem conversão.</b> A referência
+    vem de venda concluída; a faixa é o que se pede hoje. Não existe fonte
+    aberta que cote em BRL ou JPY — converter aqui seria inventar precisão.`);
   return `<div class="nodata">${partes.join("<br><br>")}</div>`;
 }
 

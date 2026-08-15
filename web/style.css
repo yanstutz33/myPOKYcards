@@ -246,6 +246,45 @@ body {
 }
 .tag.lang { background: rgba(233, 180, 87, 0.14); color: var(--warn); }
 
+/* ------------------------------------------------------------------ preço */
+.precos {
+  grid-column: 1 / -1;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.preco-linha {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+
+.preco-val { font-size: 1rem; font-weight: 600; color: var(--ink); }
+.faixa { color: var(--ink-soft); }
+.preco-src { margin-left: auto; color: var(--ink-soft); font-size: 0.68rem; }
+
+/* Dado velho não pode se passar por atual. */
+.preco-linha.velho .preco-val { color: var(--warn); }
+.preco-linha.velho .preco-src::after { content: " · desatualizado"; color: var(--warn); }
+
+.preco-vazio {
+  grid-column: 1 / -1;
+  margin: 0.55rem 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
+}
+
 /* "Sem dados" é um estado de primeira classe, não um vazio. */
 .nodata {
   padding: 0.7rem 0.85rem;

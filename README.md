@@ -64,6 +64,50 @@ TCG Pocket (`A1-*`) primeiro, um set inteiro de arte reimpressa, e a
 acurácia aparente cai para 75% — número que descreve aquele cluster, não o
 catálogo.
 
+**Fase 3 (tela de leitura) — funcional.**
+
+Busca em 30.283 cartas em **14 ms**, num Web Worker, sem rede. A tela mostra
+os três candidatos com confiança — nunca um resultado único, porque o dado
+não sustenta essa certeza.
+
+O ponto delicado foi portar o hash de Python para JavaScript. Uma imagem
+idêntica à indexada voltava com 84% de confiança em vez de ~100%: o
+`drawImage` do canvas não reamostra como o LANCZOS do Pillow, e o `dHash`,
+que compara pixels vizinhos numa grade 9×8, divergia 10 bits de 64.
+`web/capture.js` replica o reamostrador do Pillow; a divergência caiu para
+0,0 bit e a confiança para 99,5–100%. `selftest.html` guarda essa
+verificação — é a diferença entre "reconhecimento meia-boca" e um bug
+invisível.
+
+**Fase 4 (camada de preço) — funcional para o mercado internacional.**
+
+Fonte: TCGdex, que reempacota Cardmarket (EUR) e TCGplayer (USD) e usa os
+mesmos `card_id` do catálogo — join nativo, sem tabela de correspondência.
+
+A cobertura foi medida, não estimada:
+
+| região | consultadas | com preço | |
+|---|---|---|---|
+| internacional | 166 | 165 | **99,4%** |
+| ásia (JA) | 6.116 | 132 | **2,2%** |
+
+Cardmarket e TCGplayer são mercados ocidentais; carta japonesa não está
+neles. **Não existe fonte aberta que cote em BRL ou em JPY** — a interface
+diz isso em vez de converter e fingir precisão.
+
+Cada preço é uma linha com `kind`: `listing` (pedido de anúncio), `sold`
+(derivado de venda concluída) ou `derived` (tendência da fonte). Somar os
+três num "valor de mercado" é o erro clássico de agregador. E há duas datas
+por linha: quando a fonte diz que o dado é, e quando nós buscamos.
+
+```bash
+python pipeline/fetch_prices.py --region intl --workers 10
+```
+
+```bash
+python pipeline/price_model.py swsh3-136
+```
+
 ## Rodar
 
 ```bash
@@ -108,27 +152,14 @@ produz o mesmo banco, e rodar de novo só pega o que falta.
 sqlite3 data/cards.db "SELECT c.card_id, c.rarity FROM card_names n JOIN cards c USING(card_id) WHERE n.lang='pt' AND n.name LIKE '%Charizard%' LIMIT 10"
 ```
 
-**Fase 3 (tela de leitura) — funcional.**
-
-Busca em 30.283 cartas em **14 ms**, num Web Worker, sem rede. A tela mostra
-os três candidatos com confiança — nunca um resultado único, porque o dado
-não sustenta essa certeza.
-
-O ponto delicado foi portar o hash de Python para JavaScript. Uma imagem
-idêntica à indexada voltava com 84% de confiança em vez de ~100%: o
-`drawImage` do canvas não reamostra como o LANCZOS do Pillow, e o `dHash`,
-que compara pixels vizinhos numa grade 9×8, divergia 10 bits de 64.
-`web/capture.js` replica o reamostrador do Pillow; a divergência caiu para
-0,0 bit e a confiança para 99,5–100%. `selftest.html` guarda essa
-verificação — é a diferença entre "reconhecimento meia-boca" e um bug
-invisível.
-
 ## Estrutura
 
 ```
 pipeline/ingest_tcgdex.py     catálogo TCGdex (MIT) -> SQLite
 pipeline/build_hash_index.py  imagens -> hashes perceptuais
 pipeline/match.py             busca + autoteste de acurácia
+pipeline/fetch_prices.py      preços com proveniência (TCGdex -> prices.db)
+pipeline/price_model.py       faixa, referência e idade exibíveis
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 web/                          tela de leitura (câmera, worker, HUD)
 data/                         bancos gerados (não versionado)

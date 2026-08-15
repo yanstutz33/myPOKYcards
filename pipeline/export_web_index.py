@@ -39,6 +39,52 @@ LABEL_ORDER = {
 }
 
 
+def _export_prices(out_dir: Path, known_ids: set[str], prices_db: Path = Path("data/prices.db")) -> None:
+    """Leituras de preco para as cartas que estao no indice.
+
+    Vai num arquivo separado de proposito: o catalogo e estavel e o preco
+    muda todo dia. Juntar os dois obrigaria a rebaixar o cache do catalogo
+    ao ritmo do preco.
+
+    Cada entrada carrega moeda, variante, fonte e data — a interface nao tem
+    permissao de exibir numero sem isso.
+    """
+    if not prices_db.exists():
+        print("  (sem prices.db — a tela vai mostrar 'sem dados de preco')")
+        return
+
+    sys.path.insert(0, str(Path(__file__).parent))
+    from price_model import leitura  # noqa: PLC0415
+
+    conn = sqlite3.connect(f"file:{prices_db}?mode=ro", uri=True)
+    ids = [r[0] for r in conn.execute("SELECT DISTINCT card_id FROM prices")]
+
+    payload = {}
+    for card_id in ids:
+        if card_id not in known_ids:
+            continue  # carta sem hash: preco dela nunca seria exibido
+        r = leitura(conn, card_id)
+        if not r.get("tem_preco"):
+            continue
+        payload[card_id] = [
+            {
+                "v": m["variante"], "f": m["fonte"], "c": m["moeda"],
+                "ref": m["referencia"], "faixa": m["faixa"],
+                "em": m["atualizado_em"], "idade": m["idade_dias"],
+            }
+            for m in r["mercados"] if m["referencia"] is not None
+        ]
+        if not payload[card_id]:
+            del payload[card_id]
+    conn.close()
+
+    raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    (out_dir / "prices.json").write_bytes(raw)
+    with gzip.open(out_dir / "prices.json.gz", "wb", compresslevel=9) as fh:
+        fh.write(raw)
+    print(f"  prices.json     : {len(raw)/1024/1024:.2f} MB  ({len(payload)} cartas)")
+
+
 def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -94,6 +140,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         ])
 
     (out_dir / "index.bin").write_bytes(buf)
+    _export_prices(out_dir, set(ids))
 
     payload = {
         "version": VERSION,
