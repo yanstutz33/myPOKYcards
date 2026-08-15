@@ -100,12 +100,18 @@ invisível.
 Fonte: TCGdex, que reempacota Cardmarket (EUR) e TCGplayer (USD) e usa os
 mesmos `card_id` do catálogo — join nativo, sem tabela de correspondência.
 
-A cobertura foi medida, não estimada:
+| | |
+|---|---|
+| cotações | 353.040 |
+| cartas com preço | 20.333 |
+| internacionais consultadas | 23.639 de 23.639 (100%) |
 
-| região | consultadas | com preço | |
-|---|---|---|---|
-| internacional | 166 | 165 | **99,4%** |
-| ásia (JA) | 6.116 | 132 | **2,2%** |
+A cobertura por região foi medida, não estimada:
+
+| região | com preço na fonte |
+|---|---|
+| internacional | **~86%** |
+| ásia (JA) | **2,2%** |
 
 Cardmarket e TCGplayer são mercados ocidentais; carta japonesa não está
 neles. **Não existe fonte aberta que cote em BRL ou em JPY** — a interface
@@ -115,6 +121,15 @@ Cada preço é uma linha com `kind`: `listing` (pedido de anúncio), `sold`
 (derivado de venda concluída) ou `derived` (tendência da fonte). Somar os
 três num "valor de mercado" é o erro clássico de agregador. E há duas datas
 por linha: quando a fonte diz que o dado é, e quando nós buscamos.
+
+**Não filtre quem consultar por `tcgplayer_id`/`cardmarket_id`.** Esses ids
+vêm do repo estático e existem em 57% do catálogo; a API de preço não
+depende deles. Numa amostra de 20 cartas internacionais sem esses ids, 12
+tinham preço — o filtro excluía 10.677 cartas que nunca eram perguntadas.
+
+Ausência de preço tem causas distintas, e a interface diz qual: TCG Pocket
+é jogo digital e não tem mercado físico; carta japonesa não está nos
+mercados ocidentais; o resto foi consultado e não tinha cotação.
 
 ```bash
 python pipeline/fetch_prices.py --region intl --workers 10

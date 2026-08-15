@@ -73,9 +73,11 @@ def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path) -> dict:
 
     precos = None
     if prices_db.exists():
-        alvo = q("""SELECT COUNT(*) FROM cards
-                    WHERE region='intl'
-                      AND (tcgplayer_id IS NOT NULL OR cardmarket_id IS NOT NULL)""")
+        # O denominador tem que ser o mesmo universo que o coletor percorre.
+        # Ele filtrava por tcgplayer_id/cardmarket_id; quando esse filtro caiu,
+        # o painel passou a exibir "23.639 de 12.962" — acima de 100%, que e o
+        # sintoma classico de denominador desatualizado.
+        alvo = q("SELECT COUNT(*) FROM cards WHERE region='intl'")
         consultadas = q("""SELECT COUNT(*) FROM px.fetch_log f
                            JOIN cards cd ON cd.card_id = f.card_id
                            WHERE cd.region='intl'""")
