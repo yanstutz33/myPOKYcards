@@ -1,6 +1,10 @@
 # YAMI-TCG
 
-Scanner de cartas Pokémon por câmera + radar de preços 24/7 + dashboard.
+Leitor de cartas Pokémon pela câmera, com preço. Reconhece 41.694 cartas em
+14 ms no próprio aparelho, sem enviar foto para servidor nenhum, e funciona
+offline depois do primeiro carregamento.
+
+**No ar:** https://yanstutz33.github.io/yami-tcg/sobre.html
 
 ## Estado atual
 
@@ -260,6 +264,22 @@ O que dá para dizer com o dado que temos é **se vale graduar**: abaixo de
 ~US$ 50 raw, o custo da graduação e do frete costuma comer o ganho. É
 orientação de decisão, rotulada como tal, não preço inventado.
 
+**Fase 7 (automação e landing) — funcional.**
+
+`.github/workflows/precos.yml` atualiza os preços todo dia às 09:00 UTC e
+republica o site. Preço coletado uma vez fica velho no dia seguinte, e app
+de preço com preço velho é pior que app nenhum.
+
+O que persiste entre execuções é só o histórico: `cards.db` se reconstrói em
+2 min, `prices.db` tem 77 MB e não cabe no repositório, e o índice de
+reconhecimento não muda quando o preço muda. Comprimido, o histórico dá
+0,32 MB e é versionado de propósito — um dia não coletado é perdido para
+sempre. A lista de cartas exibíveis vem do `cards.json` **já publicado**, e
+é isso que dispensa o `hashes.db` no runner.
+
+O job falha de forma visível se a coleta trouxer menos de 5.000 cartas:
+silêncio não pode parecer sucesso.
+
 ## Estrutura
 
 ```
@@ -274,7 +294,7 @@ pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
-web/                          leitor, coleção e painel (tema.css/tema.js = camada temática)
+web/                          landing, leitor, coleção e painel (tema.css/tema.js = camada temática)
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```

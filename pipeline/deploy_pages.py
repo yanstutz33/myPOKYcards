@@ -39,6 +39,8 @@ OBRIGATORIOS = [
     ("tema.js", 500),
     ("painel.html", 500),
     ("colecao.html", 500),
+    ("sobre.html", 2_000),
+    ("data/numeros.json", 50),
     ("colecao.js", 1_000),
     ("data/index.bin", 1_000_000),
     ("data/cards.json", 1_000_000),

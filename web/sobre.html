@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06080C">
+  <title>YAMI-TCG · Leitor de cartas Pokémon</title>
+  <meta name="description" content="Leitor de cartas Pokémon pela câmera:
+    41.694 cartas, reconhecimento em 14 ms no próprio aparelho, preço com
+    proveniência. Funciona offline.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="painel.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="sobre.css">
+</head>
+<body class="painel-body lp">
+
+  <header class="lp-hero">
+    <span class="brand">YAMI · TCG</span>
+    <h1>Aponte a câmera.<br>Descubra o que a carta vale.</h1>
+    <p class="lp-sub">
+      Reconhecimento de <strong>41.694 cartas Pokémon</strong> em
+      <strong>14 milissegundos</strong>, rodando no próprio celular — sem
+      enviar sua foto para servidor nenhum. Depois do primeiro
+      carregamento, funciona offline.
+    </p>
+    <div class="lp-acoes">
+      <a class="lp-btn primaria" href="index.html">Abrir o leitor</a>
+      <a class="lp-btn" href="painel.html">Ver os dados</a>
+      <a class="lp-btn" href="https://github.com/yanstutz33/yami-tcg">Código no GitHub</a>
+    </div>
+    <ul class="lp-tipos" aria-hidden="true">
+      <li style="--cor:var(--t-grass)"></li>
+      <li style="--cor:var(--t-fire)"></li>
+      <li style="--cor:var(--t-water)"></li>
+      <li style="--cor:var(--t-lightning)"></li>
+      <li style="--cor:var(--t-psychic)"></li>
+      <li style="--cor:var(--t-fighting)"></li>
+      <li style="--cor:var(--t-darkness)"></li>
+      <li style="--cor:var(--t-metal)"></li>
+      <li style="--cor:var(--t-dragon)"></li>
+      <li style="--cor:var(--t-fairy)"></li>
+    </ul>
+  </header>
+
+  <main class="painel">
+
+    <section class="bloco">
+      <h2>O que já existe</h2>
+      <div class="kpis" id="numeros"></div>
+    </section>
+
+    <section class="bloco">
+      <h2>Como funciona</h2>
+      <div class="passos">
+        <article class="passo">
+          <span class="passo-n">01</span>
+          <h3>Enquadra</h3>
+          <p>A carta inteira na moldura. Quando o leitor reconhece a mesma
+             carta em três leituras seguidas, ele <strong>trava sozinho</strong> —
+             você pode baixar o celular e ler com calma.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">02</span>
+          <h3>Compara</h3>
+          <p>Cinco impressões digitais da imagem são comparadas com um índice
+             de 30.283 cartas que já está no seu aparelho. Nenhuma foto sai
+             do celular.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">03</span>
+          <h3>Mostra três</h3>
+          <p>Sempre três candidatos com o grau de confiança, nunca um só.
+             O acerto em primeiro lugar fica entre 93% e 100%; entre os três
+             primeiros, 99,8%.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">04</span>
+          <h3>Precifica</h3>
+          <p>Preço por variante e por mercado, com a data. Referência de
+             venda concluída, faixa do que se pede hoje, e conversão para
+             real pela taxa oficial do Banco Central.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>O que ele não faz — e por quê</h2>
+      <p class="prog-nota lp-intro">
+        Um leitor de preço que esconde os próprios limites é pior que um que
+        não existe: você toma decisão de venda com ele. Estes limites foram
+        medidos, não estimados.
+      </p>
+      <div class="limites">
+        <article class="limite">
+          <h3>Não cota carta japonesa</h3>
+          <p>Cardmarket e TCGplayer são mercados ocidentais. Medido: 99,4%
+             das cartas internacionais têm preço na fonte, contra 2,2% das
+             asiáticas.</p>
+        </article>
+        <article class="limite">
+          <h3>Não sabe o preço no Brasil</h3>
+          <p>Nenhuma fonte aberta cota carta em real. O <code>≈ R$</code> é
+             conversão pela PTAX do Banco Central — serve para ordem de
+             grandeza, não é o preço de venda aqui.</p>
+        </article>
+        <article class="limite">
+          <h3>Não separa impressões idênticas</h3>
+          <p>A mesma arte existe em várias impressões com preços diferentes.
+             4.867 grupos são sinalizados para você conferir pelo número
+             impresso — nenhum algoritmo de imagem resolve isso.</p>
+        </article>
+        <article class="limite">
+          <h3>Não precifica carta graduada</h3>
+          <p>PSA só tem fonte paga; GBA e as demais graduadoras brasileiras
+             não têm índice público. O campo fica vazio em vez de estimado
+             por multiplicador.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>Privacidade</h2>
+      <div class="linhas">
+        <div class="linha"><span>A foto da carta</span>
+          <span class="linha-val">nunca sai do aparelho</span></div>
+        <div class="linha"><span>Sua coleção</span>
+          <span class="linha-val">fica no navegador</span></div>
+        <div class="linha"><span>Conta ou cadastro</span>
+          <span class="linha-val">não existe</span></div>
+        <div class="linha"><span>Rastreador de terceiro</span>
+          <span class="linha-val">nenhum</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="painel-pe">
+    <p>Catálogo derivado de
+      <a href="https://github.com/tcgdex/cards-database">tcgdex/cards-database</a> (MIT).
+      Preços via TCGdex (Cardmarket e TCGplayer). Câmbio: PTAX / Banco Central.</p>
+    <p>Projeto de terceiro, <strong>sem qualquer vínculo</strong> com a
+      The Pokémon Company, Nintendo, Game Freak ou Creatures Inc. Nomes,
+      símbolos e artes das cartas pertencem a seus titulares.</p>
+  </footer>
+
+  <script type="module" src="sobre.js"></script>
+</body>
+</html>

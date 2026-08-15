@@ -114,6 +114,19 @@ def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path) -> dict:
     }
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
+    # Resumo curto para a landing. Sai do mesmo lugar que o painel, para
+    # os dois nunca discordarem — número cravado em HTML envelhece calado.
+    resumo = {
+        "cartas": catalogo["cartas"],
+        "sets": catalogo["sets"],
+        "idiomas": len(catalogo["idiomas"]),
+        "hashes": (reconhecimento or {}).get("com_hash", 0),
+        "cartas_preco": (precos or {}).get("cartas_com_preco", 0),
+        "cotacoes": (precos or {}).get("linhas", 0),
+    }
+    (out.parent / "numeros.json").write_text(
+        json.dumps(resumo, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"painel -> {out}")
     print(f"  catalogo: {catalogo['cartas']} cartas, {catalogo['sets']} sets")
     if reconhecimento:
