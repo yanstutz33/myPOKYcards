@@ -1,0 +1,24 @@
+# Bancos gerados pelo pipeline — reproduzíveis, grandes e mudam a cada
+# rebuild. Reconstrua com ingest_tcgdex.py + build_hash_index.py.
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/*.log
+data/*.err
+
+# Credenciais de API (Scrydex, afiliados de marketplace). Nunca versionar.
+.env
+.env.*
+!.env.example
+*.key
+secrets/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+.DS_Store
+Thumbs.db
