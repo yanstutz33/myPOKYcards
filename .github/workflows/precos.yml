@@ -1,0 +1,74 @@
+name: Atualizar preços
+
+# Todo dia às 09:00 UTC (06:00 em Brasília). Depois do fechamento americano
+# e antes do horário comercial daqui, então o dado do dia já estabilizou.
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:        # botão manual, para testar sem esperar o cron
+
+concurrency:
+  # Duas execuções ao mesmo tempo brigariam pelo commit do histórico.
+  group: precos
+  cancel-in-progress: false
+
+permissions:
+  contents: write           # commitar o histórico e publicar em gh-pages
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90     # a coleta leva ~30 min; a folga cobre a fonte lenta
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # O catálogo é reconstruído do zero: 2 minutos, e evita versionar
+      # 15 MB de banco que muda a cada release do TCGdex.
+      - name: Reconstruir catálogo
+        run: |
+          git clone --depth 1 --quiet https://github.com/tcgdex/cards-database.git /tmp/tcgdex
+          python pipeline/ingest_tcgdex.py --repo /tmp/tcgdex --out data/cards.db
+
+      - name: Coletar preços e gerar artefatos
+        run: python pipeline/refresh_prices.py --site "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+
+      # O histórico é a única coisa insubstituível: um dia perdido é perdido
+      # para sempre. Vai para o main, não para gh-pages, que é reescrito.
+      - name: Guardar o histórico
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/price_history.csv.gz
+          git diff --staged --quiet || git commit -m "Histórico de preço: $(date -u +%Y-%m-%d)"
+          git push
+
+      # Só os três arquivos de preço. index.bin e cards.json descrevem o
+      # índice de reconhecimento, que não muda aqui — reenviá-los seria
+      # arriscar sobrescrever o índice com uma versão incompleta.
+      - name: Publicar no site
+        run: |
+          git fetch origin gh-pages --depth 1
+          git worktree add /tmp/site gh-pages
+          cp web/data/prices.json web/data/prices.json.gz web/data/fx.json web/data/dashboard.json /tmp/site/data/
+          cd /tmp/site
+          git add data/
+          git diff --staged --quiet && echo "nada mudou" && exit 0
+          git commit -m "Preços de $(date -u +%Y-%m-%d)"
+          git push origin gh-pages
+
+      # Silêncio não pode parecer sucesso: se a coleta trouxe zero preço,
+      # algo quebrou na fonte e o job precisa falhar de forma visível.
+      - name: Conferir que veio dado
+        run: |
+          python - <<'PY'
+          import json, sys, pathlib
+          d = json.loads(pathlib.Path("web/data/prices.json").read_text(encoding="utf-8"))
+          print(f"{len(d)} cartas com preço")
+          if len(d) < 5000:
+              sys.exit(f"apenas {len(d)} cartas — abaixo do esperado, investigar")
+          PY

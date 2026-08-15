@@ -71,7 +71,9 @@ def _export_prices(out_dir: Path, known_ids: set[str], prices_db: Path = Path("d
             {
                 "v": m["variante"], "f": m["fonte"], "c": m["moeda"],
                 "ref": m["referencia"], "faixa": m["faixa"],
-                "em": m["atualizado_em"], "idade": m["idade_dias"],
+                # Só a idade: a interface não usa o carimbo ISO, e ele
+                # custava 26% do arquivo baixado no celular.
+                "idade": m["idade_dias"],
             }
             for m in r["mercados"] if m["referencia"] is not None
         ]

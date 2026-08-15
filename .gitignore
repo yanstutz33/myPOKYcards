@@ -6,6 +6,11 @@ data/*.db-shm
 data/*.log
 data/*.err
 
+# EXCEÇÃO: o histórico de preço é versionado de propósito. É a única coisa
+# insubstituível do projeto — um dia não coletado é perdido para sempre —
+# e comprimido dá 0,32 MB.
+!data/price_history.csv.gz
+
 # Índice exportado para o navegador e imagens de teste: derivados dos bancos
 # acima, gerados por export_web_index.py. ~4 MB que mudam a cada rebuild.
 web/data/
