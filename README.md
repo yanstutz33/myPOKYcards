@@ -131,6 +131,16 @@ Ausência de preço tem causas distintas, e a interface diz qual: TCG Pocket
 é jogo digital e não tem mercado físico; carta japonesa não está nos
 mercados ocidentais; o resto foi consultado e não tinha cotação.
 
+**Conversão para real, não preço brasileiro.** A tela mostra `≈ R$` ao lado
+do valor nativo, pela PTAX oficial do Banco Central, com data visível. Isso
+responde "é carta de dez reais ou de mil?" sem afirmar que sabe o preço no
+Brasil — o mercado nacional tem liquidez, imposto e frete próprios, e a
+diferença para o americano não é a taxa de câmbio.
+
+```bash
+python pipeline/fetch_fx.py
+```
+
 ```bash
 python pipeline/fetch_prices.py --region intl --workers 10
 ```
@@ -192,6 +202,7 @@ pipeline/match.py             busca + autoteste de acurácia
 pipeline/build_art_groups.py  impressões que o leitor não distingue
 pipeline/fetch_prices.py      preços com proveniência (TCGdex -> prices.db)
 pipeline/price_model.py       faixa, referência e idade exibíveis
+pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)

@@ -30,6 +30,7 @@ const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
 let worker = null;
 let catalog = null;
 let prices = {};
+let fx = null;
 let stream = null;
 let running = false;
 let frozen = false;
@@ -60,6 +61,7 @@ async function boot() {
     // Preço é opcional por desenho: o leitor tem que funcionar sem ele, e
     // dizer que não tem, em vez de quebrar ou mostrar zero.
     prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+    fx = await fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
     worker.postMessage({ type: "load", buffer }, [buffer]);
   } catch (err) {
     fatal(err.message);
@@ -256,6 +258,23 @@ const digital = (cardId) => RE_DIGITAL.test(cardId);
  * proveniência é pior que preço nenhum, porque parece confiável. Ausência é
  * um estado explícito com motivo, jamais zero.
  */
+/**
+ * Conversão para real — deliberadamente discreta e sempre rotulada.
+ *
+ * Não é o preço brasileiro: o mercado nacional tem liquidez, imposto e frete
+ * próprios, e a diferença em relação ao americano não é a taxa de câmbio.
+ * Serve para responder "isso é carta de dez reais ou de mil?".
+ *
+ * Taxa oficial PTAX do Banco Central, com data visível no rodapé do bloco.
+ */
+function converter(valor, moeda) {
+  const t = fx?.taxas?.[moeda];
+  if (!t) return "";
+  const v = valor * t.taxa;
+  const fmt = v >= 100 ? v.toFixed(0) : v.toFixed(2);
+  return `<span class="brl" title="Conversão pela PTAX de ${escapeHtml(t.em || "")}. Não é o preço do mercado brasileiro.">≈ R$ ${fmt}</span>`;
+}
+
 function precoHtml(cardId, regiao) {
   const mercados = prices[cardId];
 
@@ -276,18 +295,25 @@ function precoHtml(cardId, regiao) {
     const faixa = m.faixa
       ? `<span class="faixa">${s} ${m.faixa[0].toFixed(2)}–${m.faixa[1].toFixed(2)}</span>`
       : "";
+    const brl = converter(m.ref, m.c);
     const velho = m.idade != null && m.idade > 7;
     const idade = m.idade == null ? "sem data"
       : m.idade < 1 ? "hoje"
       : `há ${Math.round(m.idade)} d`;
     return `<div class="preco-linha${velho ? " velho" : ""}">
       <span class="preco-val">${s} ${m.ref.toFixed(2)}</span>
+      ${brl}
       ${faixa}
       <span class="preco-src">${escapeHtml(m.v)} · ${escapeHtml(m.f)} · ${idade}</span>
     </div>`;
   }).join("");
 
-  return `<div class="precos">${linhas}</div>`;
+  const nota = fx
+    ? `<p class="fx-nota">≈ R$ é conversão pela PTAX do Banco Central de
+       ${escapeHtml((fx.taxas.USD?.em || "").slice(0, 10))}, não o preço do
+       mercado brasileiro.</p>`
+    : "";
+  return `<div class="precos">${linhas}${nota}</div>`;
 }
 
 /**
