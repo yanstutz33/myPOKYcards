@@ -161,7 +161,8 @@ pipeline/match.py             busca + autoteste de acurácia
 pipeline/fetch_prices.py      preços com proveniência (TCGdex -> prices.db)
 pipeline/price_model.py       faixa, referência e idade exibíveis
 pipeline/export_web_index.py  bancos -> índice binário do navegador
-web/                          tela de leitura (câmera, worker, HUD)
+pipeline/export_dashboard.py  estado do sistema -> dashboard.json
+web/                          leitor (câmera + HUD) e painel
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```

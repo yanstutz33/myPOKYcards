@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06080C">
+  <title>YAMI-TCG · Painel</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="painel.css">
+</head>
+<body class="painel-body">
+
+  <header class="painel-top">
+    <div>
+      <span class="brand">YAMI · TCG</span>
+      <h1>Estado do sistema</h1>
+    </div>
+    <a class="ir-scan" href="index.html">Abrir leitor →</a>
+  </header>
+
+  <main id="painel" class="painel">
+    <p class="empty">Carregando…</p>
+  </main>
+
+  <footer class="painel-pe">
+    <p id="gerado"></p>
+    <p>Catálogo derivado de
+      <a href="https://github.com/tcgdex/cards-database">tcgdex/cards-database</a> (MIT).
+      Projeto de terceiro, não afiliado à The Pokémon Company.</p>
+  </footer>
+
+  <script type="module" src="painel.js"></script>
+</body>
+</html>

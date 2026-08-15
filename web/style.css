@@ -81,6 +81,19 @@ body {
 .dot.on   { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .dot.err  { background: var(--crit); }
 
+.ir-painel {
+  color: var(--scan);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ir-painel:hover { border-color: var(--scan); }
+.ir-painel:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
 /* ------------------------------------------------------------ visor */
 .stage {
   position: relative;
