@@ -421,3 +421,46 @@ button:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
   line-height: 1.45;
   color: var(--ink-soft);
 }
+
+/* ------------------------------------------------------- guardar na coleção */
+.guardar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.guardar-var {
+  flex: 0 1 auto;
+  min-height: 38px;
+  padding: 0 0.5rem;
+  background: var(--ground);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.guardar-btn {
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 0 1rem;
+  font-size: 0.85rem;
+}
+
+.guardar-tem {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-left: auto;
+}
+
+/* Ações por linha na coleção (+/−). */
+.linha-acoes { grid-column: 2; display: flex; gap: 0.3rem; justify-content: flex-end; }
+.linha-acoes button {
+  flex: 0 0 auto; min-height: 30px; min-width: 34px; padding: 0;
+  font-size: 1rem; line-height: 1;
+}
+.linha .sem { color: var(--ink-soft); font-weight: 400; }
+.linha-val em { font-style: normal; font-weight: 400; color: var(--ink-soft); font-size: 0.8em; }

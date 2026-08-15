@@ -9,6 +9,7 @@
  */
 
 import { capture } from "./capture.js";
+import * as colecao from "./colecao.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -210,6 +211,25 @@ function irmasHtml(cardId) {
   </details>`;
 }
 
+/**
+ * Botão de guardar. A variante vai junto porque normal e reverse holo são
+ * produtos econômicos distintos — guardar "a carta" sem a variante tornaria
+ * o valor da coleção um chute.
+ */
+function guardarHtml(cardId, variantes) {
+  const opcoes = (variantes && variantes.length ? variantes : ["normal"])
+    .map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  const jaTem = colecao.itens()
+    .filter((i) => i.card_id === cardId)
+    .reduce((s, i) => s + i.qtd, 0);
+  return `<div class="guardar">
+    <select class="guardar-var" data-card="${escapeHtml(cardId)}"
+            aria-label="variante">${opcoes}</select>
+    <button class="guardar-btn" data-card="${escapeHtml(cardId)}">Guardar</button>
+    ${jaTem ? `<span class="guardar-tem">${jaTem} na coleção</span>` : ""}
+  </div>`;
+}
+
 function render(results) {
   if (!results.length) return;
 
@@ -238,6 +258,7 @@ function render(results) {
         ${tags.join("")}
       </div>
       ${precoHtml(id, regiao)}
+      ${guardarHtml(id, variantes)}
       ${i === 0 ? irmasHtml(id) : ""}
     </article>`;
   }).join("") + avisoDeLimite(results, ambiguo);
@@ -411,6 +432,25 @@ els.freeze.addEventListener("click", () => {
     ? "Leitura pausada — resultado mantido"
     : "Encaixe a carta inteira na moldura";
   if (!frozen) tick();
+});
+
+els.results.addEventListener("click", (ev) => {
+  const btn = ev.target.closest(".guardar-btn");
+  if (!btn) return;
+  const cardId = btn.dataset.card;
+  const sel = btn.parentElement.querySelector(".guardar-var");
+  const n = colecao.adicionar(cardId, sel?.value);
+  if (n === null) {
+    btn.textContent = "sem espaço";
+    return;
+  }
+  // Congela a leitura ao guardar: sem isso o próximo frame reescreve o
+  // painel e o retorno visual some antes de ser lido.
+  frozen = true;
+  els.freeze.textContent = "Retomar";
+  els.stage.classList.add("paused");
+  btn.textContent = `guardado (${n})`;
+  btn.disabled = true;
 });
 
 document.addEventListener("visibilitychange", () => {

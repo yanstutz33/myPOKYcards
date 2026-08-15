@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#06080C">
-  <title>YAMI-TCG · Painel</title>
+  <title>YAMI-TCG · Coleção</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="painel.css">
 </head>
@@ -13,23 +13,22 @@
   <header class="painel-top">
     <div>
       <span class="brand">YAMI · TCG</span>
-      <h1>Estado do sistema</h1>
+      <h1>Minha coleção</h1>
     </div>
-    <a class="ir-scan" href="colecao.html">Coleção</a>
+    <a class="ir-scan" href="painel.html">Painel</a>
       <a class="ir-scan" href="index.html">Abrir leitor →</a>
   </header>
 
-  <main id="painel" class="painel">
+  <main id="colecao" class="painel">
     <p class="empty">Carregando…</p>
   </main>
 
   <footer class="painel-pe">
-    <p id="gerado"></p>
-    <p>Catálogo derivado de
-      <a href="https://github.com/tcgdex/cards-database">tcgdex/cards-database</a> (MIT).
-      Projeto de terceiro, não afiliado à The Pokémon Company.</p>
+    <p>A coleção fica <strong>neste aparelho</strong>, no navegador. Ela revela
+      patrimônio, então nada é enviado para servidor nenhum — e limpar os dados
+      do site apaga tudo. Exporte se quiser guardar.</p>
   </footer>
 
-  <script type="module" src="painel.js"></script>
+  <script type="module" src="colecao-tela.js"></script>
 </body>
 </html>

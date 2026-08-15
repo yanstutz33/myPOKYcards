@@ -173,3 +173,7 @@
 }
 .painel-pe p { margin: 0 0 0.4rem; }
 .painel-pe a { color: var(--scan); }
+
+/* Dois links no topo: precisam caber lado a lado em tela de 375px. */
+.painel-top { align-items: center; }
+.painel-top .ir-scan + .ir-scan { margin-left: 0.5rem; }

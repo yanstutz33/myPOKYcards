@@ -36,6 +36,8 @@ OBRIGATORIOS = [
     ("capture.js", 3_000),
     ("style.css", 3_000),
     ("painel.html", 500),
+    ("colecao.html", 500),
+    ("colecao.js", 1_000),
     ("data/index.bin", 1_000_000),
     ("data/cards.json", 1_000_000),
     ("data/dashboard.json", 500),

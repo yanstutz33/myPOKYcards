@@ -211,6 +211,30 @@ produz o mesmo banco, e rodar de novo só pega o que falta.
 sqlite3 data/cards.db "SELECT c.card_id, c.rarity FROM card_names n JOIN cards c USING(card_id) WHERE n.lang='pt' AND n.name LIKE '%Charizard%' LIMIT 10"
 ```
 
+**Fase 5 (coleção e histórico) — funcional.**
+
+O leitor deixou de responder uma carta por vez. A tela de coleção guarda o
+que foi escaneado **no aparelho** (localStorage) — coleção revela
+patrimônio, então nada vai para servidor e a exportação em JSON é a saída.
+
+Duas regras que o valor da coleção respeita:
+
+- **Moedas não se somam.** USD e EUR ficam em totais separados. Um total
+  único em real daria a impressão de ser o valor de venda no Brasil, que é
+  exatamente o que não sabemos.
+- **Sem cotação não é zero.** Cartas sem preço, e cartas cuja variante
+  guardada não tem cotação, são contadas à parte. Quatro cartas sem preço
+  não valem R$ 0,00, valem "não sei".
+
+Armadilha que custou um erro de quase 10×: o catálogo chama a variante de
+`reverse`, os preços chamam de `reverse-holofoil`. Sem traduzir os dois
+vocabulários, a busca não casava, caía no primeiro mercado, e um reverse
+holo de € 4,05 era avaliado a € 0,41 — o preço da versão normal.
+
+E `price_history` passou a acumular série temporal: a tabela `prices` é
+sobrescrita a cada coleta, então sem ela nenhuma tendência existiria. Já são
+67.856 pontos em 20.331 cartas.
+
 ## Estrutura
 
 ```
@@ -225,7 +249,7 @@ pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
-web/                          leitor (câmera + HUD) e painel
+web/                          leitor, coleção e painel
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```

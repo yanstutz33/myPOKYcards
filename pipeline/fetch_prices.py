@@ -64,6 +64,10 @@ CARDMARKET_METRICS = {
     "avg30": "sold", "trend": "derived",
 }
 
+# Metricas que viram serie historica. Sao as de referencia (venda
+# concluida) — as unicas que respondem "essa carta subiu ou caiu?".
+METRICAS_HISTORICO = {"marketPrice", "avg30"}
+
 # O Cardmarket sufixa "-holo" nos campos de reverse holo, nao de holo comum.
 # Evidencia: swsh3-136 declara variants {holo: false, reverse: true} e mesmo
 # assim traz avg-holo/trend-holo. Sem essa correcao o reverse ficaria com
@@ -87,6 +91,24 @@ CREATE TABLE IF NOT EXISTS prices (
 );
 
 CREATE INDEX IF NOT EXISTS idx_prices_card ON prices(card_id);
+
+-- Serie temporal. A tabela `prices` guarda o AGORA e e sobrescrita a cada
+-- coleta; sem esta aqui, cada rodada apagaria a anterior e tendencia nunca
+-- existiria. So as metricas de referencia entram, com granularidade de um
+-- dia: guardar tudo multiplicaria o volume por seis sem responder nenhuma
+-- pergunta a mais.
+CREATE TABLE IF NOT EXISTS price_history (
+    card_id  TEXT NOT NULL,
+    variant  TEXT NOT NULL,
+    source   TEXT NOT NULL,
+    metric   TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    value    REAL NOT NULL,
+    dia      TEXT NOT NULL,          -- AAAA-MM-DD
+    PRIMARY KEY (card_id, variant, source, metric, dia)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hist_card ON price_history(card_id, dia);
 
 CREATE TABLE IF NOT EXISTS fetch_log (
     card_id  TEXT PRIMARY KEY,
@@ -204,6 +226,7 @@ def run(cards_db: Path, prices_db: Path, only_set: str | None, limit: int | None
     prices_db.parent.mkdir(parents=True, exist_ok=True)
     sqlite3.connect(prices_db).executescript(SCHEMA)
 
+    hoje = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     todo = pending(cards_db, prices_db, only_set, limit, stale_days, region)
     if not todo:
         print("nada pendente")
@@ -229,6 +252,13 @@ def run(cards_db: Path, prices_db: Path, only_set: str | None, limit: int | None
             if rows:
                 conn.executemany(
                     "INSERT OR REPLACE INTO prices VALUES (?,?,?,?,?,?,?,?,?)", rows)
+                # INSERT OR IGNORE, nao REPLACE: se o dia ja foi registrado,
+                # o primeiro valor do dia e o que vale. Rodar a coleta duas
+                # vezes no mesmo dia nao pode reescrever a historia.
+                conn.executemany(
+                    "INSERT OR IGNORE INTO price_history VALUES (?,?,?,?,?,?,?)",
+                    [(r[0], r[1], r[2], r[3], r[5], r[6], hoje) for r in rows
+                     if r[3] in METRICAS_HISTORICO])
                 stat["ok"] += 1
             else:
                 stat["sem"] += 1
@@ -250,7 +280,10 @@ def run(cards_db: Path, prices_db: Path, only_set: str | None, limit: int | None
     cartas = conn.execute("SELECT COUNT(DISTINCT card_id) FROM prices").fetchone()[0]
     print(f"\nsessao: com_preco={stat['ok']} sem_preco={stat['sem']} erro={stat['erro']}"
           f"  em {(time.monotonic()-t0)/60:.1f}min")
+    dias = conn.execute("SELECT COUNT(DISTINCT dia) FROM price_history").fetchone()[0]
+    hist = conn.execute("SELECT COUNT(*) FROM price_history").fetchone()[0]
     print(f"base:   {total} precos em {cartas} cartas -> {prices_db}")
+    print(f"        historico: {hist} pontos em {dias} dia(s)")
     if stat["erro"]:
         print(f"\n{stat['erro']} cartas falharam apos 4 tentativas — rode de novo.")
     conn.close()
