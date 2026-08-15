@@ -39,13 +39,25 @@ jobs:
 
       # O histórico é a única coisa insubstituível: um dia perdido é perdido
       # para sempre. Vai para o main, não para gh-pages, que é reescrito.
+      # A coleta leva ~30 min. Qualquer commit no main nesse intervalo faz o
+      # push ser rejeitado — aconteceu na primeira execução. Rebase antes de
+      # empurrar, com retentativa: só este arquivo é tocado, então rebase é
+      # seguro.
       - name: Guardar o histórico
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/price_history.csv.gz
-          git diff --staged --quiet || git commit -m "Histórico de preço: $(date -u +%Y-%m-%d)"
-          git push
+          if git diff --staged --quiet; then
+            echo "histórico sem mudança"; exit 0
+          fi
+          git commit -m "Histórico de preço: $(date -u +%Y-%m-%d)"
+          for tentativa in 1 2 3; do
+            git pull --rebase --autostash origin main && git push && exit 0
+            echo "push rejeitado (tentativa $tentativa), refazendo o rebase"
+            sleep 5
+          done
+          exit 1
 
       # Só os três arquivos de preço. index.bin e cards.json descrevem o
       # índice de reconhecimento, que não muda aqui — reenviá-los seria

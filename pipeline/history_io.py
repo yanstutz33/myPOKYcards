@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import io
 import sqlite3
 import sys
 from pathlib import Path
@@ -50,8 +51,13 @@ def exportar(db: Path, out: Path) -> None:
     conn.close()
 
     out.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.open(out, "wt", encoding="utf-8", newline="", compresslevel=9) as fh:
-        w = csv.writer(fh)
+    # mtime=0 é obrigatório: o gzip grava a data de modificação DENTRO do
+    # arquivo, então conteúdo idêntico gerava bytes diferentes a cada
+    # execução. O commit diário vinha com "0 insertions, 0 deletions" e o
+    # repositório encheria de commits vazios.
+    with open(out, "wb") as bruto, gzip.GzipFile(
+            fileobj=bruto, mode="wb", compresslevel=9, mtime=0) as gz:
+        w = csv.writer(io.TextIOWrapper(gz, encoding="utf-8", newline=""))
         w.writerow(COLUNAS)
         w.writerows(linhas)
     dias = len({l[-1] for l in linhas})
