@@ -41,17 +41,26 @@ const verdict = document.getElementById("verdict");
 
 const load = (src) => new Promise((res, rej) => {
   const i = new Image();
+  i.crossOrigin = "anonymous";   // sem isso o canvas fica contaminado
   i.onload = () => res(i); i.onerror = () => rej(new Error("falhou: " + src));
   i.src = src;
 });
 
 (async () => {
   const worker = new Worker("matcher.worker.js");
-  const [bin, cards, manifest] = await Promise.all([
+  const [bin, cards] = await Promise.all([
     fetch("data/index.bin").then(r => r.arrayBuffer()),
     fetch("data/cards.json").then(r => r.json()),
-    fetch("test/manifest.json").then(r => r.json()),
   ]);
+
+  // Amostra determinística do próprio índice; a arte vem do CDN de origem,
+  // nunca deste site. Assim o autoteste funciona publicado sem redistribuir
+  // nenhuma imagem de carta.
+  const manifest = [];
+  for (let k = 0; k < 6; k++) {
+    const i = (k * 5081) % cards.count;
+    if (cards.meta[i][7]) manifest.push({ card_id: cards.ids[i], caminho: cards.meta[i][7] });
+  }
 
   await new Promise((res) => {
     worker.onmessage = (e) => { if (e.data.type === "ready") res(); };
@@ -66,7 +75,7 @@ const load = (src) => new Promise((res, rej) => {
   let acertos = 0, piorConf = 1;
   const diags = [];
   for (const item of manifest) {
-    const img = await load("test/" + item.file);
+    const img = await load(`${cards.cdn}/${item.caminho}/low.png`);
     const snap = capture(img);
     const out = await match(snap);
 
@@ -92,19 +101,31 @@ const load = (src) => new Promise((res, rej) => {
 
   const total = manifest.length;
   const nomes = ["phash", "dhash", "ahash", "dhash_r", "dhash_g", "dhash_b"];
-  const media = nomes.map((n, f) =>
-    `${n}: ${(diags.reduce((s, d) => s + d[f], 0) / diags.length).toFixed(1)}`);
-  const perfeito = acertos === total && piorConf > 0.99;
+  const medias = nomes.map((n, f) => ({
+    nome: n, bits: diags.reduce((s, d) => s + d[f], 0) / diags.length,
+  }));
+  const pior = Math.max(...medias.map((m) => m.bits));
+
+  // O critério é BITS DIVERGENTES, não a confiança agregada. Bits medem o
+  // porte diretamente; a confiança mistura os seis hashes com pesos e
+  // esconde qual etapa quebrou. Tolerância de 2 bits em 64 cobre o ruído de
+  // ponto flutuante entre numpy e JS — o defeito real que isso pegou eram
+  // 10,2 bits no dHash, uma ordem de grandeza acima.
+  const LIMITE_BITS = 2;
+  const passou = acertos === total && pior <= LIMITE_BITS;
+
   verdict.innerHTML = `<p style="margin:0 0 0.8rem;color:#97A3B6">
-      Bits divergentes por hash (de 64, média): <code>${media.join(" · ")}</code>
-    </p>` + (perfeito
+      Bits divergentes por hash (de 64, média):
+      <code>${medias.map((m) => `${m.nome}: ${m.bits.toFixed(1)}`).join(" · ")}</code>
+    </p>` + (passou
     ? `<span class="ok">PORTE CORRETO.</span> ${acertos}/${total} em top-1,
-       pior confiança ${(piorConf * 100).toFixed(2)}%. Uma imagem idêntica à
-       indexada tem que voltar praticamente em 100% — e voltou.`
+       pior divergência ${pior.toFixed(1)} bit de 64 (limite ${LIMITE_BITS}),
+       confiança mínima ${(piorConf * 100).toFixed(1)}%. O que sobra é ruído
+       de ponto flutuante entre numpy e JavaScript.`
     : `<span class="bad">DIVERGÊNCIA.</span> ${acertos}/${total} em top-1,
-       pior confiança ${(piorConf * 100).toFixed(2)}%. A mesma imagem que gerou
-       o índice deveria bater quase exato; não bateu, então o hash em JS não é
-       equivalente ao do Python.`);
+       pior divergência ${pior.toFixed(1)} bit de 64 — acima do limite de
+       ${LIMITE_BITS}. O hash em JS não é equivalente ao do Python; veja qual
+       hash está alto acima para saber que etapa quebrou.`);
 })().catch(e => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
 </script>
 </body>

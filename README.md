@@ -162,6 +162,7 @@ pipeline/fetch_prices.py      preços com proveniência (TCGdex -> prices.db)
 pipeline/price_model.py       faixa, referência e idade exibíveis
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
+pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
 web/                          leitor (câmera + HUD) e painel
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio

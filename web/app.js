@@ -260,20 +260,34 @@ function escapeHtml(s) {
 }
 
 /**
- * `?demo` — roda o matcher contra uma imagem de teste local, sem câmera.
- * Serve para revisar a interface em máquina sem webcam e para depurar a
- * renderização. É um match real, não um resultado fabricado.
+ * Carrega a arte de uma carta a partir do CDN de origem.
+ *
+ * O site nunca hospeda arte de carta — aponta para a fonte, que serve com
+ * `Access-Control-Allow-Origin: *`. Sem `crossOrigin` o canvas seria
+ * marcado como contaminado e `getImageData` lançaria erro de segurança.
+ */
+function carregarCarta(cardId) {
+  const caminho = catalog.meta[catalog.ids.indexOf(cardId)]?.[7];
+  if (!caminho) return Promise.reject(new Error("carta sem arte conhecida"));
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error("não foi possível carregar a arte"));
+    img.src = `${catalog.cdn}/${caminho}/low.png`;
+  });
+}
+
+/**
+ * `?demo` — roda o matcher contra a arte de uma carta conhecida, sem câmera.
+ * Serve para revisar a interface em máquina sem webcam. É um match real
+ * contra o índice, não um resultado fabricado.
  */
 async function demo() {
   try {
-    const manifest = await fetch("test/manifest.json").then((r) => r.json());
-    const img = await new Promise((res, rej) => {
-      const i = new Image();
-      i.onload = () => res(i);
-      i.onerror = () => rej(new Error("imagem de teste ausente"));
-      i.src = "test/" + manifest[0].file;
-    });
-    els.hint.textContent = `demo · ${manifest[0].card_id}`;
+    const alvo = catalog.ids.find((id) => id === "ex2-85") || catalog.ids[0];
+    const img = await carregarCarta(alvo);
+    els.hint.textContent = `demo · ${alvo}`;
     els.stage.classList.add("paused");
     seq++;
     worker.postMessage({ type: "match", seq, k: 3, ...capture(img) });

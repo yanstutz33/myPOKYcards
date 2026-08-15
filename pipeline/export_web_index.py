@@ -30,6 +30,7 @@ from pathlib import Path
 
 MAGIC = b"YTCG"
 VERSION = 1
+CDN = "https://assets.tcgdex.net"
 FIELDS = ("phash", "dhash", "ahash", "dhash_r", "dhash_g", "dhash_b")
 
 # Idioma preferido para o rotulo principal, por regiao da carta.
@@ -94,7 +95,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     rows = conn.execute(
         f"""SELECT h.card_id, h.lang, {', '.join('h.' + f for f in FIELDS)},
                    c.region, c.set_id, c.local_id, c.rarity, c.variants_json,
-                   c.names_json, s.names_json
+                   c.names_json, s.names_json, h.src_url
             FROM hashes h
             JOIN cat.cards c ON c.card_id = h.card_id
             JOIN cat.sets  s ON s.set_id  = c.set_id
@@ -127,6 +128,12 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         set_label = (set_names.get("en") or set_names.get("ja")
                      or next(iter(set_names.values()), set_id))
 
+        # Caminho da arte no CDN de origem, nao a imagem. O site nunca
+        # redistribui arte: quando precisa mostrar uma carta, aponta para a
+        # fonte (que serve com Access-Control-Allow-Origin: *).
+        # So o sufixo — o prefixo e reconstruido no cliente.
+        caminho = r[15].removeprefix(f"{CDN}/").removesuffix("/low.png") if r[15] else ""
+
         meta.append([
             label,
             set_label,
@@ -137,6 +144,7 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
             # Todos os idiomas disponiveis: a UI usa isso para avisar que o
             # match e ambiguo entre impressoes, em vez de fingir certeza.
             sorted(card_names.keys()),
+            caminho,
         ])
 
     (out_dir / "index.bin").write_bytes(buf)
@@ -146,7 +154,9 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         "version": VERSION,
         "count": len(ids),
         "fields": list(FIELDS),
-        "schema": ["nome", "set", "numero", "raridade", "regiao", "variantes", "idiomas"],
+        "schema": ["nome", "set", "numero", "raridade", "regiao", "variantes",
+                   "idiomas", "caminho_arte"],
+        "cdn": CDN,
         "ids": ids,
         "meta": meta,
     }
