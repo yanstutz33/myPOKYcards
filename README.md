@@ -151,6 +151,24 @@ python pipeline/price_model.py swsh3-136
 
 ## Rodar
 
+Num clone novo — inclusive numa sessão pela nuvem ou pelo celular:
+
+```bash
+python pipeline/bootstrap.py
+```
+
+Isso monta o catálogo em ~2 min e busca as taxas de câmbio. Suficiente para
+mexer em código, consultar cartas e rodar testes. Os estágios caros ficam
+explícitos porque têm custo muito diferente:
+
+| estágio | tempo | comando |
+|---|---|---|
+| catálogo | ~2 min | `bootstrap.py` (padrão) |
+| preços | ~25 min | `bootstrap.py --precos` |
+| índice de imagens | **~2 h** | `bootstrap.py --tudo` |
+
+Passo a passo, se preferir controlar cada etapa:
+
 ```bash
 git clone --depth 1 https://github.com/tcgdex/cards-database.git /tmp/tcgdex
 ```
@@ -196,6 +214,7 @@ sqlite3 data/cards.db "SELECT c.card_id, c.rarity FROM card_names n JOIN cards c
 ## Estrutura
 
 ```
+pipeline/bootstrap.py         prepara um clone novo (nuvem, celular)
 pipeline/ingest_tcgdex.py     catálogo TCGdex (MIT) -> SQLite
 pipeline/build_hash_index.py  imagens -> hashes perceptuais
 pipeline/match.py             busca + autoteste de acurácia
