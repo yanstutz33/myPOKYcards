@@ -36,6 +36,8 @@ OBRIGATORIOS = [
     ("capture.js", 3_000),
     ("style.css", 3_000),
     ("tema.css", 2_000),
+    ("scan.css", 2_000),
+    ("detectar.js", 2_000),
     ("tema.js", 500),
     ("painel.html", 500),
     ("colecao.html", 500),

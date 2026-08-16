@@ -7,21 +7,27 @@
   <title>YAMI-TCG · Leitor de cartas</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="scan.css">
 </head>
-<body>
+<body class="scan-body">
 
   <header class="topbar">
-    <a class="brand" href="sobre.html" style="text-decoration:none">YAMI · TCG</a>
+    <a class="brand" href="sobre.html">YAMI · TCG</a>
     <span class="status">
       <span class="dot" id="dot"></span>
-      <span id="statusText">carregando índice…</span>
-      <a class="ir-painel" href="colecao.html">Coleção</a>
-      <a class="ir-painel" href="painel.html" title="Estado do sistema">Painel</a>
+      <span id="statusText">carregando…</span>
     </span>
+    <nav class="topnav">
+      <a href="colecao.html">Coleção</a>
+      <a href="painel.html">Painel</a>
+    </nav>
   </header>
 
   <main class="stage" id="stage">
     <video id="video" playsinline muted autoplay></video>
+
+    <!-- A moldura é sugestão de enquadramento. O recorte real vem da borda
+         detectada, desenhada por cima em .achado. -->
     <div class="frame" id="frame">
       <span class="corner tl"></span>
       <span class="corner tr"></span>
@@ -29,25 +35,35 @@
       <span class="corner br"></span>
       <div class="sweep"></div>
     </div>
-    <p class="hint" id="hint">Encaixe a carta inteira na moldura</p>
+    <div class="achado" id="achado" hidden></div>
+
+    <p class="hint" id="hint">Aponte para a carta</p>
+
+    <!-- Diagnóstico: liga com ?diag. Existe para calibrar limiar com
+         aparelho real, porque foto de celular não se parece com a imagem
+         perfeita do catálogo. -->
+    <pre class="diag" id="diag" hidden></pre>
   </main>
 
-  <section class="sheet">
-    <div class="sheet-head">
-      <span class="sheet-title">Candidatos</span>
-      <span class="timing" id="timing"></span>
-    </div>
+  <!-- Barra de captura: sempre disponível, independente do automático.
+       O usuário nunca pode ficar preso esperando o leitor decidir. -->
+  <div class="barra" id="barra">
+    <button id="capturar" class="captura" aria-label="Capturar carta">
+      <span class="captura-anel"></span>
+    </button>
+    <button id="retomar" class="secundaria" hidden>Ler outra</button>
+  </div>
 
+  <section class="sheet" id="sheet" aria-live="polite">
     <div class="results" id="results">
-      <p class="empty">Aponte a câmera para uma carta.<br>
-        O leitor mostra os três candidatos mais prováveis.</p>
-    </div>
-
-    <div class="actions">
-      <button id="toggle" class="primary" disabled>Iniciar câmera</button>
-      <button id="freeze" disabled>Congelar</button>
+      <p class="empty">Toque em <strong>Iniciar</strong> e aponte para uma carta.<br>
+        Não precisa encaixar exato — o leitor acha a borda sozinho.</p>
     </div>
   </section>
+
+  <div class="acoes-base">
+    <button id="toggle" class="primary" disabled>Iniciar câmera</button>
+  </div>
 
   <script type="module" src="app.js"></script>
 </body>

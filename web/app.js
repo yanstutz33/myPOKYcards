@@ -11,6 +11,7 @@
 import { capture } from "./capture.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
+import { detectarCarta, regiaoDeBusca } from "./detectar.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -18,21 +19,34 @@ const els = {
   frame: document.getElementById("frame"),
   hint: document.getElementById("hint"),
   results: document.getElementById("results"),
-  timing: document.getElementById("timing"),
   dot: document.getElementById("dot"),
   statusText: document.getElementById("statusText"),
   toggle: document.getElementById("toggle"),
-  freeze: document.getElementById("freeze"),
+  barra: document.getElementById("barra"),
+  capturar: document.getElementById("capturar"),
+  retomar: document.getElementById("retomar"),
+  achado: document.getElementById("achado"),
+  diag: document.getElementById("diag"),
 };
+
+const DIAG = new URLSearchParams(location.search).has("diag");
+els.barra.hidden = true;
 
 const CARD_RATIO = 0.716;   // 63mm / 88mm — igual ao CSS
 const INTERVAL_MS = 450;    // ritmo de leitura; abaixo disso só aquece o celular
 const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
-// Trava sozinho quando o MESMO candidato vem no topo em N leituras seguidas
-// com confiança alta. Uma leitura só não basta: um frame borrado durante o
-// movimento pode acertar por acaso e travar na carta errada.
-const TRAVA_CONF = 0.90;
-const TRAVA_FRAMES = 3;
+// Limiares do travamento automático.
+//
+// Os valores anteriores (90% de confiança, 3 quadros) vinham de imagem
+// sintética e não disparavam com carta real na mão: foto de celular tem
+// borrão de movimento, reflexo e branco desbalanceado que a degradação
+// simulada não reproduz. Com detecção de borda o recorte melhorou muito,
+// mas a confiança real continua abaixo do que a imagem perfeita produz.
+//
+// Independentemente disso, o automático NUNCA é o único caminho: o botão
+// de captura sempre trava o que estiver na tela.
+const TRAVA_CONF = 0.82;
+const TRAVA_FRAMES = 2;
 // Margem entre o 1o e o 2o candidato, em bits ponderados.
 //
 // A confianca sozinha NAO distingue "achei a carta" de "a carta nao esta no
@@ -45,7 +59,7 @@ const TRAVA_FRAMES = 3;
 // falso-positivo de ~100% para 25%. Nao resolve — 11.411 cartas do catalogo
 // nao tem hash, quase todas japonesas, e para elas nao existe resposta certa
 // possivel. Mas impede que o leitor TRAVE numa carta errada com ar de certeza.
-const MARGEM_MIN = 12;
+const MARGEM_MIN = 8;
 
 let worker = null;
 let catalog = null;
@@ -102,9 +116,14 @@ function onWorkerMessage(ev) {
   if (msg.type === "error") return fatal(msg.message);
   if (msg.type === "result") {
     if (msg.seq !== seq) return;           // resultado de frame vencido
-    els.timing.textContent = `${msg.ms.toFixed(0)} ms`;
     render(msg.results);
-    avaliarTrava(msg.results);
+    if (DIAG) mostrarDiag(msg);
+    if (pendenteTravar) {
+      pendenteTravar = false;
+      if (msg.results[0]) travar(catalog.ids[msg.results[0].i], true);
+    } else {
+      avaliarTrava(msg.results);
+    }
   }
 }
 
@@ -180,15 +199,78 @@ function cropRect() {
   };
 }
 
+let ultimoRecorte = null;
+let ultimaDeteccao = null;
+
+/**
+ * Recorte de uma leitura.
+ *
+ * A moldura vira sugestão: procura-se a borda da carta numa região mais
+ * larga que ela. Enquadramento errado em 10–15% destruía o match antes,
+ * porque o hash é da carta inteira e sobra de fundo entra como se fosse
+ * arte. Sem detecção confiável, cai de volta na moldura.
+ */
+function recorteAtual() {
+  const guia = cropRect();
+  if (!guia) return null;
+  const achado = detectarCarta(els.video, regiaoDeBusca(guia, els.video));
+  ultimaDeteccao = achado;
+  desenharAchado(achado);
+  return achado || guia;
+}
+
+/** Desenha na tela a borda que está sendo recortada de fato. */
+function desenharAchado(a) {
+  if (!a) {
+    els.achado.hidden = true;
+    els.stage.classList.remove("detectado");
+    return;
+  }
+  const vw = els.video.videoWidth, vh = els.video.videoHeight;
+  const box = els.stage.getBoundingClientRect();
+  const escala = Math.max(box.width / vw, box.height / vh);
+  const offX = (box.width - vw * escala) / 2;
+  const offY = (box.height - vh * escala) / 2;
+  Object.assign(els.achado.style, {
+    left: `${a.x * escala + offX}px`,
+    top: `${a.y * escala + offY}px`,
+    width: `${a.w * escala}px`,
+    height: `${a.h * escala}px`,
+  });
+  els.achado.hidden = false;
+  els.stage.classList.add("detectado");
+}
+
 function tick() {
   if (!running || frozen) return;
-  const rect = cropRect();
+  const rect = recorteAtual();
   if (rect && rect.w > 8 && rect.h > 8) {
+    ultimoRecorte = rect;
     seq++;
     worker.postMessage({ type: "match", seq, k: 3, ...capture(els.video, rect) });
   }
   setTimeout(tick, INTERVAL_MS);
 }
+
+/**
+ * Captura manual: trava no melhor candidato do quadro atual, sem exigir
+ * confiança nem repetição.
+ *
+ * Existe porque o automático pode simplesmente não disparar — luz ruim,
+ * carta fora do índice, reflexo de foil. Ficar preso esperando o leitor
+ * "decidir" foi a reclamação do primeiro teste com carta real.
+ */
+function capturarAgora() {
+  if (!running) return;
+  const rect = recorteAtual() || cropRect();
+  if (!rect) return;
+  frozen = true;
+  seq++;
+  pendenteTravar = true;
+  worker.postMessage({ type: "match", seq, k: 3, ...capture(els.video, rect) });
+  els.hint.textContent = "Lendo…";
+}
+let pendenteTravar = false;
 
 /**
  * Trava a leitura quando o resultado se estabiliza.
@@ -216,10 +298,11 @@ function avaliarTrava(results) {
   if (repeticoes >= TRAVA_FRAMES) travar(id);
 }
 
-function travar(cardId) {
+function travar(cardId, manual = false) {
   frozen = true;
   repeticoes = 0;
-  els.freeze.textContent = "Ler outra";
+  els.retomar.hidden = false;
+  els.capturar.hidden = true;
   els.stage.classList.add("paused", "travado");
 
   const meta = catalog.meta[catalog.ids.indexOf(cardId)];
@@ -228,7 +311,9 @@ function travar(cardId) {
   // o visor precisa da própria cópia ou a moldura e o selo saem no ciano
   // padrão em vez da cor do tipo da carta.
   els.stage.style.setProperty("--tipo", corDaCarta(meta?.[9]));
-  els.hint.textContent = "Toque em “Ler outra” para escanear a próxima";
+  els.hint.textContent = manual
+    ? "Capturado — confira se é a carta certa"
+    : "Reconhecido. Toque em “Ler outra” para a próxima";
   const selo = document.createElement("div");
   selo.className = "travado-selo";
   selo.textContent = `✓ ${nome}`;
@@ -240,12 +325,41 @@ function destravar() {
   frozen = false;
   ultimoTopo = null;
   repeticoes = 0;
-  els.freeze.textContent = "Congelar";
+  els.retomar.hidden = true;
+  els.capturar.hidden = false;
   els.stage.classList.remove("paused", "travado");
   els.stage.style.removeProperty("--tipo");
   els.stage.querySelector(".travado-selo")?.remove();
-  els.hint.textContent = "Encaixe a carta inteira na moldura";
+  els.hint.textContent = "Aponte para a carta";
   tick();
+}
+
+/**
+ * Diagnóstico na tela (`?diag`).
+ *
+ * Existe porque não dá para calibrar limiar sem número de aparelho real:
+ * foto de celular tem borrão, reflexo e branco desbalanceado que a
+ * degradação simulada não reproduz. Estes números dizem POR QUE o
+ * travamento não disparou.
+ */
+function mostrarDiag(msg) {
+  const r = msg.results;
+  const d = ultimaDeteccao;
+  const linhas = [
+    `busca      ${msg.ms.toFixed(0)} ms`,
+    `borda      ${d ? `${d.w}x${d.h}  proporcao ${(d.w / d.h).toFixed(3)}  conf ${(d.confianca * 100).toFixed(0)}%` : "NAO DETECTADA (usando moldura)"}`,
+    `recorte    ${ultimoRecorte ? `${ultimoRecorte.w}x${ultimoRecorte.h}` : "-"}`,
+    `video      ${els.video.videoWidth}x${els.video.videoHeight}`,
+    "",
+    ...r.map((x, i) =>
+      `${i + 1}. ${catalog.ids[x.i].padEnd(15)} conf ${(x.confidence * 100).toFixed(1)}%  dist ${x.score.toFixed(1)}`),
+    "",
+    `margem     ${margem(r).toFixed(1)}  (minimo ${MARGEM_MIN})`,
+    `travaria   conf>=${(TRAVA_CONF * 100).toFixed(0)}% ${r[0]?.confidence >= TRAVA_CONF ? "OK" : "NAO"}` +
+      `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  repet ${repeticoes}/${TRAVA_FRAMES}`,
+  ];
+  els.diag.textContent = linhas.join("\n");
+  els.diag.hidden = false;
 }
 
 // ---------------------------------------------------------------- resultados
@@ -296,17 +410,33 @@ function irmasHtml(cardId) {
  * produtos econômicos distintos — guardar "a carta" sem a variante tornaria
  * o valor da coleção um chute.
  */
+/**
+ * Guardar: um botão por variante, grande, de um toque.
+ *
+ * Antes era um <select> mais um botão dentro do painel rolante, e foi
+ * difícil de usar com a carta numa mão e o celular na outra. Variantes que
+ * não têm preço próprio (erro de impressão, marcador de tiragem) ficam de
+ * fora: guardar por elas quebraria o cálculo de valor da coleção.
+ */
+const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited"];
+
 function guardarHtml(cardId, variantes) {
-  const opcoes = (variantes && variantes.length ? variantes : ["normal"])
-    .map((v) => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join("");
+  const uteis = (variantes || []).filter((v) => VARIANTES_UTEIS.includes(v));
+  const lista = uteis.length ? uteis : ["normal"];
   const jaTem = colecao.itens()
     .filter((i) => i.card_id === cardId)
     .reduce((s, i) => s + i.qtd, 0);
-  return `<div class="guardar">
-    <select class="guardar-var" data-card="${escapeHtml(cardId)}"
-            aria-label="variante">${opcoes}</select>
-    <button class="guardar-btn" data-card="${escapeHtml(cardId)}">Guardar</button>
-    ${jaTem ? `<span class="guardar-tem">${jaTem} na coleção</span>` : ""}
+
+  const botoes = lista.map((v) => {
+    const n = colecao.quantidade(cardId, v);
+    return `<button class="guardar-btn${n ? " feito" : ""}"
+      data-card="${escapeHtml(cardId)}" data-var="${escapeHtml(v)}">
+      + ${escapeHtml(v)}${n ? ` <small>${n} guardada${n > 1 ? "s" : ""}</small>` : ""}
+    </button>`;
+  }).join("");
+
+  return `<div class="guardar">${botoes}
+    ${jaTem ? `<span class="guardar-tem">${jaTem} desta carta na coleção</span>` : ""}
   </div>`;
 }
 
@@ -566,8 +696,10 @@ els.toggle.addEventListener("click", async () => {
     frozen = false;
     stopCamera();
     els.stage.classList.add("paused");
+    els.stage.classList.remove("detectado", "travado");
+    els.achado.hidden = true;
+    els.barra.hidden = true;
     els.toggle.textContent = "Iniciar câmera";
-    els.freeze.disabled = true;
     els.hint.textContent = "Câmera parada";
     return;
   }
@@ -577,43 +709,40 @@ els.toggle.addEventListener("click", async () => {
   if (!ok) return;
   running = true;
   els.stage.classList.remove("paused");
+  els.barra.hidden = false;
+  els.capturar.hidden = false;
+  els.retomar.hidden = true;
   els.toggle.textContent = "Parar";
-  els.freeze.disabled = false;
-  els.hint.textContent = "Encaixe a carta inteira na moldura";
+  els.hint.textContent = "Aponte para a carta";
   tick();
-});
-
-els.freeze.addEventListener("click", () => {
-  if (frozen) return destravar();
-  frozen = true;
-  els.freeze.textContent = "Retomar";
-  els.stage.classList.add("paused");
-  els.hint.textContent = "Leitura pausada — resultado mantido";
 });
 
 els.results.addEventListener("click", (ev) => {
   const btn = ev.target.closest(".guardar-btn");
   if (!btn) return;
-  const cardId = btn.dataset.card;
-  const sel = btn.parentElement.querySelector(".guardar-var");
-  const n = colecao.adicionar(cardId, sel?.value);
+  const n = colecao.adicionar(btn.dataset.card, btn.dataset.var);
   if (n === null) {
-    btn.textContent = "sem espaço";
+    btn.textContent = "sem espaço no navegador";
     return;
   }
-  // Congela a leitura ao guardar: sem isso o próximo frame reescreve o
-  // painel e o retorno visual some antes de ser lido.
-  frozen = true;
-  els.freeze.textContent = "Retomar";
-  els.stage.classList.add("paused");
-  btn.textContent = `guardado (${n})`;
-  btn.disabled = true;
+  // Congela ao guardar: sem isso o próximo quadro reescreve o painel e o
+  // retorno visual some antes de ser lido.
+  if (!frozen) travar(btn.dataset.card, true);
+  btn.classList.add("feito");
+  btn.innerHTML = `✓ ${escapeHtml(btn.dataset.var)} <small>${n} guardada${n > 1 ? "s" : ""}</small>`;
 });
 
+els.capturar.addEventListener("click", capturarAgora);
+els.retomar.addEventListener("click", destravar);
+
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && running) {
+  // Sair do app pausa a leitura: a câmera continuar rodando em segundo
+  // plano gasta bateria e não serve para nada.
+  if (document.hidden && running && !frozen) {
     frozen = true;
-    els.freeze.textContent = "Retomar";
+    els.retomar.hidden = false;
+    els.capturar.hidden = true;
+    els.stage.classList.add("paused");
   }
 });
 

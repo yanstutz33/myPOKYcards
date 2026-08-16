@@ -1,0 +1,190 @@
+/* Tela de leitura — layout de celular na mão.
+   ------------------------------------------------------------------
+   Três regras que vieram de teste com carta real:
+
+   1. O botão de captura fica no polegar, não no topo. Segurar o celular com
+      uma mão e a carta com a outra deixa só o polegar livre.
+   2. O painel de resultado nunca cobre a câmera inteira — dá para conferir
+      o enquadramento enquanto lê o resultado.
+   3. Guardar é ação primária e de um toque. Antes era um <select> e um
+      botão dentro de painel rolante, e foi difícil de usar. */
+
+.scan-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------- topo */
+.topbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.topbar .brand { text-decoration: none; }
+.topbar .status { margin-left: auto; }
+
+.topnav { display: flex; gap: 0.4rem; }
+.topnav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-family: var(--font-data);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.topnav a:hover { color: var(--scan); border-color: var(--scan); }
+.topnav a:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+/* ------------------------------------------------------------ visor */
+.stage { position: relative; min-height: 0; }
+
+/* Borda detectada, desenhada sobre o vídeo. É o retorno mais importante da
+   tela: mostra o que o leitor está REALMENTE recortando, que pode não ser
+   o que a moldura sugere. */
+.achado {
+  position: absolute;
+  border: 2px solid var(--ok);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(4, 6, 10, 0.55), 0 0 18px -2px var(--ok);
+  pointer-events: none;
+  z-index: 2;
+  transition: all 120ms ease-out;
+}
+.stage.travado .achado { border-color: var(--tipo); box-shadow: 0 0 0 100vmax rgba(4,6,10,.72), 0 0 22px -2px var(--tipo); }
+
+/* Com a carta detectada, a moldura-guia sai do caminho. */
+.stage.detectado .frame { opacity: 0.18; }
+.stage.detectado .sweep { display: none; }
+.frame { transition: opacity 160ms ease; }
+
+.diag {
+  position: absolute;
+  left: 0.6rem; bottom: 0.6rem;
+  z-index: 4;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  background: rgba(6, 8, 12, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: pre;
+}
+
+/* ------------------------------------------------- barra de captura */
+.barra {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem 1.1rem;
+  background: linear-gradient(transparent, rgba(6, 8, 12, 0.85) 45%);
+  pointer-events: none;
+}
+.barra > * { pointer-events: auto; }
+.barra[hidden] { display: none; }
+
+/* Alvo de 68px: o dedo cobre o botão enquanto a outra mão segura a carta. */
+.captura {
+  flex: 0 0 auto;
+  width: 68px; height: 68px;
+  min-height: 68px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  display: grid;
+  place-items: center;
+}
+.captura-anel {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--scan);
+  transition: transform 120ms ease;
+}
+.captura:active .captura-anel { transform: scale(0.86); }
+.captura:disabled { opacity: 0.4; }
+
+.secundaria {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  background: rgba(6, 8, 12, 0.8);
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------- resultado */
+.sheet {
+  max-height: 42dvh;
+  border-top: 1px solid var(--line);
+}
+.sheet .empty { padding: 1.1rem 0.5rem; }
+
+/* Cabeçalho antigo (título + tempo) saiu: ocupava linha inteira para
+   informação que só interessa depurando. O tempo foi para o diagnóstico. */
+
+.acoes-base {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--ground);
+}
+.acoes-base button { flex: 1; min-height: 48px; }
+
+/* ------------------------------------------------- guardar, refeito */
+/* Antes: <select> de variante + botão, dentro do painel rolante. Difícil de
+   acertar com o polegar e fácil de não perceber. Agora: um botão por
+   variante, grandes, lado a lado. Um toque guarda. */
+.guardar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.guardar-btn {
+  flex: 1 1 auto;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--tipo) 45%, var(--line));
+  background: color-mix(in srgb, var(--tipo) 12%, var(--surface-2));
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.guardar-btn:hover { border-color: var(--tipo); }
+.guardar-btn small {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.guardar-btn.feito {
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface-2));
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.guardar-tem {
+  flex: 1 0 100%;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+@media (max-width: 380px) {
+  .guardar-btn { flex: 1 1 100%; }
+}
