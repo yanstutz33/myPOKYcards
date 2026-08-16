@@ -20,7 +20,16 @@
  *     som inesperado ao abrir um site é agressivo.
  */
 
-const CHAVE = "yami-tcg:som:v1";
+const CHAVE = "mypokycards:som:v1";
+
+// Preferência de som da versão anterior, para quem já tinha desligado.
+try {
+  const velho = localStorage.getItem("yami-tcg:som:v1");
+  if (velho !== null && localStorage.getItem(CHAVE) === null) {
+    localStorage.setItem(CHAVE, velho);
+  }
+  if (velho !== null) localStorage.removeItem("yami-tcg:som:v1");
+} catch { /* storage bloqueado */ }
 
 let ctx = null;
 let ligado = localStorage.getItem(CHAVE) !== "0";

@@ -8,7 +8,7 @@
   <link rel="icon" href="icone.svg" type="image/svg+xml">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>YAMI-TCG · Leitor de cartas</title>
+  <title>myPOKYcards · Leitor de cartas</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="tema.css">
   <link rel="stylesheet" href="scan.css">
@@ -17,7 +17,7 @@
 <body class="scan-body">
 
   <header class="topbar">
-    <a class="brand" href="sobre.html">YAMI · TCG</a>
+    <a class="brand" href="sobre.html">myPOKY<b>cards</b></a>
     <span class="status">
       <span class="dot" id="dot"></span>
       <span id="statusText">carregando…</span>
@@ -89,6 +89,8 @@
   <div class="acoes-base">
     <button id="toggle" class="primary" disabled>Ligar leitor</button>
   </div>
+
+  <div class="ficha" id="ficha" hidden></div>
 
   <script type="module" src="app.js"></script>
   <script type="module" src="pwa.js"></script>

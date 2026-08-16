@@ -10,7 +10,25 @@
  * catálogo, para o valor nunca ficar congelado num número velho.
  */
 
-const CHAVE = "yami-tcg:colecao:v1";
+const CHAVE = "mypokycards:colecao:v1";
+const CHAVE_ANTIGA = "yami-tcg:colecao:v1";
+
+/**
+ * Migração da chave antiga.
+ *
+ * O app mudou de nome. Trocar a chave sem migrar apagaria a coleção de quem
+ * já usava — e coleção é justamente o dado que a pessoa construiu à mão,
+ * carta por carta. A antiga é lida uma vez, copiada, e só então removida.
+ */
+(function migrar() {
+  try {
+    const velho = localStorage.getItem(CHAVE_ANTIGA);
+    if (velho && !localStorage.getItem(CHAVE)) {
+      localStorage.setItem(CHAVE, velho);
+    }
+    if (velho) localStorage.removeItem(CHAVE_ANTIGA);
+  } catch { /* storage bloqueado: segue sem migrar */ }
+})();
 
 function ler() {
   try {

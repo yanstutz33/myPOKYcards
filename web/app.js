@@ -1,5 +1,5 @@
 /**
- * YAMI-TCG — tela de leitura.
+ * myPOKYcards — tela de leitura.
  *
  * Fluxo: câmera -> recorte da moldura -> três reduções (32x32, 9x8, 8x8) ->
  * worker calcula os hashes e busca no índice -> top-3 com confiança.
@@ -15,6 +15,7 @@ import { detectarCarta, regiaoDeBusca } from "./detectar.js";
 import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz }
   from "./camera.js";
 import * as som from "./som.js";
+import * as ficha from "./ficha.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -107,6 +108,13 @@ async function boot() {
     // dizer que não tem, em vez de quebrar ou mostrar zero.
     prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
     fx = await fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    ficha.configurar({
+      get catalog() { return catalog; },
+      get prices() { return prices; },
+      get fx() { return fx; },
+      converter, corDaCarta, energiasHtml,
+    });
+    ficha.ligarControles();
     worker.postMessage({ type: "load", buffer }, [buffer]);
   } catch (err) {
     fatal(err.message);
@@ -685,8 +693,8 @@ function cartaHtml(r, results) {
        </div>`
     : `<div class="valor sem">${motivoSemPreco(id, regiao)}</div>`;
 
-  return `<article class="hit top${eFoil(raridade) ? " foil" : ""}${caminho ? " com-mini" : ""}"
-      style="--tipo:${cor}">
+  return `<article class="hit top tocavel${eFoil(raridade) ? " foil" : ""}${
+        caminho ? " com-mini" : ""}" style="--tipo:${cor}" data-ficha="${escapeHtml(id)}">
     ${caminho ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
          src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
     <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
@@ -695,6 +703,7 @@ function cartaHtml(r, results) {
       <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
       ${raridade ? `<span class="selo-raridade">${escapeHtml(raridade)}</span>` : ""}
       <span>${regiao === "asia" ? "JA" : "INTL"}</span>
+      <span class="toque-dica">toque para ver tudo →</span>
     </div>
     ${preco}
     ${guardarHtml(id, variantes)}
@@ -729,13 +738,12 @@ function motivoSemPreco(cardId, regiao) {
 }
 
 /** Tudo que não é "que carta é" e "quanto vale" fica fechado. */
+/**
+ * No painel fica só o que decide ação imediata. Todo o resto — mercados,
+ * dados da carta, impressões irmãs — mora na ficha, a um toque.
+ */
 function detalhesHtml(cardId, regiao, results) {
-  const mercados = prices[cardId] || [];
-  const outros = mercados.length > 1
-    ? `<details class="bloco-det"><summary>Todos os mercados (${mercados.length})</summary>
-         ${precoHtml(cardId, regiao)}</summary></details>`
-    : "";
-  return `${outros}${gradedHtml(cardId)}${irmasHtml(cardId)}${avisoDeLimite(results)}`;
+  return `${gradedHtml(cardId)}${avisoDeLimite(results)}`;
 }
 
 function render(results) {
@@ -850,6 +858,15 @@ els.results.addEventListener("click", (ev) => {
 });
 
 els.results.addEventListener("click", (ev) => {
+  const carta = ev.target.closest(".tocavel");
+  if (carta && !ev.target.closest("button, summary, a, details")) {
+    som.somClique();
+    // Congela ao abrir a ficha: sem isso o próximo quadro troca a carta
+    // embaixo da leitura e a ficha fica falando de outra coisa.
+    if (!frozen && running) travar(carta.dataset.ficha, true);
+    ficha.abrir(carta.dataset.ficha);
+    return;
+  }
   const alt = ev.target.closest(".alt");
   if (!alt || !ultimosResultados) return;
   escolhido = Number(alt.dataset.i);

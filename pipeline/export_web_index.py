@@ -106,7 +106,8 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
     rows = conn.execute(
         f"""SELECT h.card_id, h.lang, {', '.join('h.' + f for f in FIELDS)},
                    c.region, c.set_id, c.local_id, c.rarity, c.variants_json,
-                   c.names_json, s.names_json, h.src_url, c.types_json
+                   c.names_json, s.names_json, h.src_url, c.types_json,
+                   c.illustrator, c.hp, c.dex_id, c.regulation_mark, c.category
             FROM hashes h
             JOIN cat.cards c ON c.card_id = h.card_id
             JOIN cat.sets  s ON s.set_id  = c.set_id
@@ -126,6 +127,22 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
 
     # Grupos de impressoes que o reconhecimento por imagem NAO distingue.
     # Nao e "mesma arte": inclui os Unown, que diferem so por uma letra.
+    # Ilustradores repetem MUITO (432 distintos em 30 mil cartas). Guardar
+    # o nome em cada carta custaria ~450 KB; guardar um indice para uma
+    # lista custa 2 bytes. O mesmo vale para categoria.
+    ilustradores: list[str] = []
+    idx_ilustrador: dict[str, int] = {}
+    categorias: list[str] = []
+    idx_categoria: dict[str, int] = {}
+
+    def interna(valor, lista, indice):
+        if not valor:
+            return -1
+        if valor not in indice:
+            indice[valor] = len(lista)
+            lista.append(valor)
+        return indice[valor]
+
     grupo_de: dict[str, int] = {}
     try:
         gconn = sqlite3.connect(f"file:{hashes_db}?mode=ro", uri=True)
@@ -168,6 +185,11 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
             caminho,
             grupo_de.get(card_id, -1),
             json.loads(r[16] or "[]"),
+            interna(r[17], ilustradores, idx_ilustrador),
+            r[18],                                   # hp
+            r[19],                                   # dex_id
+            r[20] or "",                             # marca de regulacao
+            interna(r[21], categorias, idx_categoria),
         ])
 
     (out_dir / "index.bin").write_bytes(buf)
@@ -178,8 +200,11 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         "count": len(ids),
         "fields": list(FIELDS),
         "schema": ["nome", "set", "numero", "raridade", "regiao", "variantes",
-                   "idiomas", "caminho_arte", "grupo", "tipos"],
+                   "idiomas", "caminho_arte", "grupo", "tipos",
+                   "ilustrador_idx", "hp", "dex", "regulacao", "categoria_idx"],
         "cdn": CDN,
+        "ilustradores": ilustradores,
+        "categorias": categorias,
         "ids": ids,
         "meta": meta,
         # grupo -> posicoes, para a UI listar as irmas sem varrer tudo.

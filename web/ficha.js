@@ -1,0 +1,166 @@
+/**
+ * Ficha da carta: toque no resultado e vem tudo que se sabe sobre ela.
+ *
+ * Por que separada da tela de leitura
+ * -----------------------------------
+ * O painel de leitura precisa responder duas perguntas de relance — que
+ * carta é, quanto vale — e qualquer coisa além disso competia com elas.
+ * Empilhar tudo lá foi o que deixou a tela difícil de usar (1.405 px de
+ * conteúdo em 338 px de espaço). Aqui há espaço para o resto, e só quem
+ * pediu paga o custo de ler.
+ *
+ * A arte grande vem do CDN de origem, nunca daqui.
+ */
+
+const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
+
+const NOME_IDIOMA = {
+  en: "inglês", pt: "português", "pt-br": "português (BR)", ja: "japonês",
+  ko: "coreano", "zh-tw": "chinês tradicional", "zh-cn": "chinês simplificado",
+  es: "espanhol", fr: "francês", de: "alemão", it: "italiano",
+};
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let ctx = null;   // { catalog, prices, fx, converter, corDaCarta, energiasHtml }
+
+export function configurar(dependencias) {
+  ctx = dependencias;
+}
+
+function linha(rotulo, valor) {
+  if (valor === null || valor === undefined || valor === "") return "";
+  return `<div class="fx-linha"><dt>${esc(rotulo)}</dt><dd>${valor}</dd></div>`;
+}
+
+function mercadosHtml(cardId) {
+  const mercados = ctx.prices[cardId] || [];
+  if (!mercados.length) return `<p class="ficha-vazio">Sem cotação para esta carta.</p>`;
+
+  return `<table class="tabela-precos">
+    <thead><tr><th>Variante</th><th>Mercado</th><th class="num">Referência</th><th class="num">Faixa</th></tr></thead>
+    <tbody>${mercados.map((m) => {
+      const s = SIMBOLO[m.c] || m.c;
+      const velho = m.idade != null && m.idade > 7;
+      return `<tr${velho ? ' class="velho"' : ""}>
+        <td>${esc(m.v)}</td>
+        <td>${esc(m.f)}<small>${m.idade == null ? "" :
+          m.idade < 1 ? " · hoje" : ` · há ${Math.round(m.idade)} d`}</small></td>
+        <td class="num"><strong>${s} ${m.ref.toFixed(2)}</strong>
+          ${ctx.converter(m.ref, m.c)}</td>
+        <td class="num">${m.faixa ? `${s} ${m.faixa[0].toFixed(2)}–${m.faixa[1].toFixed(2)}` : "—"}</td>
+      </tr>`;
+    }).join("")}</tbody>
+  </table>`;
+}
+
+function irmasHtml(i) {
+  const grupo = ctx.catalog.meta[i][8];
+  if (grupo === -1) return "";
+  const irmas = (ctx.catalog.grupos?.[String(grupo)] || []).filter((j) => j !== i);
+  if (!irmas.length) return "";
+
+  return `<section class="ficha-bloco">
+    <h3>Impressões que o leitor não distingue</h3>
+    <p class="ficha-nota">Arte igual ou quase igual, preços diferentes.
+      Nenhum algoritmo de imagem separa estas — só o número impresso separa.</p>
+    <div class="ficha-irmas">${irmas.slice(0, 12).map((j) => {
+      const id = ctx.catalog.ids[j];
+      const [nome, set, numero, , regiao, , , caminho] = ctx.catalog.meta[j];
+      const p = ctx.prices[id]?.[0];
+      return `<button class="ficha-irma" data-ir="${esc(id)}">
+        ${caminho ? `<img alt="" loading="lazy" crossorigin="anonymous"
+             src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">` : ""}
+        <span class="ir-nome">${esc(nome)}</span>
+        <span class="ir-meta">${esc(set)} · ${esc(numero)} · ${regiao === "asia" ? "JA" : "INTL"}</span>
+        <span class="ir-preco">${p ? `${SIMBOLO[p.c] || p.c} ${p.ref.toFixed(2)}` : "sem preço"}</span>
+      </button>`;
+    }).join("")}</div>
+  </section>`;
+}
+
+export function abrir(cardId) {
+  const i = ctx.catalog.ids.indexOf(cardId);
+  if (i < 0) return;
+
+  const [nome, set, numero, raridade, regiao, variantes, idiomas, caminho, ,
+         tipos, ilustradorIdx, hp, dex, regulacao, categoriaIdx] = ctx.catalog.meta[i];
+  const ilustrador = ctx.catalog.ilustradores?.[ilustradorIdx] || null;
+  const categoria = ctx.catalog.categorias?.[categoriaIdx] || null;
+  const cor = ctx.corDaCarta(tipos);
+
+  const alvo = document.getElementById("ficha");
+  alvo.style.setProperty("--tipo", cor);
+  alvo.innerHTML = `
+    <div class="ficha-caixa" role="dialog" aria-modal="true" aria-label="Detalhes da carta">
+      <header class="ficha-topo">
+        <div>
+          <h2>${esc(nome)} ${ctx.energiasHtml(tipos)}</h2>
+          <p class="ficha-sub">${esc(set)} · ${esc(numero)}${
+            raridade ? ` · ${esc(raridade)}` : ""}</p>
+        </div>
+        <button class="ficha-fechar" id="fecharFicha" aria-label="Fechar">✕</button>
+      </header>
+
+      <div class="ficha-corpo">
+        ${caminho ? `<img class="ficha-arte" alt="${esc(nome)}" crossorigin="anonymous"
+             src="${ctx.catalog.cdn}/${esc(caminho)}/high.png"
+             onerror="this.src='${ctx.catalog.cdn}/${esc(caminho)}/low.png'">` : ""}
+
+        <section class="ficha-bloco">
+          <h3>Preço por mercado</h3>
+          ${mercadosHtml(cardId)}
+          <p class="ficha-nota">Referência vem de venda concluída; faixa é o que
+            se pede hoje. <strong>≈ R$ é conversão pela PTAX</strong>, não o preço
+            do mercado brasileiro.</p>
+        </section>
+
+        <section class="ficha-bloco">
+          <h3>A carta</h3>
+          <dl class="ficha-dados">
+            ${linha("Identificador", `<code>${esc(cardId)}</code>`)}
+            ${linha("Expansão", esc(set))}
+            ${linha("Número", esc(numero))}
+            ${linha("Raridade", raridade ? esc(raridade) : null)}
+            ${linha("Categoria", categoria ? esc(categoria) : null)}
+            ${linha("HP", hp || null)}
+            ${linha("Tipos", tipos?.length ? esc(tipos.join(" · ")) : null)}
+            ${linha("Pokédex", dex || null)}
+            ${linha("Ilustração", ilustrador ? esc(ilustrador) : null)}
+            ${linha("Marca de regulação", regulacao ? esc(regulacao) : null)}
+            ${linha("Região", regiao === "asia" ? "Ásia (japonês e afins)" : "Internacional")}
+            ${linha("Variantes", variantes?.length ? esc(variantes.join(" · ")) : null)}
+            ${linha("Idiomas impressos", idiomas.map((l) =>
+              esc(NOME_IDIOMA[l] || l)).join(" · "))}
+          </dl>
+        </section>
+
+        ${irmasHtml(i)}
+      </div>
+    </div>`;
+
+  alvo.hidden = false;
+  document.body.classList.add("com-ficha");
+  document.getElementById("fecharFicha").focus();
+}
+
+export function fechar() {
+  const alvo = document.getElementById("ficha");
+  alvo.hidden = true;
+  alvo.innerHTML = "";
+  document.body.classList.remove("com-ficha");
+}
+
+/** Fecha ao tocar fora, no X, ou com Esc. */
+export function ligarControles() {
+  const alvo = document.getElementById("ficha");
+  alvo.addEventListener("click", (ev) => {
+    if (ev.target === alvo || ev.target.closest(".ficha-fechar")) return fechar();
+    const irma = ev.target.closest(".ficha-irma");
+    if (irma) abrir(irma.dataset.ir);   // navega entre impressões sem sair
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !alvo.hidden) fechar();
+  });
+}

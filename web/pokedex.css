@@ -1,4 +1,4 @@
-/* YAMI-TCG — a tela de leitura como APARELHO, o resultado como CARTA.
+/* myPOKYcards — a tela de leitura como APARELHO, o resultado como CARTA.
    ==================================================================
 
    Direção
@@ -73,12 +73,21 @@
   gap: 0.7rem;
 }
 
+/* A marca: "POKY" pesado no meio, o resto leve. Dá ritmo ao nome sem
+   imitar logotipo de ninguém. */
 .topbar .brand {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.topbar .brand b {
   font-family: var(--font-titulo);
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  font-weight: 900;
   color: #fff;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+  letter-spacing: 0.01em;
 }
 
 /* LED grande, como o do aparelho. Estado por cor E por brilho: quem não
@@ -540,3 +549,185 @@
 .audio.mudo { color: rgba(255, 255, 255, 0.45); }
 .audio.mudo .onda { display: none; }
 .audio.mudo .corte { display: block; }
+
+/* ============================================================== ficha */
+/* Gaveta de detalhe. Sobe de baixo como uma carta saindo do fichário —
+   e cobre a tela porque agora ela é o assunto, não um apêndice. */
+.ficha {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(3, 5, 8, 0.78);
+  display: flex;
+  align-items: flex-end;
+  backdrop-filter: blur(3px);
+}
+.ficha[hidden] { display: none; }
+body.com-ficha { overflow: hidden; }
+
+.ficha-caixa {
+  width: 100%;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco));
+  border-top: 5px solid var(--carta-borda);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.7);
+  animation: sobe 220ms cubic-bezier(.22,.9,.3,1);
+}
+@keyframes sobe { from { transform: translateY(18%); opacity: 0.4; } }
+
+.ficha-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 1rem 1rem 0.8rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+}
+.ficha-topo h2 {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 1.25rem;
+  line-height: 1.15;
+  color: #fff;
+}
+.ficha-sub {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.ficha-fechar {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.ficha-corpo {
+  overflow-y: auto;
+  padding: 0.9rem 1rem calc(1.6rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+/* A arte grande vem do CDN de origem — o site nunca hospeda arte. */
+.ficha-arte {
+  width: min(62%, 240px);
+  align-self: center;
+  aspect-ratio: 0.716;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
+}
+
+.ficha-bloco { display: flex; flex-direction: column; gap: 0.5rem; }
+.ficha-bloco h3 {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--carta-borda);
+}
+.ficha-nota {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+.ficha-vazio {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* --- tabela de preços --- */
+.tabela-precos {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: #fff;
+}
+.tabela-precos th {
+  text-align: left;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 0.4rem 0.35rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+}
+.tabela-precos td {
+  padding: 0.45rem 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  vertical-align: top;
+}
+.tabela-precos .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela-precos small { color: rgba(255, 255, 255, 0.45); }
+.tabela-precos .brl { display: block; font-size: 0.72rem; border: 0; }
+/* Dado velho não pode se passar por atual, nem aqui. */
+.tabela-precos tr.velho td { color: var(--led-ambar); }
+
+/* --- dados da carta --- */
+.ficha-dados { margin: 0; display: flex; flex-direction: column; gap: 1px; }
+.fx-linha {
+  display: grid;
+  grid-template-columns: 10.5rem 1fr;
+  gap: 0.8rem;
+  padding: 0.42rem 0.4rem;
+  background: rgba(255, 255, 255, 0.035);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+.fx-linha dt { color: rgba(255, 255, 255, 0.55); }
+.fx-linha dd { margin: 0; color: #fff; }
+.fx-linha code { background: rgba(0, 0, 0, 0.35); border-radius: 4px; padding: 0.05em 0.35em; }
+
+/* --- impressões irmãs --- */
+.ficha-irmas { display: flex; flex-direction: column; gap: 0.4rem; }
+.ficha-irma {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 0.1rem 0.7rem;
+  text-align: left;
+  min-height: 52px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+.ficha-irma:hover { border-color: var(--carta-borda); }
+.ficha-irma img { grid-row: 1 / span 2; width: 34px; border-radius: 4px; }
+.ir-nome { font-family: var(--font-ui); font-weight: 700; font-size: 0.85rem; }
+.ir-meta { grid-column: 2; font-size: 0.68rem; color: rgba(255, 255, 255, 0.55); }
+.ir-preco {
+  grid-row: 1 / span 2; grid-column: 3;
+  font-family: var(--font-titulo);
+  font-size: 0.85rem;
+  color: var(--carta-borda);
+}
+
+/* Convite ao toque, discreto — sem ele ninguém descobre a ficha. */
+.toque-dica {
+  color: color-mix(in srgb, var(--tipo) 62%, var(--carta-tinta-2));
+  font-weight: 700;
+}
+.hit.tocavel { cursor: pointer; }
+.hit.tocavel:active { transform: scale(0.995); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha-caixa { animation: none; }
+}

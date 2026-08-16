@@ -1,6 +1,6 @@
 {
-  "name": "YAMI-TCG · Leitor de cartas Pokémon",
-  "short_name": "YAMI-TCG",
+  "name": "myPOKYcards · Leitor de cartas Pokémon",
+  "short_name": "myPOKYcards",
   "description": "Reconhece cartas Pokémon pela câmera e mostra o preço. Funciona offline.",
   "start_url": "./index.html",
   "scope": "./",

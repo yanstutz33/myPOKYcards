@@ -1,4 +1,4 @@
-# YAMI-TCG
+# myPOKYcards
 
 Leitor de cartas Pokémon pela câmera, com preço. Reconhece 41.694 cartas em
 14 ms no próprio aparelho, sem enviar foto para servidor nenhum, e funciona

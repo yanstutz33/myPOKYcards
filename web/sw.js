@@ -24,7 +24,7 @@ const CACHE_DADOS = `yami-dados-${VERSAO}`;
 const ESSENCIAIS = [
   "./", "./index.html", "./style.css", "./tema.css", "./scan.css",
   "./app.js", "./capture.js", "./detectar.js", "./camera.js",
-  "./tema.js", "./colecao.js", "./som.js", "./matcher.worker.js",
+  "./tema.js", "./colecao.js", "./som.js", "./ficha.js", "./matcher.worker.js",
   "./colecao.html", "./colecao-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
   "./sobre.html", "./sobre.js", "./sobre.css",
