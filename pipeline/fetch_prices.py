@@ -51,7 +51,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 API = "https://api.tcgdex.net/v2/en/cards/"
-UA = "yami-tcg/0.1 (agregador de catalogo; github.com/yanstutz33/yami-tcg)"
+UA = "myPOKYcards/0.1 (agregador de catalogo; github.com/yanstutz33/myPOKYcards)"
 
 # Como interpretar cada metrica. O que nao esta mapeado nao e gravado —
 # melhor faltar campo do que guardar numero sem saber o que ele significa.

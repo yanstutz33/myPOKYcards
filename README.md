@@ -4,7 +4,7 @@ Leitor de cartas Pokémon pela câmera, com preço. Reconhece 41.694 cartas em
 14 ms no próprio aparelho, sem enviar foto para servidor nenhum, e funciona
 offline depois do primeiro carregamento.
 
-**No ar:** https://yanstutz33.github.io/yami-tcg/sobre.html
+**No ar:** https://yanstutz33.github.io/myPOKYcards/sobre.html
 
 Leitor pela câmera, busca por nome, ficha completa da carta, coleção com
 valor, e painel do estado do sistema. Instalável, funciona offline.

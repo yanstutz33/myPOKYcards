@@ -39,7 +39,7 @@ import numpy as np
 from PIL import Image
 
 CDN = "https://assets.tcgdex.net"
-UA = "yami-tcg/0.1 (indexador de catalogo; contato via repo)"
+UA = "myPOKYcards/0.1 (indexador de catalogo; github.com/yanstutz33/myPOKYcards)"
 
 # Idioma da imagem por regiao. A arte e a mesma em todos os idiomas, entao
 # uma impressao por carta basta para o match; o idioma real e resolvido

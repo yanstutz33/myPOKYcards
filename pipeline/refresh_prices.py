@@ -16,7 +16,7 @@ PRECISA: `cards.db` (reconstruivel em 2 min) e o historico
 insubstituivel: um dia perdido e perdido para sempre.
 
 Uso:
-    python refresh_prices.py --site https://yanstutz33.github.io/yami-tcg
+    python refresh_prices.py --site https://yanstutz33.github.io/myPOKYcards
 """
 
 from __future__ import annotations
@@ -126,7 +126,7 @@ def main(site: str, stale_days: int, workers: int, saida: Path) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--site", default="https://yanstutz33.github.io/yami-tcg")
+    ap.add_argument("--site", default="https://yanstutz33.github.io/myPOKYcards")
     ap.add_argument("--stale-days", default=1, type=int)
     ap.add_argument("--workers", default=10, type=int)
     ap.add_argument("--saida", default=Path("web/data"), type=Path)
