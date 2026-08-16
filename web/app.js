@@ -14,6 +14,7 @@ import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
 import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz }
   from "./camera.js";
+import * as som from "./som.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -30,6 +31,7 @@ const els = {
   achado: document.getElementById("achado"),
   diag: document.getElementById("diag"),
   lanterna: document.getElementById("lanterna"),
+  audio: document.getElementById("audio"),
 };
 
 let trilha = null;        // MediaStreamTrack de vídeo
@@ -238,7 +240,14 @@ function recorteAtual() {
 }
 
 /** Desenha na tela a borda que está sendo recortada de fato. */
+let tinhaBorda = false;
 function desenharAchado(a) {
+  // Só na transição: bipe a cada 450 ms de leitura seria insuportável em
+  // dois minutos de uso na loja.
+  if (Boolean(a) !== tinhaBorda) {
+    tinhaBorda = Boolean(a);
+    if (tinhaBorda) som.somDetectou();
+  }
   if (!a) {
     els.achado.hidden = true;
     els.stage.classList.remove("detectado");
@@ -300,6 +309,8 @@ function orientar(results) {
   }
 
   if (msg === motivoAtual) return;
+  // Toca só ao ENTRAR em estado de alerta, não a cada leitura ruim.
+  if (classe === "alerta" && !els.hint.classList.contains("alerta")) som.somAlerta();
   motivoAtual = msg;
   els.hint.textContent = msg;
   els.hint.className = "hint" + (classe ? " " + classe : "");
@@ -371,6 +382,8 @@ function avaliarTrava(results) {
 
 function travar(cardId, manual = false) {
   escolhido = 0;
+  if (manual) som.somCapturou();
+  else som.somReconheceu();
   frozen = true;
   repeticoes = 0;
   els.retomar.hidden = false;
@@ -396,6 +409,7 @@ function travar(cardId, manual = false) {
 }
 
 function destravar() {
+  som.somClique();
   frozen = false;
   ultimoTopo = null;
   repeticoes = 0;
@@ -801,6 +815,7 @@ els.toggle.addEventListener("click", async () => {
     els.barra.hidden = true;
     els.toggle.textContent = "Ligar leitor";
     els.hint.textContent = "Câmera parada";
+    som.somDesligou();
     return;
   }
   els.toggle.disabled = true;
@@ -814,6 +829,7 @@ els.toggle.addEventListener("click", async () => {
   els.retomar.hidden = true;
   els.toggle.textContent = "Desligar";
   els.hint.textContent = "Aponte para a carta";
+  som.somLigou();
   tick();
 });
 
@@ -827,6 +843,7 @@ els.results.addEventListener("click", (ev) => {
   }
   // Congela ao guardar: sem isso o próximo quadro reescreve o painel e o
   // retorno visual some antes de ser lido.
+  som.somGuardou();
   if (!frozen) travar(btn.dataset.card, true);
   btn.classList.add("feito");
   btn.innerHTML = `✓ ${escapeHtml(btn.dataset.var)} <small>${n} guardada${n > 1 ? "s" : ""}</small>`;
@@ -839,6 +856,15 @@ els.results.addEventListener("click", (ev) => {
   render(ultimosResultados);
 });
 
+els.audio.addEventListener("click", () => {
+  const on = som.alternar();
+  els.audio.classList.toggle("mudo", !on);
+  els.audio.setAttribute("aria-pressed", String(on));
+  els.audio.setAttribute("aria-label", on ? "Desligar sons" : "Ligar sons");
+});
+els.audio.classList.toggle("mudo", !som.estaLigado());
+els.audio.setAttribute("aria-pressed", String(som.estaLigado()));
+
 els.capturar.addEventListener("click", capturarAgora);
 
 els.lanterna.addEventListener("click", async () => {
@@ -849,6 +875,7 @@ els.lanterna.addEventListener("click", async () => {
     return;
   }
   lanternaLigada = !lanternaLigada;
+  som.somClique();
   els.lanterna.classList.toggle("ligada", lanternaLigada);
   els.lanterna.setAttribute("aria-pressed", String(lanternaLigada));
 });
