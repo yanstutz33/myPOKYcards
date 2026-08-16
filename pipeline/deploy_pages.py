@@ -37,6 +37,7 @@ OBRIGATORIOS = [
     ("style.css", 3_000),
     ("tema.css", 2_000),
     ("scan.css", 2_000),
+    ("pokedex.css", 4_000),
     ("detectar.js", 2_000),
     ("camera.js", 1_500),
     ("manifest.json", 300),
@@ -99,6 +100,19 @@ def main(repo: Path, dry: bool) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         stage = Path(tmp) / "site"
         shutil.copytree(web, stage)
+
+        # Carimba a versao do service worker com o commit.
+        #
+        # Sem isso o cache serve codigo velho apos cada publicacao — e o
+        # sintoma e cruel: a pagina carrega, parece atual, e roda a versao
+        # anterior. Custou uma depuracao inteira perseguindo um erro que ja
+        # estava corrigido no disco.
+        sw = stage / "sw.js"
+        if sw.exists():
+            sw.write_text(
+                sw.read_text(encoding="utf-8").replace('const VERSAO = "v1";',
+                                                        f'const VERSAO = "{commit}";'),
+                encoding="utf-8")
         # Sem .nojekyll o Pages ignora arquivos e pastas iniciados por "_".
         (stage / ".nojekyll").write_text("", encoding="utf-8")
 

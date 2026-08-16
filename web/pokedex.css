@@ -1,0 +1,521 @@
+/* YAMI-TCG — a tela de leitura como APARELHO, o resultado como CARTA.
+   ==================================================================
+
+   Direção
+   -------
+   Duas referências, ambas do vocabulário industrial do Pokémon e nenhuma
+   registrada: o aparelho de bolso que identifica criaturas (chassi de
+   plástico vermelho, lente azul com anéis concêntricos, LEDs de estado,
+   botões que afundam) e a própria carta (moldura amarela, miolo creme,
+   valor no canto superior direito como o HP, barra de dados no rodapé).
+
+   O contraste é o ponto: um objeto claro e quente saltando de dentro de um
+   aparelho escuro — que é exatamente o que acontece quando você tira uma
+   carta da caixa sob luz baixa.
+
+   O que foi descartado de propósito
+   ---------------------------------
+   Quase-preto com um acento ciano, borda de 1px em tudo, raio de 8px em
+   tudo, rótulo em monoespaçada maiúscula. Era o visual anterior e é o
+   padrão genérico de interface gerada — não diz nada sobre o assunto.
+
+   Nada aqui usa logo, mascote, fonte ou arte oficial. */
+
+:root {
+  /* --- chassi do aparelho ------------------------------------------- */
+  --chassi:        #B0241C;
+  --chassi-escuro: #6E140F;
+  --chassi-claro:  #D9483C;
+  --chassi-borda:  #4A0D09;
+
+  --casco:         #17191D;   /* plástico escuro das laterais */
+  --casco-alto:    #24272D;
+  --casco-baixo:   #0C0D10;
+
+  /* --- lente -------------------------------------------------------- */
+  --lente:         #2C6FC9;
+  --lente-brilho:  #A8D8FF;
+
+  /* --- carta -------------------------------------------------------- */
+  --carta-borda:   #E3BE3C;
+  --carta-borda-2: #B8912A;
+  --carta-papel:   #F3EEDF;
+  --carta-papel-2: #E4DCC6;
+  --carta-tinta:   #1C1A15;
+  --carta-tinta-2: #5B5442;
+
+  /* --- LEDs de estado ----------------------------------------------- */
+  --led-verde:     #46D96B;
+  --led-ambar:     #F2B331;
+  --led-vermelho:  #E8503C;
+
+  /* Pesada e larga. A monoespaçada fininha do visual anterior é justamente
+     o que dá cara de painel genérico. */
+  --font-titulo: "Arial Black", "Segoe UI Black", "Helvetica Neue", system-ui, sans-serif;
+  --font-ui: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ================================================================ chassi */
+
+.scan-body {
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--casco-alto), var(--casco) 55%),
+    var(--casco-baixo);
+}
+
+/* Faixa superior do aparelho: vermelha, com brilho de plástico. */
+.topbar {
+  position: relative;
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 45%, var(--chassi-escuro));
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.5);
+  padding: 0.65rem 0.9rem;
+  gap: 0.7rem;
+}
+
+.topbar .brand {
+  font-family: var(--font-titulo);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+/* LED grande, como o do aparelho. Estado por cor E por brilho: quem não
+   distingue as cores ainda vê o anel acender. */
+.status { gap: 0.55rem; color: rgba(255, 255, 255, 0.92); font-family: var(--font-ui); }
+.status #statusText { font-size: 0.72rem; letter-spacing: 0; text-transform: none; }
+
+.dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #6E1611;
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.dot.on {
+  background: var(--led-verde);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+              inset 0 2px 3px rgba(255, 255, 255, 0.5),
+              0 0 12px var(--led-verde), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.dot.err {
+  background: var(--led-vermelho);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+              0 0 12px var(--led-vermelho), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.topnav a {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.32rem 0.7rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.topnav a:hover { background: rgba(0, 0, 0, 0.45); color: #fff; }
+
+/* ================================================================= lente */
+
+.stage {
+  background: #05070A;
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 0 0 6px var(--casco-baixo), inset 0 6px 18px rgba(0, 0, 0, 0.8);
+}
+
+/* Anéis concêntricos em volta do visor, como a lente do aparelho. */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow:
+    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 8px rgba(255, 255, 255, 0.06),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Moldura-guia: cantos grossos, cor de lente. */
+.corner {
+  width: 30px; height: 30px;
+  border-width: 4px;
+  border-color: var(--lente-brilho);
+  filter: drop-shadow(0 0 6px rgba(44, 111, 201, 0.9));
+}
+.frame::after { border: 2px dashed rgba(168, 216, 255, 0.35); }
+.sweep {
+  background: linear-gradient(90deg, transparent, var(--lente-brilho), transparent);
+  box-shadow: 0 0 14px var(--lente);
+}
+
+.achado {
+  border: 3px solid var(--led-verde);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax rgba(3, 5, 8, 0.62), 0 0 22px -2px var(--led-verde);
+}
+
+/* Dica: etiqueta do aparelho, não legenda flutuante. */
+.hint {
+  bottom: 6.2rem;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(6, 10, 16, 0.86);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  max-width: 88%;
+  white-space: normal;
+  text-align: center;
+}
+.hint.alerta {
+  color: #2A1B00;
+  background: var(--led-ambar);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================== botões */
+
+.barra { background: linear-gradient(transparent, rgba(5, 7, 10, 0.92) 55%); }
+
+/* Botão que afunda: sombra embaixo some no toque. É o que faz parecer
+   peça física em vez de retângulo colorido. */
+.captura {
+  width: 76px; height: 76px;
+  min-height: 76px;
+  background: linear-gradient(180deg, var(--lente-brilho) 0%, var(--lente) 55%, #17427C 100%);
+  border: 4px solid #0B1A2E;
+  box-shadow: 0 5px 0 #0B1A2E, 0 9px 16px rgba(0, 0, 0, 0.6),
+              inset 0 3px 6px rgba(255, 255, 255, 0.45);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.captura:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #0B1A2E, 0 3px 8px rgba(0, 0, 0, 0.6),
+              inset 0 3px 6px rgba(255, 255, 255, 0.35);
+}
+.captura-anel {
+  width: 46px; height: 46px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 -3px 6px rgba(44, 111, 201, 0.45);
+}
+.captura:active .captura-anel { transform: none; }
+
+.secundaria, .lanterna {
+  border: 3px solid var(--chassi-borda);
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--chassi-borda), 0 7px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.secundaria:active, .lanterna:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--chassi-borda), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.lanterna.ligada {
+  background: linear-gradient(180deg, #FFD86B, var(--led-ambar));
+  border-color: #7A5400;
+  box-shadow: 0 4px 0 #7A5400, 0 0 18px var(--led-ambar);
+  color: #2A1B00;
+}
+
+.acoes-base {
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco-baixo));
+  border-top: 3px solid var(--chassi-borda);
+}
+.acoes-base button.primary {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  border: 3px solid var(--chassi-borda);
+  color: #fff;
+  font-family: var(--font-titulo);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 var(--chassi-borda), 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+.acoes-base button.primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--chassi-borda);
+}
+
+/* ========================================================= gaveta/carta */
+
+.sheet {
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco));
+  border-top: 3px solid var(--chassi-borda);
+  padding: 0.85rem 0.8rem 1rem;
+}
+.sheet .empty {
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+}
+
+/* O resultado é uma CARTA: moldura amarela, miolo de papel, tinta escura.
+   Objeto claro dentro de aparelho escuro — como carta na mão sob luz baixa. */
+.hit {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.2rem 0.7rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, var(--carta-borda), var(--carta-borda-2));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--carta-tinta);
+  position: relative;
+}
+
+/* Miolo de papel, recuado da moldura — a proporção da borda amarela da
+   carta física. */
+.hit::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--carta-papel), var(--carta-papel-2));
+  z-index: 0;
+}
+.hit > * { position: relative; z-index: 1; }
+
+.hit.top {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              0 0 0 3px color-mix(in srgb, var(--tipo) 60%, transparent);
+}
+
+.hit-name {
+  font-family: var(--font-titulo);
+  font-size: 1.15rem;
+  line-height: 1.15;
+  color: var(--carta-tinta);
+  letter-spacing: -0.01em;
+  padding-top: 0.3rem;
+}
+.hit.top .hit-name { color: var(--carta-tinta); }
+
+/* Confiança no canto superior direito, no lugar e no peso do HP. */
+.hit-conf {
+  align-self: start;
+  text-align: right;
+  padding: 0.3rem 0.35rem 0 0;
+  font-family: var(--font-titulo);
+}
+.hit-conf b {
+  font-size: 1.35rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tipo) 72%, var(--carta-tinta));
+}
+.hit-conf small {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--carta-tinta-2);
+  letter-spacing: 0.04em;
+}
+
+.hit-meta {
+  grid-column: 2 / -1;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  color: var(--carta-tinta-2);
+  gap: 0.3rem 0.5rem;
+  padding-bottom: 0.15rem;
+}
+.hit-meta code {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--carta-tinta-2);
+  border-radius: 4px;
+}
+
+.miniatura {
+  width: 52px;
+  border: 2px solid rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  margin: 0.3rem 0 0 0.3rem;
+}
+
+.selo-raridade {
+  background: color-mix(in srgb, var(--tipo) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tipo) 55%, transparent);
+  color: color-mix(in srgb, var(--tipo) 65%, var(--carta-tinta));
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.58rem;
+}
+.tag {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--carta-tinta-2);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.58rem;
+}
+.tag.lang { background: rgba(226, 160, 40, 0.18); color: #7A5400; }
+
+.energia { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), 0 1px 2px rgba(0,0,0,.3); }
+
+/* Barra de dados no rodapé da carta, onde fica número/símbolo/raridade. */
+.precos, .preco-vazio, .graded, .grupo {
+  grid-column: 1 / -1;
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.35rem 0.1rem;
+}
+.preco-val { color: var(--carta-tinta); font-family: var(--font-titulo); font-size: 1.05rem; }
+.faixa, .preco-src, .brl { color: var(--carta-tinta-2); }
+.preco-linha { font-family: var(--font-ui); }
+.preco-linha.velho .preco-val { color: #9A5B00; }
+.preco-vazio, .fx-nota, .graded-nota, .grupo-nota { color: var(--carta-tinta-2); }
+.graded summary, .grupo summary { color: var(--carta-tinta-2); font-family: var(--font-ui); }
+.slot { border-color: rgba(0, 0, 0, 0.18); }
+.slot-nome { color: var(--carta-tinta); font-family: var(--font-ui); font-weight: 700; }
+.slot-vazio { color: var(--carta-tinta-2); }
+
+.irma {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--carta-tinta);
+}
+.irma-meta, .irma-preco { color: var(--carta-tinta-2); }
+
+/* Guardar: botão de fichário, não de painel. */
+.guardar { grid-column: 1 / -1; padding: 0 0.35rem 0.35rem; }
+.guardar-btn {
+  background: linear-gradient(180deg, #FFFDF6, var(--carta-papel-2));
+  border: 2px solid color-mix(in srgb, var(--tipo) 55%, rgba(0, 0, 0, 0.25));
+  color: var(--carta-tinta);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.guardar-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.18); }
+.guardar-btn small { color: var(--carta-tinta-2); }
+.guardar-btn.feito {
+  background: linear-gradient(180deg, #D8F5DC, #B6E8C0);
+  border-color: #2E7D46;
+  color: #16512B;
+}
+.guardar-tem { color: rgba(255, 255, 255, 0.6); }
+
+.nodata {
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 4px solid var(--led-ambar);
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 0 10px 10px 0;
+}
+.nodata b { color: #fff; }
+
+/* Brilho holográfico por cima do papel, não por baixo. */
+.hit.foil::before { z-index: 2; mix-blend-mode: overlay; opacity: 0.85; }
+
+.diag {
+  background: rgba(3, 8, 5, 0.92);
+  border: 2px solid #1E4A2C;
+  color: var(--led-verde);
+  border-radius: 8px;
+}
+
+@media (max-width: 380px) {
+  .hit-name { font-size: 1.02rem; }
+  .miniatura { width: 44px; }
+}
+
+/* ================================================ valor em destaque */
+/* O que a pessoa veio saber: que carta é, e quanto vale. Tudo o mais é
+   secundário e fica fechado. */
+.valor {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.55rem;
+  margin-top: 0.45rem;
+  padding: 0.5rem 0.4rem 0.15rem;
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+}
+.valor-num {
+  font-family: var(--font-titulo);
+  font-size: 1.65rem;
+  line-height: 1;
+  color: var(--carta-tinta);
+  letter-spacing: -0.02em;
+}
+.valor .brl { font-size: 0.95rem; border: 0; }
+.valor-src {
+  flex: 1 0 100%;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  color: var(--carta-tinta-2);
+}
+.valor.sem {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--carta-tinta-2);
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------ alternativas */
+.alts { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.7rem; }
+.alts-titulo {
+  margin: 0 0 0.1rem;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.66);
+}
+.alt {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.6rem;
+  text-align: left;
+  min-height: 46px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+.alt:hover { border-color: var(--carta-borda); }
+.alt-nome { font-family: var(--font-ui); font-weight: 700; font-size: 0.9rem; }
+.alt-meta { grid-column: 1; font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); }
+.alt-conf {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  font-family: var(--font-titulo);
+  font-size: 0.95rem;
+  color: var(--carta-borda);
+}
+
+/* ---------------------------------------------------------- detalhes */
+.bloco-det { grid-column: 1 / -1; padding: 0 0.35rem; }
+.bloco-det summary {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--carta-tinta-2);
+  padding: 0.45rem 0;
+}
+.bloco-det summary:focus-visible { outline: 2px solid var(--lente); outline-offset: 2px; }
+.bloco-det .precos { border-top: 0; margin-top: 0; padding-top: 0; }
+
+/* Quando os candidatos empatam, a tira de alternativas ganha destaque —
+   é justamente quando escolher importa. */
+.results.ambiguo .alts-titulo { color: var(--led-ambar); font-weight: 700; }
+.results.ambiguo .alt { border-color: rgba(242, 179, 49, 0.45); }

@@ -370,6 +370,7 @@ function avaliarTrava(results) {
 }
 
 function travar(cardId, manual = false) {
+  escolhido = 0;
   frozen = true;
   repeticoes = 0;
   els.retomar.hidden = false;
@@ -515,52 +516,19 @@ function guardarHtml(cardId, variantes) {
   </div>`;
 }
 
-function render(results) {
-  if (!results.length) return;
-
-  const ambiguo = results.length > 1 &&
-    results[1].confidence > results[0].confidence - 0.02;
-
-  els.results.innerHTML = results.map((r, i) => {
-    const id = catalog.ids[r.i];
-    const [nome, set, numero, raridade, regiao, variantes, idiomas, caminho, , tipos]
-      = catalog.meta[r.i];
-    const destaque = i === 0 && r.confidence >= CONF_ALTA && !ambiguo;
-    const cor = corDaCarta(tipos);
-
-    const tags = [];
-    if (raridade) tags.push(`<span class="selo-raridade">${escapeHtml(raridade)}</span>`);
-    for (const v of variantes) tags.push(`<span class="tag">${escapeHtml(v)}</span>`);
-    if (idiomas.length > 1) {
-      tags.push(`<span class="tag lang">${idiomas.length} idiomas</span>`);
-    }
-
-    // Miniatura só no candidato do topo: nas alternativas ela competiria
-    // por atenção com a carta que o usuário está de fato conferindo.
-    const mini = i === 0 && caminho
-      ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
-             src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">`
-      : "";
-
-    return `<article class="hit${destaque ? " top" : ""}${
-        eFoil(raridade) ? " foil" : ""}${mini ? " com-mini" : ""}"
-        style="--tipo:${cor}">
-      ${mini}
-      <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
-      <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>confiança</small></div>
-      <div class="hit-meta">
-        <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
-        <span>${regiao === "asia" ? "Ásia" : "Internacional"}</span>
-        <code>${escapeHtml(id)}</code>
-        ${tags.join("")}
-      </div>
-      ${precoHtml(id, regiao)}
-      ${i === 0 ? gradedHtml(id) : ""}
-      ${guardarHtml(id, variantes)}
-      ${i === 0 ? irmasHtml(id) : ""}
-    </article>`;
-  }).join("") + avisoDeLimite(results, ambiguo);
-}
+/**
+ * Um resultado em destaque, o resto sob demanda.
+ *
+ * A versão anterior empilhava as TRÊS cartas completas — nome, mercados,
+ * graduação, grupo, botões — e dava 1.405 px de conteúdo num painel de
+ * 338 px. Era o que tornava a tela difícil: tudo com o mesmo peso, nada
+ * legível de relance, e o que importa (que carta é, quanto vale) enterrado
+ * no meio.
+ *
+ * Agora: a carta provável ocupa a tela como uma carta de verdade, com UM
+ * preço de referência grande. Alternativas viram uma tira compacta, e
+ * detalhe abre quando é pedido.
+ */
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
@@ -571,20 +539,11 @@ const RE_DIGITAL = /^[AB]\d/;
 const digital = (cardId) => RE_DIGITAL.test(cardId);
 
 /**
- * Bloco de preço de um candidato.
- *
- * Nunca renderiza número sem moeda, variante, fonte e idade — preço sem
- * proveniência é pior que preço nenhum, porque parece confiável. Ausência é
- * um estado explícito com motivo, jamais zero.
- */
-/**
- * Conversão para real — deliberadamente discreta e sempre rotulada.
+ * Conversão para real — discreta e sempre rotulada.
  *
  * Não é o preço brasileiro: o mercado nacional tem liquidez, imposto e frete
- * próprios, e a diferença em relação ao americano não é a taxa de câmbio.
- * Serve para responder "isso é carta de dez reais ou de mil?".
- *
- * Taxa oficial PTAX do Banco Central, com data visível no rodapé do bloco.
+ * próprios, e a diferença para o americano não é a taxa de câmbio. Serve
+ * para responder "isso é carta de dez reais ou de mil?".
  */
 function converter(valor, moeda) {
   const t = fx?.taxas?.[moeda];
@@ -594,90 +553,23 @@ function converter(valor, moeda) {
   return `<span class="brl" title="Conversão pela PTAX de ${escapeHtml(t.em || "")}. Não é o preço do mercado brasileiro.">≈ R$ ${fmt}</span>`;
 }
 
-/**
- * Bloco de graduação (PSA 10, GBA).
- *
- * Estado honesto: NENHUMA fonte pública cota carta graduada de graça.
- * PSA 10 existe em serviço pago (PokemonPriceTracker ~US$ 10/mês); GBA,
- * MGS e Capy são graduadoras brasileiras novas demais para ter índice
- * público — não há preço de GBA em lugar nenhum, verificado.
- *
- * O que dá para dizer com o dado que temos é se graduar faz sentido: a
- * regra de bolso do mercado é que abaixo de ~US$ 50 raw o custo da
- * graduação come o ganho. Isso é orientação de decisão, não preço
- * inventado — e é explicitamente rotulado como tal.
- */
-const LIMIAR_GRADUACAO_USD = 50;
-
-function gradedHtml(cardId) {
+/** Todos os mercados da carta, com moeda, variante, fonte e idade. */
+function precoHtml(cardId, regiao) {
   const mercados = prices[cardId] || [];
   if (!mercados.length) return "";
-
-  // Referência em dólar para comparar com o limiar; sem USD, converte do
-  // que houver usando a PTAX, e diz que foi convertido.
-  const usd = mercados.find((m) => m.c === "USD");
-  let base = usd?.ref ?? null;
-  let convertido = false;
-  if (base === null) {
-    const outro = mercados[0];
-    const tOutro = fx?.taxas?.[outro.c]?.taxa;
-    const tUsd = fx?.taxas?.USD?.taxa;
-    if (tOutro && tUsd) { base = (outro.ref * tOutro) / tUsd; convertido = true; }
-  }
-  if (base === null) return "";
-
-  const vale = base >= LIMIAR_GRADUACAO_USD;
-  return `<details class="graded">
-    <summary>Vale graduar? <strong>${vale ? "provavelmente sim" : "provavelmente não"}</strong></summary>
-    <p class="graded-nota">
-      Esta carta vale <strong>US$ ${base.toFixed(2)}</strong> sem graduação${
-        convertido ? " (convertido)" : ""}. A regra de bolso do mercado é que
-      abaixo de <strong>US$ ${LIMIAR_GRADUACAO_USD}</strong> o custo da
-      graduação e do frete costuma comer o ganho — e só nota 9 ou 10
-      multiplica o valor de verdade.
-    </p>
-    <div class="graded-slots">
-      <div class="slot"><span class="slot-nome">PSA 10</span>
-        <span class="slot-vazio">sem fonte gratuita</span></div>
-      <div class="slot"><span class="slot-nome">GBA</span>
-        <span class="slot-vazio">sem índice público</span></div>
-    </div>
-    <p class="graded-nota">
-      Preço de carta graduada não tem fonte aberta: PSA existe só em serviço
-      pago, e GBA, MGS e Capy são graduadoras brasileiras novas demais para
-      ter índice. Preferimos deixar o espaço vazio a estimar por multiplicador.
-    </p>
-  </details>`;
-}
-
-function precoHtml(cardId, regiao) {
-  const mercados = prices[cardId];
-
-  if (!mercados || !mercados.length) {
-    // Cada ausência tem uma causa diferente, e o usuário merece saber qual.
-    // "Sem preço" sozinho parece falha do app quando muitas vezes é a
-    // natureza da carta.
-    const motivo = digital(cardId)
-      ? "Carta do TCG Pocket, que é digital — não existe mercado físico nem cotação."
-      : regiao === "asia"
-      ? "Carta japonesa: Cardmarket e TCGplayer são mercados ocidentais e não a cotam. Só 2% das cartas asiáticas têm preço nessas fontes."
-      : "Consultada na fonte, sem cotação registrada.";
-    return `<p class="preco-vazio">Sem preço · ${escapeHtml(motivo)}</p>`;
-  }
 
   const linhas = mercados.map((m) => {
     const s = SIMBOLO[m.c] || m.c + " ";
     const faixa = m.faixa
       ? `<span class="faixa">${s} ${m.faixa[0].toFixed(2)}–${m.faixa[1].toFixed(2)}</span>`
       : "";
-    const brl = converter(m.ref, m.c);
     const velho = m.idade != null && m.idade > 7;
     const idade = m.idade == null ? "sem data"
       : m.idade < 1 ? "hoje"
       : `há ${Math.round(m.idade)} d`;
     return `<div class="preco-linha${velho ? " velho" : ""}">
       <span class="preco-val">${s} ${m.ref.toFixed(2)}</span>
-      ${brl}
+      ${converter(m.ref, m.c)}
       ${faixa}
       <span class="preco-src">${escapeHtml(m.v)} · ${escapeHtml(m.f)} · ${idade}</span>
     </div>`;
@@ -692,28 +584,161 @@ function precoHtml(cardId, regiao) {
 }
 
 /**
- * Os avisos abaixo não são disclaimers de praxe — são limitações medidas:
- * a mesma arte aparece em impressões de idiomas diferentes, e nenhuma fonte
- * aberta cota carta em BRL ou JPY.
+ * Graduação (PSA 10, GBA).
+ *
+ * Nenhuma fonte pública cota carta graduada de graça: PSA existe só em
+ * serviço pago e GBA, MGS e Capy são graduadoras brasileiras novas demais
+ * para ter índice — verificado. Os campos ficam visivelmente vazios em vez
+ * de estimados por multiplicador.
+ *
+ * O que o dado sustenta é se VALE graduar: abaixo de ~US$ 50 raw o custo da
+ * graduação e do frete costuma comer o ganho.
  */
-function avisoDeLimite(results, ambiguo) {
-  const partes = [];
-  if (margem(results) < MARGEM_MIN) {
-    partes.push(`<b>Certeza baixa.</b> O segundo candidato está quase tão
-      próximo quanto o primeiro. Isso costuma acontecer quando a carta não
-      está no índice — 11.411 cartas do catálogo não têm imagem na fonte,
-      quase todas japonesas. Confira o número impresso antes de confiar.`);
+const LIMIAR_GRADUACAO_USD = 50;
+
+function gradedHtml(cardId) {
+  const mercados = prices[cardId] || [];
+  if (!mercados.length) return "";
+
+  const usd = mercados.find((m) => m.c === "USD");
+  let base = usd?.ref ?? null;
+  let convertido = false;
+  if (base === null) {
+    const outro = mercados[0];
+    const tOutro = fx?.taxas?.[outro.c]?.taxa;
+    const tUsd = fx?.taxas?.USD?.taxa;
+    if (tOutro && tUsd) { base = (outro.ref * tOutro) / tUsd; convertido = true; }
   }
-  if (ambiguo) {
-    partes.push(`<b>Candidatos empatados.</b> Provavelmente a mesma arte em
-      impressões diferentes — a versão japonesa e a internacional têm hash
-      quase idêntico. Confira o número e o símbolo da expansão na carta.`);
-  }
-  partes.push(`<b>Preço em moeda estrangeira, sem conversão.</b> A referência
-    vem de venda concluída; a faixa é o que se pede hoje. Não existe fonte
-    aberta que cote em BRL ou JPY — converter aqui seria inventar precisão.`);
-  return `<div class="nodata">${partes.join("<br><br>")}</div>`;
+  if (base === null) return "";
+
+  const vale = base >= LIMIAR_GRADUACAO_USD;
+  return `<details class="bloco-det graded">
+    <summary>Vale graduar? <strong>${vale ? "provavelmente sim" : "provavelmente não"}</strong></summary>
+    <p class="graded-nota">
+      Vale <strong>US$ ${base.toFixed(2)}</strong> sem graduação${convertido ? " (convertido)" : ""}.
+      Abaixo de <strong>US$ ${LIMIAR_GRADUACAO_USD}</strong> o custo da graduação e do
+      frete costuma comer o ganho — e só nota 9 ou 10 multiplica o valor.
+    </p>
+    <div class="graded-slots">
+      <div class="slot"><span class="slot-nome">PSA 10</span>
+        <span class="slot-vazio">sem fonte gratuita</span></div>
+      <div class="slot"><span class="slot-nome">GBA</span>
+        <span class="slot-vazio">sem índice público</span></div>
+    </div>
+  </details>`;
 }
+
+/**
+ * Avisos que são limitações MEDIDAS, não disclaimer de praxe.
+ */
+function avisoDeLimite(results) {
+  const partes = [];
+  const ambiguo = results.length > 1 &&
+    results[1].confidence > results[0].confidence - 0.02;
+  if (margem(results) < MARGEM_MIN) {
+    partes.push(`<b>Certeza baixa.</b> Isso costuma acontecer quando a carta
+      não está no índice — 11.411 cartas do catálogo não têm imagem na fonte,
+      quase todas japonesas. Confira o número impresso.`);
+  } else if (ambiguo) {
+    partes.push(`<b>Candidatos empatados.</b> Provavelmente a mesma arte em
+      impressões diferentes. Confira o número e o símbolo da expansão.`);
+  }
+  return partes.length ? `<div class="nodata">${partes.join("<br><br>")}</div>` : "";
+}
+
+let escolhido = 0;   // índice do candidato em destaque
+
+function precoDestaque(cardId) {
+  const mercados = prices[cardId] || [];
+  if (!mercados.length) return null;
+  // Preferir a cotação mais recente; entre iguais, a de venda concluída.
+  return mercados.slice().sort((a, b) => (a.idade ?? 99) - (b.idade ?? 99))[0];
+}
+
+function cartaHtml(r, results) {
+  const id = catalog.ids[r.i];
+  const [nome, set, numero, raridade, regiao, variantes, idiomas, caminho, , tipos]
+    = catalog.meta[r.i];
+  const cor = corDaCarta(tipos);
+  const m = precoDestaque(id);
+
+  const preco = m
+    ? `<div class="valor">
+         <span class="valor-num">${SIMBOLO[m.c] || m.c} ${m.ref.toFixed(2)}</span>
+         ${converter(m.ref, m.c)}
+         <span class="valor-src">${escapeHtml(m.v)} · ${escapeHtml(m.f)}${
+           m.idade != null ? (m.idade < 1 ? " · hoje" : ` · há ${Math.round(m.idade)} d`) : ""}</span>
+       </div>`
+    : `<div class="valor sem">${motivoSemPreco(id, regiao)}</div>`;
+
+  return `<article class="hit top${eFoil(raridade) ? " foil" : ""}${caminho ? " com-mini" : ""}"
+      style="--tipo:${cor}">
+    ${caminho ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
+         src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
+    <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
+    <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>certeza</small></div>
+    <div class="hit-meta">
+      <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
+      ${raridade ? `<span class="selo-raridade">${escapeHtml(raridade)}</span>` : ""}
+      <span>${regiao === "asia" ? "JA" : "INTL"}</span>
+    </div>
+    ${preco}
+    ${guardarHtml(id, variantes)}
+    ${detalhesHtml(id, regiao, results)}
+  </article>`;
+}
+
+/** Alternativas: tira compacta, tocável para trocar o destaque. */
+function alternativasHtml(results) {
+  const outros = results.map((r, i) => [r, i]).filter(([, i]) => i !== escolhido);
+  if (!outros.length) return "";
+  const itens = outros.map(([r, i]) => {
+    const [nome, set, numero] = catalog.meta[r.i];
+    return `<button class="alt" data-i="${i}">
+      <span class="alt-nome">${escapeHtml(nome)}</span>
+      <span class="alt-meta">${escapeHtml(set)} · ${escapeHtml(numero)}</span>
+      <span class="alt-conf">${(r.confidence * 100).toFixed(0)}%</span>
+    </button>`;
+  }).join("");
+  return `<div class="alts">
+    <p class="alts-titulo">Não é essa? Toque na certa:</p>
+    ${itens}
+  </div>`;
+}
+
+function motivoSemPreco(cardId, regiao) {
+  return digital(cardId)
+    ? "Carta do TCG Pocket — jogo digital, sem mercado físico"
+    : regiao === "asia"
+    ? "Sem cotação: mercados ocidentais não cotam carta japonesa"
+    : "Consultada na fonte, sem cotação registrada";
+}
+
+/** Tudo que não é "que carta é" e "quanto vale" fica fechado. */
+function detalhesHtml(cardId, regiao, results) {
+  const mercados = prices[cardId] || [];
+  const outros = mercados.length > 1
+    ? `<details class="bloco-det"><summary>Todos os mercados (${mercados.length})</summary>
+         ${precoHtml(cardId, regiao)}</summary></details>`
+    : "";
+  return `${outros}${gradedHtml(cardId)}${irmasHtml(cardId)}${avisoDeLimite(results)}`;
+}
+
+function render(results) {
+  if (!results.length) return;
+  if (escolhido >= results.length) escolhido = 0;
+
+  const ambiguo = results.length > 1 &&
+    results[1].confidence > results[0].confidence - 0.02;
+
+  els.results.innerHTML =
+    cartaHtml(results[escolhido], results) + alternativasHtml(results);
+  ultimosResultados = results;
+  if (ambiguo) els.results.classList.add("ambiguo");
+  else els.results.classList.remove("ambiguo");
+}
+
+let ultimosResultados = null;
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
@@ -774,7 +799,7 @@ els.toggle.addEventListener("click", async () => {
     els.stage.classList.remove("detectado", "travado");
     els.achado.hidden = true;
     els.barra.hidden = true;
-    els.toggle.textContent = "Iniciar câmera";
+    els.toggle.textContent = "Ligar leitor";
     els.hint.textContent = "Câmera parada";
     return;
   }
@@ -787,7 +812,7 @@ els.toggle.addEventListener("click", async () => {
   els.barra.hidden = false;
   els.capturar.hidden = false;
   els.retomar.hidden = true;
-  els.toggle.textContent = "Parar";
+  els.toggle.textContent = "Desligar";
   els.hint.textContent = "Aponte para a carta";
   tick();
 });
@@ -805,6 +830,13 @@ els.results.addEventListener("click", (ev) => {
   if (!frozen) travar(btn.dataset.card, true);
   btn.classList.add("feito");
   btn.innerHTML = `✓ ${escapeHtml(btn.dataset.var)} <small>${n} guardada${n > 1 ? "s" : ""}</small>`;
+});
+
+els.results.addEventListener("click", (ev) => {
+  const alt = ev.target.closest(".alt");
+  if (!alt || !ultimosResultados) return;
+  escolhido = Number(alt.dataset.i);
+  render(ultimosResultados);
 });
 
 els.capturar.addEventListener("click", capturarAgora);
