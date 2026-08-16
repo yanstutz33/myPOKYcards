@@ -847,3 +847,127 @@ body.com-ficha { overflow: hidden; }
   border-color: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
+
+/* ================================ telas de painel, coleção e landing */
+/* Elas nasceram antes do redesenho e ficaram no visual antigo. Um app em
+   que metade das telas parece outro app é pior que um app feio: quebra a
+   sensação de estar no mesmo lugar. */
+
+.painel-body {
+  background:
+    radial-gradient(120% 60% at 50% 0%, var(--casco-alto), var(--casco) 55%),
+    var(--casco-baixo);
+  color: #fff;
+}
+
+.painel-top {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 45%, var(--chassi-escuro));
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+.painel-top h1 {
+  font-family: var(--font-titulo);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.painel-top .brand { color: rgba(255, 255, 255, 0.85); }
+
+/* Botão de navegação: mesma peça física do resto do aparelho. */
+.ir-scan {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.ir-scan:hover { background: rgba(0, 0, 0, 0.45); }
+.ir-scan:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda); }
+
+/* Blocos e cartões viram peças de fichário: papel claro dentro do aparelho.
+   Só onde é leitura de dados — em barra de progresso o claro atrapalharia. */
+.bloco > h2 {
+  font-family: var(--font-titulo);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--carta-borda);
+}
+
+.kpis, .linhas, .prog, .passos, .limites {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 12px;
+  background: var(--chassi-borda);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+.kpi, .linha, .passo, .limite { background: var(--casco-alto); }
+.prog { background: var(--casco-alto); }
+
+.kpi b, .linha-val, .prog-nome {
+  font-family: var(--font-titulo);
+  color: #fff;
+}
+.kpi small, .kpi em, .linha-sub, .prog-num, .prog-nota {
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.6);
+}
+.kpi small { font-size: 0.68rem; font-weight: 600; }
+.linha, .passo p, .limite p { color: rgba(255, 255, 255, 0.85); }
+
+.trilho { background: rgba(0, 0, 0, 0.45); border-radius: 4px; }
+.trilho i.feito { background: var(--led-verde); }
+.trilho i.falta { background: var(--led-vermelho); opacity: 0.5; }
+.mini-barra { background: rgba(0, 0, 0, 0.4); }
+.mini-barra i { background: var(--carta-borda); opacity: 1; }
+
+.painel-pe { border-top: 3px solid var(--chassi-borda); color: rgba(255,255,255,.55); }
+.painel-pe a { color: var(--carta-borda); }
+
+.empty { color: rgba(255, 255, 255, 0.7); font-family: var(--font-ui); }
+
+/* Botões da coleção: peça física, como no leitor. */
+.actions button, .painel-body button {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.actions button:active, .painel-body button:active {
+  transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda);
+}
+.actions button.primary {
+  background: linear-gradient(180deg, var(--carta-borda), var(--carta-borda-2));
+  border-color: var(--carta-borda-2);
+  color: #2A2205;
+}
+.linha-acoes button { min-width: 38px; box-shadow: 0 2px 0 var(--chassi-borda); }
+
+/* --- landing --- */
+.lp-hero { border-bottom: 3px solid var(--chassi-borda); }
+.lp-hero h1 { font-family: var(--font-titulo); letter-spacing: -0.02em; }
+.lp-sub { color: rgba(255, 255, 255, 0.72); }
+.lp-sub strong { color: #fff; }
+.lp-btn {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--chassi-borda);
+}
+.lp-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--chassi-borda); }
+.lp-btn.primaria {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  border-color: var(--chassi-borda);
+  color: #fff;
+}
+.passo-n { font-family: var(--font-titulo); color: var(--carta-borda); }
+.passo h3 { font-family: var(--font-titulo); color: #fff; }
+.limite h3 { font-family: var(--font-titulo); color: var(--led-ambar); }
+.lp-tipos li { height: 7px; border-radius: 3px; }

@@ -6,6 +6,9 @@ offline depois do primeiro carregamento.
 
 **No ar:** https://yanstutz33.github.io/yami-tcg/sobre.html
 
+Leitor pela câmera, busca por nome, ficha completa da carta, coleção com
+valor, e painel do estado do sistema. Instalável, funciona offline.
+
 ## Estado atual
 
 **Fase 1 (fundação de dados) — concluída e validada.**
