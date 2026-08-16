@@ -4,6 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#06080C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>YAMI-TCG · Leitor de cartas</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="tema.css">
@@ -52,6 +56,17 @@
       <span class="captura-anel"></span>
     </button>
     <button id="retomar" class="secundaria" hidden>Ler outra</button>
+    <!-- Só aparece se o aparelho declarar `torch`. iPhone não implementa,
+         e botão que não faz nada é pior que botão nenhum. -->
+    <button id="lanterna" class="lanterna" hidden aria-pressed="false"
+            aria-label="Lanterna">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M9 2h6v3l-1.5 2v13a1.5 1.5 0 0 1-3 0V7L9 5V2z"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linejoin="round"/>
+        <path d="M10.5 11h3" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </button>
   </div>
 
   <section class="sheet" id="sheet" aria-live="polite">
@@ -66,5 +81,6 @@
   </div>
 
   <script type="module" src="app.js"></script>
+  <script type="module" src="pwa.js"></script>
 </body>
 </html>

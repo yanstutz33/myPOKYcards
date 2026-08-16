@@ -1,0 +1,16 @@
+{
+  "name": "YAMI-TCG · Leitor de cartas Pokémon",
+  "short_name": "YAMI-TCG",
+  "description": "Reconhece cartas Pokémon pela câmera e mostra o preço. Funciona offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06080C",
+  "theme_color": "#06080C",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icone-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

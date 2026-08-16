@@ -12,6 +12,8 @@ import { capture } from "./capture.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
+import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz }
+  from "./camera.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -27,7 +29,12 @@ const els = {
   retomar: document.getElementById("retomar"),
   achado: document.getElementById("achado"),
   diag: document.getElementById("diag"),
+  lanterna: document.getElementById("lanterna"),
 };
+
+let trilha = null;        // MediaStreamTrack de vídeo
+let lanternaLigada = false;
+let ultimaLuz = null;
 
 const DIAG = new URLSearchParams(location.search).has("diag");
 els.barra.hidden = true;
@@ -117,6 +124,7 @@ function onWorkerMessage(ev) {
   if (msg.type === "result") {
     if (msg.seq !== seq) return;           // resultado de frame vencido
     render(msg.results);
+    if (!frozen) orientar(msg.results);
     if (DIAG) mostrarDiag(msg);
     if (pendenteTravar) {
       pendenteTravar = false;
@@ -139,8 +147,7 @@ function fatal(message) {
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
-      audio: false,
+      video: RESTRICOES_VIDEO, audio: false,
     });
   } catch (err) {
     const motivo = err.name === "NotAllowedError"
@@ -154,12 +161,23 @@ async function startCamera() {
   }
   els.video.srcObject = stream;
   await els.video.play();
+
+  // A lanterna só aparece se o aparelho declarar o recurso. iPhone não
+  // implementa `torch`, e um botão que não faz nada é pior que nenhum.
+  trilha = stream.getVideoTracks()[0] || null;
+  els.lanterna.hidden = !temLanterna(trilha);
+  lanternaLigada = false;
+  els.lanterna.classList.remove("ligada");
   return true;
 }
 
 function stopCamera() {
+  if (lanternaLigada && trilha) definirLanterna(trilha, false);
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
+  trilha = null;
+  lanternaLigada = false;
+  els.lanterna.hidden = true;
   els.video.srcObject = null;
 }
 
@@ -241,13 +259,66 @@ function desenharAchado(a) {
   els.stage.classList.add("detectado");
 }
 
+/**
+ * Diz ao usuário o que está atrapalhando.
+ *
+ * O app tinha toda essa informação e mostrava "Aponte para a carta" para
+ * sempre — inclusive quando sabia que a borda não fora encontrada ou que o
+ * quadro estava estourado. Cada causa tem uma ação diferente, e sem dizer
+ * qual é a pessoa só pode tentar de novo no escuro.
+ *
+ * A dica só muda quando o motivo muda: texto piscando a cada 450 ms é
+ * ilegível e passa sensação de instabilidade.
+ */
+let motivoAtual = "";
+function orientar(results) {
+  let msg = "Aponte para a carta";
+  let classe = "";
+
+  if (ultimaLuz?.estourado) {
+    msg = "Reflexo forte — incline a carta ou desligue a lanterna";
+    classe = "alerta";
+  } else if (ultimaLuz?.escuro) {
+    msg = temLanterna(trilha)
+      ? "Escuro — toque na lanterna"
+      : "Escuro demais para ler";
+    classe = "alerta";
+  } else if (!ultimaDeteccao) {
+    msg = "Não achei a borda — aproxime e use fundo liso";
+    classe = "alerta";
+  } else if (results?.length) {
+    const m = margem(results);
+    const c = results[0].confidence;
+    if (c < TRAVA_CONF) {
+      msg = "Quase lá — segure firme e aproxime";
+    } else if (m < MARGEM_MIN) {
+      msg = "Reconhecimento incerto — toque no botão para capturar";
+      classe = "alerta";
+    } else {
+      msg = "Lendo…";
+    }
+  }
+
+  if (msg === motivoAtual) return;
+  motivoAtual = msg;
+  els.hint.textContent = msg;
+  els.hint.className = "hint" + (classe ? " " + classe : "");
+}
+
 function tick() {
   if (!running || frozen) return;
   const rect = recorteAtual();
   if (rect && rect.w > 8 && rect.h > 8) {
     ultimoRecorte = rect;
+    const quadro = capture(els.video, rect);
+    // Aproveita a redução 32x32 que o matcher já exige: medir luz num quadro
+    // cheio custaria mais que a própria leitura.
+    ultimaLuz = condicaoDeLuz(quadro.p32);
     seq++;
-    worker.postMessage({ type: "match", seq, k: 3, ...capture(els.video, rect) });
+    worker.postMessage({ type: "match", seq, k: 3, ...quadro });
+  } else {
+    ultimaLuz = null;
+    orientar(null);
   }
   setTimeout(tick, INTERVAL_MS);
 }
@@ -311,6 +382,8 @@ function travar(cardId, manual = false) {
   // o visor precisa da própria cópia ou a moldura e o selo saem no ciano
   // padrão em vez da cor do tipo da carta.
   els.stage.style.setProperty("--tipo", corDaCarta(meta?.[9]));
+  motivoAtual = "";
+  els.hint.className = "hint";
   els.hint.textContent = manual
     ? "Capturado — confira se é a carta certa"
     : "Reconhecido. Toque em “Ler outra” para a próxima";
@@ -349,6 +422,8 @@ function mostrarDiag(msg) {
     `busca      ${msg.ms.toFixed(0)} ms`,
     `borda      ${d ? `${d.w}x${d.h}  proporcao ${(d.w / d.h).toFixed(3)}  conf ${(d.confianca * 100).toFixed(0)}%` : "NAO DETECTADA (usando moldura)"}`,
     `recorte    ${ultimoRecorte ? `${ultimoRecorte.w}x${ultimoRecorte.h}` : "-"}`,
+    `luz        ${ultimaLuz ? `media ${ultimaLuz.media.toFixed(0)}  estourado ${(ultimaLuz.fracaoEstourada * 100).toFixed(0)}%` + (ultimaLuz.estourado ? "  REFLEXO" : "") + (ultimaLuz.escuro ? "  ESCURO" : "") : "-"}`,
+    `lanterna   ${trilha ? (temLanterna(trilha) ? (lanternaLigada ? "ligada" : "disponivel") : "nao suportada") : "-"}`,
     `video      ${els.video.videoWidth}x${els.video.videoHeight}`,
     "",
     ...r.map((x, i) =>
@@ -733,6 +808,28 @@ els.results.addEventListener("click", (ev) => {
 });
 
 els.capturar.addEventListener("click", capturarAgora);
+
+els.lanterna.addEventListener("click", async () => {
+  if (!trilha) return;
+  const ok = await definirLanterna(trilha, !lanternaLigada);
+  if (!ok) {
+    els.lanterna.hidden = true;   // o aparelho mentiu sobre suportar
+    return;
+  }
+  lanternaLigada = !lanternaLigada;
+  els.lanterna.classList.toggle("ligada", lanternaLigada);
+  els.lanterna.setAttribute("aria-pressed", String(lanternaLigada));
+});
+
+// Tocar no visor foca naquele ponto. Carta a ~15 cm costuma cair fora do
+// foco automático, que mira no fundo.
+els.stage.addEventListener("click", (ev) => {
+  if (!trilha || frozen || ev.target.closest(".barra")) return;
+  const b = els.stage.getBoundingClientRect();
+  focarEm(trilha, (ev.clientX - b.left) / b.width, (ev.clientY - b.top) / b.height);
+  els.stage.classList.add("focando");
+  setTimeout(() => els.stage.classList.remove("focando"), 400);
+});
 els.retomar.addEventListener("click", destravar);
 
 document.addEventListener("visibilitychange", () => {

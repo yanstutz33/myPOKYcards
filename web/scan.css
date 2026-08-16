@@ -188,3 +188,34 @@
 @media (max-width: 380px) {
   .guardar-btn { flex: 1 1 100%; }
 }
+
+/* -------------------------------------------------- lanterna e foco */
+.lanterna {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 12, 0.8);
+  color: var(--ink-soft);
+}
+.lanterna.ligada {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #241800;
+}
+.lanterna[hidden] { display: none; }
+
+/* Pulso curto confirmando o toque para focar. */
+.stage.focando .frame::after {
+  border-color: var(--scan);
+  box-shadow: 0 0 26px -4px var(--scan);
+}
+
+/* A dica vira aviso quando aponta um problema concreto. */
+.hint.alerta {
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+}

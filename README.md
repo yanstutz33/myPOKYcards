@@ -298,6 +298,31 @@ habilidades que vêm adiante no arquivo. Isso vazava para o seletor de
 variante da interface. Corrigido com extração por região balanceada — e de
 quebra as cartas com `tcgplayer_id` subiram de 19.632 para 22.998.
 
+**Fase 8 (câmera, orientação e PWA) — funcional.**
+
+Três frentes, todas vindas do primeiro teste com carta real.
+
+**Luz e foco.** Carta holográfica espelha, e sob luz de teto o reflexo apaga
+parte da arte — nenhum ajuste de limiar no matcher resolve, porque o dado
+que chega já está destruído. Agora há lanterna (quando o aparelho declara
+`torch`; iPhone não implementa, e o botão só aparece se existir), foco
+contínuo pedido na abertura, e toque no visor para focar num ponto. A
+condição de luz é medida na própria redução 32×32 que o matcher já faz.
+
+**O app diz o que está errado.** Antes mostrava "Aponte para a carta" para
+sempre, mesmo sabendo que a borda não fora encontrada ou que o quadro
+estava estourado. Agora cada causa tem sua mensagem: reflexo forte, escuro
+demais, borda não encontrada, reconhecimento incerto. A dica só muda quando
+o motivo muda — texto piscando a cada 450 ms é ilegível.
+
+**PWA.** `manifest.json` e service worker: instala na tela de início, abre
+em tela cheia e funciona offline dentro da loja. Duas estratégias de cache,
+porque os arquivos têm exigências opostas — o app usa
+stale-while-revalidate (versão velha por segundos é melhor que tela branca)
+e os 7 MB de dados usam cache-first com atualização em segundo plano. A
+arte das cartas não é cacheada: vem do CDN de origem e não é nossa para
+guardar.
+
 ## Estrutura
 
 ```
@@ -313,7 +338,7 @@ pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
-web/                          landing, leitor, coleção e painel (tema.css/tema.js = camada temática)
+web/                          landing, leitor, coleção e painel (PWA instalável) (tema.css/tema.js = camada temática)
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```
