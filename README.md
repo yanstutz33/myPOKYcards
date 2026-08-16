@@ -280,10 +280,29 @@ sempre. A lista de cartas exibíveis vem do `cards.json` **já publicado**, e
 O job falha de forma visível se a coleta trouxer menos de 5.000 cartas:
 silêncio não pode parecer sucesso.
 
+**Fase 8 (invariantes automatizados) — funcional.**
+
+```bash
+python tests/test_invariantes.py
+```
+
+21 checagens que rodam antes de cada publicação. Cada uma existe porque um
+bug **real** passou por ela — e nenhum daqueles bugs quebrava nada: todos
+apareceram como número que não fecha.
+
+Na primeira execução o suite achou um bug que ninguém tinha visto: o campo
+`variants` estava poluído com tipos de energia e habilidades
+(`["Fire", "holo"]`, `["Ability", "normal", "reverse"]`), porque o parser
+lia *tudo depois* de `variants:` e capturava os `type:` de fraquezas e
+habilidades que vêm adiante no arquivo. Isso vazava para o seletor de
+variante da interface. Corrigido com extração por região balanceada — e de
+quebra as cartas com `tcgplayer_id` subiram de 19.632 para 22.998.
+
 ## Estrutura
 
 ```
 pipeline/bootstrap.py         prepara um clone novo (nuvem, celular)
+tests/test_invariantes.py     21 invariantes, rodam antes de publicar
 pipeline/ingest_tcgdex.py     catálogo TCGdex (MIT) -> SQLite
 pipeline/build_hash_index.py  imagens -> hashes perceptuais
 pipeline/match.py             busca + autoteste de acurácia

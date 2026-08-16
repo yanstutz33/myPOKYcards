@@ -18,7 +18,7 @@ permissions:
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 90     # a coleta leva ~30 min; a folga cobre a fonte lenta
+    timeout-minutes: 60     # medido: ~3 min; a folga cobre a fonte lenta
 
     steps:
       - uses: actions/checkout@v4
@@ -34,13 +34,20 @@ jobs:
           git clone --depth 1 --quiet https://github.com/tcgdex/cards-database.git /tmp/tcgdex
           python pipeline/ingest_tcgdex.py --repo /tmp/tcgdex --out data/cards.db
 
+      # Os invariantes rodam ANTES de publicar. Cada um existe porque um bug
+      # real passou por ele, e nenhum daqueles bugs quebrava nada — todos
+      # apareciam como número que não fecha.
+      - name: Conferir invariantes do catálogo
+        run: python tests/test_invariantes.py
+
       - name: Coletar preços e gerar artefatos
         run: python pipeline/refresh_prices.py --site "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
 
       # O histórico é a única coisa insubstituível: um dia perdido é perdido
       # para sempre. Vai para o main, não para gh-pages, que é reescrito.
-      # A coleta leva ~30 min. Qualquer commit no main nesse intervalo faz o
-      # push ser rejeitado — aconteceu na primeira execução. Rebase antes de
+      # A coleta leva ~3 min na rede do runner. Qualquer commit no main
+      # nesse intervalo faz o push ser rejeitado — aconteceu na primeira
+      # execução. Rebase antes de
       # empurrar, com retentativa: só este arquivo é tocado, então rebase é
       # seguro.
       - name: Guardar o histórico
@@ -75,6 +82,9 @@ jobs:
 
       # Silêncio não pode parecer sucesso: se a coleta trouxe zero preço,
       # algo quebrou na fonte e o job precisa falhar de forma visível.
+      - name: Conferir invariantes dos preços
+        run: python tests/test_invariantes.py
+
       - name: Conferir que veio dado
         run: |
           python - <<'PY'

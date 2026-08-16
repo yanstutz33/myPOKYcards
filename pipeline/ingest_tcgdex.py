@@ -118,12 +118,41 @@ def parse_set(path: Path) -> dict:
     }
 
 
+def _regiao_balanceada(src: str, chave: str) -> str:
+    """Trecho de `chave:` ate o colchete/chave que fecha, e nada alem.
+
+    Pegar "tudo depois de variants:" parecia suficiente e nao era: os campos
+    `type:` de weaknesses, resistances e abilities vem DEPOIS no arquivo, e
+    entravam na lista de variantes. Cartas ficaram com variants
+    ["Fire", "holo"] e ["Ability", "normal", "reverse"] — que apareciam no
+    seletor de variante da interface.
+    """
+    i = src.find(chave + ":")
+    if i == -1:
+        return ""
+    j = i + len(chave) + 1
+    while j < len(src) and src[j] not in "[{":
+        if not src[j].isspace():
+            return ""          # valor escalar, nao bloco
+        j += 1
+    if j >= len(src):
+        return ""
+    abre, fecha = src[j], {"[": "]", "{": "}"}[src[j]]
+    prof = 0
+    for k in range(j, len(src)):
+        if src[k] == abre:
+            prof += 1
+        elif src[k] == fecha:
+            prof -= 1
+            if prof == 0:
+                return src[j:k + 1]
+    return src[j:]
+
+
 def parse_card(path: Path) -> dict:
     src = path.read_text(encoding="utf-8")
     b, s = _blocks(src), _scalars(src)
-    # variants ficam depois de "variants:"; thirdParty do card vive la dentro.
-    vpos = src.find("variants:")
-    vtail = src[vpos:] if vpos != -1 else ""
+    vtail = _regiao_balanceada(src, "variants")
     m = _DEXID_RE.search(src)
     dex = ",".join(x.strip() for x in m.group(1).split(",") if x.strip()) if m else None
 
@@ -141,7 +170,8 @@ def parse_card(path: Path) -> dict:
         "hp": s.get("hp"),
         "regulation_mark": s.get("regulationMark"),
         "variants": sorted({m.group("t") for m in _VARIANT_TYPE_RE.finditer(vtail)}),
-        "third_party": {m.group("src"): int(m.group("id")) for m in _THIRDPARTY_RE.finditer(vtail)},
+        "third_party": {m.group("src"): int(m.group("id"))
+                        for m in _THIRDPARTY_RE.finditer(vtail or src)},
     }
 
 

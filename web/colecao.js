@@ -48,6 +48,13 @@ const VARIANTE_PRECO = {
   holofoil: "holofoil",
   reverse: "reverse-holofoil",
   "reverse-holofoil": "reverse-holofoil",
+  // Tiragens da era WotC (Base Set e contemporâneos). O TCGplayer cota cada
+  // uma separado, e a diferença entre 1st edition e unlimited da mesma carta
+  // chega a ordens de grandeza.
+  unlimited: "unlimited",
+  "unlimited-holofoil": "unlimited-holofoil",
+  "1st-edition": "1st-edition",
+  "1st-edition-holofoil": "1st-edition-holofoil",
 };
 
 export function variantePreco(v) {
