@@ -12,8 +12,8 @@ import { capture } from "./capture.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
-import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz }
-  from "./camera.js";
+import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz,
+         manterTelaAcesa, liberarTela, telaPresa, vibrar } from "./camera.js";
 import * as som from "./som.js";
 import * as ficha from "./ficha.js";
 
@@ -392,6 +392,9 @@ function travar(cardId, manual = false) {
   escolhido = 0;
   if (manual) som.somCapturou();
   else som.somReconheceu();
+  // Vibração curta: confirma no tato o que a tela e o som confirmam, e é o
+  // único canal que funciona com o celular no silencioso.
+  vibrar(manual ? 14 : [12, 40, 22]);
   frozen = true;
   repeticoes = 0;
   els.retomar.hidden = false;
@@ -824,6 +827,7 @@ els.toggle.addEventListener("click", async () => {
     els.toggle.textContent = "Ligar leitor";
     els.hint.textContent = "Câmera parada";
     som.somDesligou();
+    liberarTela();
     return;
   }
   els.toggle.disabled = true;
@@ -838,6 +842,7 @@ els.toggle.addEventListener("click", async () => {
   els.toggle.textContent = "Desligar";
   els.hint.textContent = "Aponte para a carta";
   som.somLigou();
+  manterTelaAcesa();
   tick();
 });
 
@@ -909,6 +914,7 @@ els.stage.addEventListener("click", (ev) => {
 els.retomar.addEventListener("click", destravar);
 
 document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && running && !telaPresa()) manterTelaAcesa();
   // Sair do app pausa a leitura: a câmera continuar rodando em segundo
   // plano gasta bateria e não serve para nada.
   if (document.hidden && running && !frozen) {

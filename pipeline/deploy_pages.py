@@ -42,6 +42,8 @@ OBRIGATORIOS = [
     ("camera.js", 1_500),
     ("som.js", 2_000),
     ("ficha.js", 3_000),
+    ("buscar.html", 800),
+    ("buscar.js", 2_000),
     ("manifest.json", 300),
     ("sw.js", 1_500),
     ("pwa.js", 200),

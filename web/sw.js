@@ -26,6 +26,7 @@ const ESSENCIAIS = [
   "./app.js", "./capture.js", "./detectar.js", "./camera.js",
   "./tema.js", "./colecao.js", "./som.js", "./ficha.js", "./matcher.worker.js",
   "./colecao.html", "./colecao-tela.js",
+  "./buscar.html", "./buscar.js", "./busca-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
   "./sobre.html", "./sobre.js", "./sobre.css",
   "./pokedex.css", "./scan.css", "./pwa.js",

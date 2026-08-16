@@ -12,6 +12,8 @@
  * A arte grande vem do CDN de origem, nunca daqui.
  */
 
+import * as colecao from "./colecao.js";
+
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
 const NOME_IDIOMA = {
@@ -24,6 +26,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 let ctx = null;   // { catalog, prices, fx, converter, corDaCarta, energiasHtml }
+let fichaAberta = null;
 
 export function configurar(dependencias) {
   ctx = dependencias;
@@ -86,6 +89,7 @@ export function abrir(cardId) {
 
   const [nome, set, numero, raridade, regiao, variantes, idiomas, caminho, ,
          tipos, ilustradorIdx, hp, dex, regulacao, categoriaIdx] = ctx.catalog.meta[i];
+  fichaAberta = cardId;
   const ilustrador = ctx.catalog.ilustradores?.[ilustradorIdx] || null;
   const categoria = ctx.catalog.categorias?.[categoriaIdx] || null;
   const cor = ctx.corDaCarta(tipos);
@@ -102,6 +106,18 @@ export function abrir(cardId) {
         </div>
         <button class="ficha-fechar" id="fecharFicha" aria-label="Fechar">✕</button>
       </header>
+
+      <div class="ficha-acoes">
+        ${(variantes?.length ? variantes : ["normal"])
+          .filter((v) => ["normal", "holo", "reverse", "1st-edition", "unlimited"].includes(v))
+          .map((v) => {
+            const n = colecao.quantidade(cardId, v);
+            return `<button class="fa-guardar${n ? " feito" : ""}"
+              data-guardar="${esc(cardId)}" data-var="${esc(v)}">
+              + ${esc(v)}${n ? ` <small>${n}</small>` : ""}</button>`;
+          }).join("") || ""}
+        <button class="fa-compartilhar" data-share="${esc(cardId)}">Compartilhar</button>
+      </div>
 
       <div class="ficha-corpo">
         ${caminho ? `<img class="ficha-arte" alt="${esc(nome)}" crossorigin="anonymous"
@@ -158,9 +174,62 @@ export function ligarControles() {
   alvo.addEventListener("click", (ev) => {
     if (ev.target === alvo || ev.target.closest(".ficha-fechar")) return fechar();
     const irma = ev.target.closest(".ficha-irma");
-    if (irma) abrir(irma.dataset.ir);   // navega entre impressões sem sair
+    if (irma) return abrir(irma.dataset.ir);   // navega entre impressões sem sair
+
+    // Guardar aqui e não só na tela de leitura: quem abriu a ficha para
+    // conferir os dados é exatamente quem acabou de decidir que quer a carta.
+    const g = ev.target.closest("[data-guardar]");
+    if (g) {
+      const n = colecao.adicionar(g.dataset.guardar, g.dataset.var);
+      if (n === null) { g.textContent = "sem espaço"; return; }
+      g.classList.add("feito");
+      g.innerHTML = `✓ ${g.dataset.var} <small>${n}</small>`;
+      return;
+    }
+
+    const sh = ev.target.closest("[data-share]");
+    if (sh) return compartilhar(sh.dataset.share);
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && !alvo.hidden) fechar();
   });
+}
+
+
+/**
+ * Compartilhar a carta.
+ *
+ * Usa a folha nativa do sistema quando existe (Android e iOS moderno) e cai
+ * para copiar o texto quando não. Nunca envia nada por conta própria: a
+ * folha nativa é o usuário escolhendo para quem vai.
+ *
+ * O texto leva a fonte e a data junto do preço — mandar "R$ 500" solto para
+ * alguém é o mesmo problema de exibir preço sem proveniência.
+ */
+async function compartilhar(cardId) {
+  const i = ctx.catalog.ids.indexOf(cardId);
+  if (i < 0) return;
+  const [nome, set, numero] = ctx.catalog.meta[i];
+  const m = (ctx.prices[cardId] || [])[0];
+
+  const linhas = [`${nome} — ${set} · ${numero}`];
+  if (m) {
+    const s = SIMBOLO[m.c] || m.c;
+    linhas.push(`${s} ${m.ref.toFixed(2)} (${m.v}, ${m.f}${
+      m.idade != null ? m.idade < 1 ? ", hoje" : `, há ${Math.round(m.idade)} d` : ""})`);
+  } else {
+    linhas.push("sem cotação nas fontes consultadas");
+  }
+  linhas.push(location.origin + location.pathname.replace(/[^/]*$/, "") + "buscar.html");
+  const texto = linhas.join("\n");
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: nome, text: texto });
+      return;
+    }
+    await navigator.clipboard.writeText(texto);
+    const btn = document.querySelector("[data-share]");
+    if (btn) { btn.textContent = "Copiado!"; setTimeout(() => { btn.textContent = "Compartilhar"; }, 1600); }
+  } catch { /* usuário cancelou a folha: nada a fazer */ }
 }

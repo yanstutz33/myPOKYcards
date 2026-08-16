@@ -4,7 +4,9 @@
     {
       "name": "yami-web",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8137", "--directory", "web"],
+      "runtimeArgs": [
+        "pipeline/servir.py"
+      ],
       "port": 8137
     }
   ]

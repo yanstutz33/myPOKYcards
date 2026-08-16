@@ -94,3 +94,39 @@ export function condicaoDeLuz(px32) {
     escuro: media < 45,
   };
 }
+
+
+/**
+ * Mantém a tela acesa enquanto o leitor está ligado.
+ *
+ * A tela apagando no meio de uma sessão de leitura obriga a desbloquear o
+ * celular com a carta numa mão — irritante e evitável. O navegador libera
+ * o bloqueio sozinho ao trocar de aba, então é preciso repedir ao voltar.
+ */
+let travaTela = null;
+
+export async function manterTelaAcesa() {
+  try {
+    if (!("wakeLock" in navigator)) return false;
+    travaTela = await navigator.wakeLock.request("screen");
+    travaTela.addEventListener("release", () => { travaTela = null; });
+    return true;
+  } catch {
+    return false;   // sem suporte, ou negado: segue sem
+  }
+}
+
+export function liberarTela() {
+  try { travaTela?.release(); } catch { /* já liberada */ }
+  travaTela = null;
+}
+
+export const telaPresa = () => Boolean(travaTela);
+
+/**
+ * Vibração curta. Confirma no tato o que o som e a tela confirmam —
+ * útil quando o celular está no silencioso ou o ambiente é barulhento.
+ */
+export function vibrar(padrao = 18) {
+  try { navigator.vibrate?.(padrao); } catch { /* não suportado */ }
+}

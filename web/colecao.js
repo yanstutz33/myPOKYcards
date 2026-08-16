@@ -98,6 +98,31 @@ export function itens() {
   return Object.values(ler());
 }
 
+/**
+ * Importa um arquivo exportado.
+ *
+ * Havia exportar sem importar — um backup que não se restaura não é backup.
+ * SOMA às quantidades existentes em vez de substituir: quem importa
+ * normalmente está juntando o que tinha em dois aparelhos, e substituir
+ * apagaria metade sem avisar.
+ */
+export function importar(itens) {
+  if (!Array.isArray(itens)) throw new Error("arquivo não parece uma coleção");
+  const dados = ler();
+  let somadas = 0;
+  for (const it of itens) {
+    if (!it?.card_id || typeof it.qtd !== "number" || it.qtd <= 0) continue;
+    const k = chaveItem(it.card_id, it.variante);
+    const atual = dados[k] || { card_id: it.card_id, variante: it.variante || null, qtd: 0 };
+    atual.qtd += it.qtd;
+    atual.em = atual.em || it.em || new Date().toISOString();
+    dados[k] = atual;
+    somadas += it.qtd;
+  }
+  if (!gravar(dados)) throw new Error("sem espaço no navegador");
+  return somadas;
+}
+
 export function limpar() {
   try { localStorage.removeItem(CHAVE); } catch { /* nada a fazer */ }
 }

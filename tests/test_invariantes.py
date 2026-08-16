@@ -17,6 +17,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from checar_js import varrer  # noqa: E402
+
 RAIZ = Path(__file__).resolve().parent.parent
 DADOS = RAIZ / "data"
 
@@ -227,6 +230,23 @@ def testar_traducao_variante() -> None:
            "colecao.js conhece os nomes de variante dos preços")
 
 
+def testar_javascript() -> None:
+    """Strings de JS cortadas por quebra de linha.
+
+    O detector vive em tests/checar_js.py, escrito por ferramenta de
+    arquivo e nunca por heredoc — porque a primeira versao dele, colada
+    num heredoc, caiu exatamente no bug que existia para detectar.
+    """
+    print("\nJAVASCRIPT")
+    web = RAIZ / "web"
+    if not web.is_dir():
+        print("  (pulando: web/ nao existe)")
+        return
+    problemas = varrer(web)
+    checar(not problemas, "nenhuma string de JS cortada por quebra de linha",
+           ", ".join(problemas[:6]))
+
+
 if __name__ == "__main__":
     print("Invariantes do YAMI-TCG")
     print("=" * 60)
@@ -234,6 +254,7 @@ if __name__ == "__main__":
     testar_indice()
     testar_precos()
     testar_traducao_variante()
+    testar_javascript()
 
     print("\n" + "=" * 60)
     if falhas:

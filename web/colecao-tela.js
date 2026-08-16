@@ -113,12 +113,29 @@ function desenhar() {
       <h2>Cartas</h2>
       <div class="linhas">${lista}</div>
       <div class="actions">
-        <button id="exportar" class="primary">Exportar JSON</button>
-        <button id="limpar">Apagar coleção</button>
+        <button id="exportar" class="primary">Exportar</button>
+        <button id="importar">Importar</button>
+        <button id="limpar">Apagar tudo</button>
+      </div>
+      <input id="arquivo" type="file" accept="application/json,.json" hidden>
       </div>
     </section>`;
 
   document.getElementById("exportar").onclick = exportar;
+  document.getElementById("importar").onclick = () =>
+    document.getElementById("arquivo").click();
+  document.getElementById("arquivo").onchange = async (ev) => {
+    const f = ev.target.files?.[0];
+    if (!f) return;
+    try {
+      const n = colecao.importar(JSON.parse(await f.text()));
+      alert(`${n} carta(s) somadas à coleção.`);
+      desenhar();
+    } catch (e) {
+      alert("Não consegui importar: " + e.message);
+    }
+    ev.target.value = "";
+  };
   document.getElementById("limpar").onclick = () => {
     if (confirm("Apagar a coleção inteira? Isso não pode ser desfeito.")) {
       colecao.limpar();
