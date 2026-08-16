@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
+import time
 import urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -37,19 +39,34 @@ BASE = ("https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/"
 MOEDAS = ("USD", "EUR", "JPY")
 
 
-def cotacao(moeda: str, dias: int = 10) -> dict | None:
+def cotacao(moeda: str, dias: int = 10, tentativas: int = 4) -> dict | None:
     """Ultima cotacao de venda publicada para a moeda.
 
     A janela de 10 dias existe porque o BCB nao publica em fim de semana
     nem feriado; pedir so o dia corrente devolveria vazio com frequencia.
+
+    Com backoff: o servico devolveu 503 nas tres moedas numa execucao de
+    madrugada, e sem retentativa isso derrubava o cambio inteiro.
     """
     hoje = date.today()
     ini = (hoje - timedelta(days=dias)).strftime("%m-%d-%Y")
     fim = hoje.strftime("%m-%d-%Y")
     url = (f"{BASE}?@moeda=%27{moeda}%27&@dataInicial=%27{ini}%27"
            f"&@dataFinalCotacao=%27{fim}%27&$format=json")
-    with urllib.request.urlopen(url, timeout=30) as r:
-        linhas = json.load(r)["value"]
+
+    ultimo = None
+    for n in range(tentativas):
+        try:
+            with urllib.request.urlopen(url, timeout=30) as r:
+                linhas = json.load(r)["value"]
+            break
+        except Exception as exc:  # noqa: BLE001
+            ultimo = exc
+            if n < tentativas - 1:
+                time.sleep((2 ** n) * 1.5 + random.random())
+    else:
+        raise ultimo  # type: ignore[misc]
+
     if not linhas:
         return None
 
@@ -87,9 +104,11 @@ def build(out: Path) -> None:
             print(f"  ! {moeda}: sem cotação na janela")
 
     if not payload["taxas"]:
-        # Sem taxa, a interface simplesmente nao mostra conversao. Melhor
-        # isso do que gravar um arquivo vazio que parece valido.
-        print("nenhuma taxa obtida — arquivo não gravado")
+        # Sem taxa, a interface simplesmente nao mostra conversao — ela ja
+        # trata fx ausente. Nao gravar arquivo vazio, e nao derrubar o
+        # processo: cambio indisponivel nao pode impedir a publicacao de
+        # preco, que e o dado principal.
+        print("nenhuma taxa obtida — arquivo não gravado, publicação segue sem conversão")
         return
 
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -73,7 +73,14 @@ jobs:
         run: |
           git fetch origin gh-pages --depth 1
           git worktree add /tmp/site gh-pages
-          cp web/data/prices.json web/data/prices.json.gz web/data/fx.json web/data/dashboard.json /tmp/site/data/
+          # Copia arquivo a arquivo e tolera ausência: uma indisponibilidade
+          # do Banco Central derrubou a publicação inteira, inclusive os
+          # preços que já estavam coletados. Se fx.json não veio, o que já
+          # está publicado continua valendo — a interface mostra a data da
+          # taxa, então cotação velha aparece velha.
+          for f in prices.json prices.json.gz fx.json dashboard.json numeros.json; do
+            if [ -f "web/data/$f" ]; then cp "web/data/$f" /tmp/site/data/; else echo "sem $f, mantendo o publicado"; fi
+          done
           cd /tmp/site
           git add data/
           git diff --staged --quiet && echo "nada mudou" && exit 0
