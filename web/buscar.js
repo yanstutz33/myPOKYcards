@@ -77,7 +77,7 @@ export function linhaHtml(i) {
   const id = catalogo.ids[i];
   const [nome, set, numero, raridade, regiao, , , caminho] = catalogo.meta[i];
   return `<button class="b-item" data-card="${esc(id)}">
-    ${caminho ? `<img alt="" loading="lazy" crossorigin="anonymous"
+    ${caminho ? `<img alt="" loading="lazy" decoding="async"
          src="${catalogo.cdn}/${esc(caminho)}/low.png">` : `<span class="b-semarte"></span>`}
     <span class="b-nome">${esc(nome)}</span>
     <span class="b-meta">${esc(set)} · ${esc(numero)}${

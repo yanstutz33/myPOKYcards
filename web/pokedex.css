@@ -1137,3 +1137,169 @@ body.com-ficha { overflow: hidden; }
   color: var(--ink-soft, #97A3B6);
   font-size: 0.85rem;
 }
+
+/* ============================================= HUD enxuta (revisão visual)
+   Medido no estado que importa — câmera ligada, 375x812: o conteúdo do
+   painel somava 461px numa área de 270px, e o botão "+ normal" aparecia
+   cortado pela metade. Painel cortado não lê como "role para ver": lê como
+   quebrado. O corte sai reduzindo conteúdo, não aumentando o painel, porque
+   a tela é da carta. */
+
+/* Quantidade: seletor de menos/mais em vez de quatro chips numa linha
+   inteira. Cabe ao lado dos botões, e passa de 4 quando o lote é grande. */
+.sheet .mults {
+  flex: 0 0 auto;
+  gap: 0;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+}
+.mult-pm {
+  min-width: 40px; min-height: 40px;
+  border: 0; background: transparent;
+  color: var(--carta-tinta);
+  font-size: 1.15rem; font-weight: 800; line-height: 1;
+}
+.mult-pm:disabled { opacity: 0.3; }
+.mult-n {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--carta-tinta);
+}
+
+/* Uma linha de metadados, não duas. */
+.sheet .hit-meta { gap: 0.2rem 0.4rem; font-size: 0.72rem; }
+.sheet .toque-dica { flex: 0 0 auto; }
+.sheet .valor { margin-top: 0.25rem; padding-top: 0.3rem; }
+.sheet .valor-num { font-size: 1.35rem; }
+.sheet .guardar { margin-top: 0.4rem; }
+.sheet .alts { margin-top: 0.35rem; }
+.sheet .alt { min-height: 36px; padding: 0.2rem 0.5rem; }
+
+/* Se ainda sobrar conteúdo, o corte precisa PARECER corte: uma sombra na
+   base diz "tem mais aqui" em vez de deixar um botão pela metade. */
+.sheet { position: relative; }
+.sheet::after {
+  content: "";
+  position: sticky;
+  bottom: 0; left: 0;
+  display: block;
+  height: 18px;
+  margin-top: -18px;
+  background: linear-gradient(transparent, rgba(8, 10, 14, 0.92));
+  pointer-events: none;
+}
+
+/* Desligar não pode parecer a lanterna: mesma forma, cor diferente. Precisa
+   estar AQUI porque pokedex.css é a última folha e venceria o scan.css. */
+.lanterna.desligar {
+  background: linear-gradient(180deg, #3A4150, #232833);
+  border-color: #12151C;
+  box-shadow: 0 4px 0 #12151C, 0 7px 14px rgba(0, 0, 0, 0.5);
+  color: #E9EFF7;
+}
+
+/* Lendo, a contagem de cartas sai da faixa: ela informa no primeiro
+   carregamento e depois vira ruído — e é o que forçava a navegação a
+   quebrar para uma segunda linha, custando 46px de visor o tempo todo. */
+body.lendo .topbar #statusText { display: none; }
+body.lendo .topbar { padding-top: calc(0.45rem + env(safe-area-inset-top)); padding-bottom: 0.45rem; }
+body.lendo .topbar .brand { font-size: 0.9rem; }
+body.lendo .topnav a { padding: 0.28rem 0.6rem; font-size: 0.7rem; }
+
+/* A linha de guardar não estava atravessando as duas colunas: ficava com
+   250px dos 308 disponíveis, e por isso o seletor de quantidade e os botões
+   de variante empilhavam em três linhas (141px). Atravessando, cabem numa
+   linha só. */
+.sheet .guardar { grid-column: 1 / -1; flex-wrap: nowrap; }
+.sheet .guardar-btn { flex: 1 1 0; min-width: 0; padding: 0 0.5rem; }
+.sheet .guardar-btn small { display: none; }   /* a contagem já vem no rodapé */
+.sheet .guardar-tem { flex: 1 0 100%; margin-top: 0.2rem; }
+
+/* A faixa somava 397px de conteúdo numa tela de 375 e quebrava em duas
+   linhas. Lendo, os espaços encolhem e ela cabe numa. */
+body.lendo .topbar { gap: 0.4rem; padding-left: 0.6rem; padding-right: 0.6rem; }
+body.lendo .topnav { gap: 0.28rem; }
+body.lendo .topbar .brand b { letter-spacing: 0; }
+
+/* O painel cabe agora; o teto sobe um pouco porque a faixa superior devolveu
+   43px ao encolher para uma linha. */
+body.lendo .sheet { max-height: 40dvh; }
+
+/* ------------------------------------- o painel acompanha a etapa da leitura
+   Mirando, o resultado ainda troca a cada 450 ms e a tela inteira serve para
+   enquadrar: o painel fica numa tira de identificação — nome, certeza e
+   preço, e nada mais. Guardar e escolher entre candidatas são decisões, e
+   decisão só existe depois que ele trava.
+
+   É a diferença entre 47% e 66% de câmera no momento em que a câmera é a
+   única coisa que importa. */
+body.lendo:not(.travado) .sheet .guardar,
+body.lendo:not(.travado) .sheet .alts,
+body.lendo:not(.travado) .sheet .bloco-det,
+body.lendo:not(.travado) .sheet .valor-src,
+body.lendo:not(.travado) .sheet .toque-dica { display: none; }
+
+body.lendo:not(.travado) .sheet { max-height: 26dvh; }
+body.lendo:not(.travado) .sheet .valor { margin-top: 0.15rem; padding-top: 0.25rem; }
+
+/* Travado, o painel abre para caber a decisão inteira. */
+body.lendo.travado .sheet { max-height: 42dvh; }
+
+/* E a tira ganha a dica de que há mais a um toque. */
+body.lendo:not(.travado) .sheet .hit-meta::after {
+  content: "toque na carta para tudo";
+  flex: 1 0 100%;
+  font-size: 0.68rem;
+  color: var(--carta-tinta-2);
+}
+
+/* A moldura-guia perdeu o tracejado. Ela existia quando o recorte ERA a
+   moldura e o encaixe precisava ser exato; com detecção de borda virou só
+   uma sugestão de onde apontar, e um retângulo pontilhado do tamanho da tela
+   lê como caixa vazia — dá a impressão de que falta algo ali. Ficam os quatro
+   cantos, que dizem a mesma coisa sem desenhar uma parede. */
+.frame::after { border: 0; }
+.corner { opacity: 0.75; }
+.stage.detectado .frame { opacity: 0; }
+
+/* ------------------------------------------------ o vazamento horizontal
+   Travado, "+ reverse", "100% CERTEZA" e "toque para ver tudo" apareciam
+   cortados na direita. Não era falta de espaço: é a regra do CSS Grid de que
+   uma faixa `1fr` não encolhe abaixo do conteúdo MÍNIMO dos seus filhos. A
+   linha de guardar, com `nowrap`, tinha mínimo maior que o painel e esticava
+   a faixa inteira para fora da caixa.
+
+   `minmax(0, 1fr)` é a forma canônica de dizer "pode encolher"; sem ela,
+   qualquer conteúdo largo que entre no painel volta a vazar. */
+.sheet .hit {
+  grid-template-columns: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.sheet .hit > * { min-width: 0; }
+
+/* Com a faixa livre para encolher, os botões cabem numa linha ao reduzir um
+   pouco o corpo — 124px do seletor + dois botões em ~264px de 308. */
+.sheet .guardar-btn { font-size: 0.8rem; padding: 0 0.45rem; }
+
+/* A tira de alternativas rola; não pode empurrar a largura do painel. */
+.sheet .alts { min-width: 0; max-width: 100%; }
+
+/* Os dois botões de variante estavam encostados um no outro. */
+.sheet .guardar { gap: 0.45rem; }
+.sheet .alts-titulo { color: var(--ink-soft); }
+
+/* A caixa da arte vive dentro de um flex container. Sem largura explícita ela
+   fica com largura de conteúdo, e o conteúdo é uma imagem pedindo `100%` da
+   própria caixa — uma referência circular que resolve em zero. Resultado:
+   figura 0x0, arte invisível, e o teste de "a imagem carregou?" dando
+   verdadeiro o tempo todo, porque a imagem carrega mesmo; ela só não tem
+   onde aparecer. */
+.ficha-arte-caixa {
+  width: min(260px, 100%);
+  flex: 0 0 auto;
+  align-self: center;
+}

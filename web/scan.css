@@ -401,3 +401,17 @@
 /* O contorno gira junto com a carta; a animação precisa acompanhar o
    transform, não só posição e tamanho. */
 .achado { transform-origin: center; will-change: transform; }
+
+/* ------------------------------------- com a câmera ligada, menos moldura
+   Do teste real: "ainda está preenchendo uma boa parte da tela". A barra
+   larga de "Desligar" ocupava ~10% da altura o tempo todo, para uma ação
+   quase nunca usada. Ela existe para LIGAR — momento em que não há nada na
+   tela para atrapalhar. Ligada, vira um botão do tamanho da lanterna. */
+body.lendo .acoes-base { display: none; }
+body.lendo #desligar { display: grid; }
+#desligar[hidden] { display: none; }
+.desligar { background: rgba(6, 8, 12, 0.8); }
+
+/* O painel encolhe junto: sem a barra embaixo, o teto pode ser menor sem
+   esconder nada — o conteúdo rola e a ficha tem tudo. */
+body.lendo .sheet { max-height: 34dvh; margin-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }

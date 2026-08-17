@@ -73,7 +73,7 @@ function irmasHtml(i) {
       const [nome, set, numero, , regiao, , , caminho] = ctx.catalog.meta[j];
       const p = ctx.prices[id]?.[0];
       return `<button class="ficha-irma" data-ir="${esc(id)}">
-        ${caminho ? `<img alt="" loading="lazy" crossorigin="anonymous"
+        ${caminho ? `<img alt="" loading="lazy" decoding="async"
              src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">` : ""}
         <span class="ir-nome">${esc(nome)}</span>
         <span class="ir-meta">${esc(set)} · ${esc(numero)} · ${regiao === "asia" ? "JA" : "INTL"}</span>
@@ -121,7 +121,7 @@ export function abrir(cardId) {
 
       <div class="ficha-corpo">
         ${caminho ? `<figure class="ficha-arte-caixa" data-arte="${esc(caminho)}">
-             <img class="ficha-arte" alt="${esc(nome)}" crossorigin="anonymous"
+             <img class="ficha-arte" alt="${esc(nome)}" decoding="async"
                   src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">
            </figure>` : `<p class="ficha-sem-arte">Sem arte para esta carta.</p>`}
 
@@ -153,6 +153,11 @@ export function abrir(cardId) {
           </dl>
         </section>
 
+        ${ctx.gradedHtml ? (() => {
+          const g = ctx.gradedHtml(cardId);
+          return g ? `<section class="ficha-bloco"><h3>Graduação</h3>${g}</section>` : "";
+        })() : ""}
+
         ${irmasHtml(i)}
       </div>
     </div>`;
@@ -183,6 +188,20 @@ export function abrir(cardId) {
  * é carregada em segundo plano e só substitui quando terminou de decodificar,
  * então a troca nunca deixa buraco na tela. Se não existir, ninguém percebe.
  */
+// NAO use crossorigin em imagem que e so para EXIBIR.
+//
+// Do teste em aparelho real: a arte nunca apareceu no iPhone, em nenhuma
+// tela, enquanto carregava em 100% de uma amostra de 240 cartas no
+// desktop. A causa esta no CDN: ele responde `Access-Control-Allow-Origin:
+// *`, mas NAO manda `Vary: Origin`. Sem esse `Vary`, o cache HTTP guarda
+// uma unica resposta para os dois tipos de requisicao; se a primeira que
+// entrou no cache foi sem CORS, toda requisicao com `crossorigin` depois
+// dela e rejeitada — e como o `Cache-Control` e `immutable` por um ano,
+// fica rejeitada para sempre naquele aparelho.
+//
+// `crossorigin` so e necessario para LER os pixels num canvas. Aqui a
+// imagem apenas aparece na tela, entao pedir CORS nao dava nada em troca e
+// transformava uma falha de cache em carta sem foto.
 function melhorarArte(raiz) {
   const caixa = raiz.querySelector(".ficha-arte-caixa");
   const img = caixa?.querySelector(".ficha-arte");
@@ -197,7 +216,6 @@ function melhorarArte(raiz) {
   if (img.complete) pintou();
 
   const grande = new Image();
-  grande.crossOrigin = "anonymous";
   grande.onload = () => {
     if (grande.naturalWidth > img.naturalWidth) img.src = grande.src;
   };

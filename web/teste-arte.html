@@ -44,15 +44,24 @@ const listaFalhas = document.getElementById("falhas");
 const AMOSTRA = Number(new URLSearchParams(location.search).get("n") || 300);
 const QUALIDADE = new URLSearchParams(location.search).get("q") || "low";
 const META = 0.90;
+// ?cors=1 repete o teste do jeito antigo, para comparar.
+const CORS = new URLSearchParams(location.search).get("cors") === "1";
 
 /* Carrega de verdade e diz se PINTOU. `naturalWidth` é o teste honesto:
    um `onload` pode disparar para uma resposta de erro decodificável, e um
    <img> com 0 de largura é exatamente o retângulo vazio que apareceu na
    tela do aparelho. */
-function carrega(url, msLimite = 15000) {
+function carrega(url, comCors, msLimite = 15000) {
   return new Promise((res) => {
     const i = new Image();
-    i.crossOrigin = "anonymous";
+    // O modo e o ponto do teste. O CDN responde `Access-Control-Allow-Origin:
+    // *` mas NAO manda `Vary: Origin`, entao o cache HTTP guarda uma resposta
+    // so para os dois tipos de requisicao. Se a que entrou primeiro foi sem
+    // CORS, toda requisicao com `crossorigin` depois dela e rejeitada — e o
+    // `Cache-Control: immutable` de um ano deixa isso permanente naquele
+    // aparelho. Foi assim que a arte nunca apareceu no iPhone e sempre
+    // apareceu aqui.
+    if (comCors) i.crossOrigin = "anonymous";
     const t = setTimeout(() => res({ ok: false, motivo: "estourou o tempo" }), msLimite);
     i.onload = () => {
       clearTimeout(t);
@@ -88,7 +97,7 @@ function carrega(url, msLimite = 15000) {
     const lote = itens.slice(k, k + LOTE);
     const rs = await Promise.all(lote.map(async (it) => {
       if (!it.caminho) return { it, r: { ok: false, motivo: "sem caminho no índice" } };
-      return { it, r: await carrega(`${cards.cdn}/${it.caminho}/${QUALIDADE}.png`) };
+      return { it, r: await carrega(`${cards.cdn}/${it.caminho}/${QUALIDADE}.png`, CORS) };
     }));
     for (const { it, r } of rs) {
       const g = porRegiao[it.regiao] ||= { n: 0, ok: 0 };
@@ -116,7 +125,8 @@ function carrega(url, msLimite = 15000) {
 
   verdict.innerHTML = `<span class="${cobertura >= META ? "ok" : "bad"}">
       ${(cobertura * 100).toFixed(1)}% das cartas amostradas pintaram a arte</span>
-      (qualidade <code>${QUALIDADE}</code>, meta ${META * 100}%).`;
+      (qualidade <code>${QUALIDADE}</code>, ${CORS ? "COM" : "sem"} crossorigin,
+      meta ${META * 100}%).`;
   if (falhas.length) {
     listaFalhas.innerHTML = `<b>Falhas (${falhas.length}):</b><br>` +
       falhas.slice(0, 40).map(f => `· ${f}`).join("<br>");

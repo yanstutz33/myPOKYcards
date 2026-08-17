@@ -33,6 +33,7 @@ const els = {
   diag: document.getElementById("diag"),
   lanterna: document.getElementById("lanterna"),
   audio: document.getElementById("audio"),
+  desligar: document.getElementById("desligar"),
   sheet: document.getElementById("sheet"),
 };
 
@@ -139,6 +140,7 @@ async function boot() {
       get prices() { return prices; },
       get fx() { return fx; },
       converter, corDaCarta, energiasHtml,
+      gradedHtml: (id) => gradedHtml(id, false),
     });
     ficha.ligarControles();
 
@@ -479,6 +481,10 @@ function travar(cardId, manual = false) {
   els.retomar.hidden = false;
   els.capturar.hidden = true;
   els.stage.classList.add("paused", "travado");
+  // O painel muda de tamanho conforme a etapa. Mirando, o resultado ainda
+  // esta trocando a cada leitura e a tela toda serve para enquadrar; travado,
+  // acabou a mira e o painel pode ocupar o espaco que a decisao exige.
+  document.body.classList.add("travado");
 
   const meta = catalog.meta[catalog.ids.indexOf(cardId)];
   const nome = meta?.[0] || cardId;
@@ -506,6 +512,7 @@ function destravar() {
   els.retomar.hidden = true;
   els.capturar.hidden = false;
   els.stage.classList.remove("paused", "travado");
+  document.body.classList.remove("travado");
   els.stage.style.removeProperty("--tipo");
   els.stage.querySelector(".travado-selo")?.remove();
   els.hint.textContent = "Aponte para a carta";
@@ -622,7 +629,7 @@ const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited"
  * seria pior que não ter.
  */
 let multiplicador = 1;
-const MULTIPLOS = [1, 2, 3, 4];
+const MULT_MAX = 20;
 
 function guardarHtml(cardId, variantes) {
   const uteis = (variantes || []).filter((v) => VARIANTES_UTEIS.includes(v));
@@ -640,9 +647,11 @@ function guardarHtml(cardId, variantes) {
     </button>`;
   }).join("");
 
-  const chips = MULTIPLOS.map((n) => `<button class="mult${
-      n === multiplicador ? " ativo" : ""}" data-mult="${n}"
-      aria-pressed="${n === multiplicador}">${n}×</button>`).join("");
+  const chips = `<button class="mult-pm" data-passo="-1"
+      aria-label="Menos uma cópia"${multiplicador <= 1 ? " disabled" : ""}>−</button>
+    <output class="mult-n" aria-live="polite">${multiplicador}×</output>
+    <button class="mult-pm" data-passo="1"
+      aria-label="Mais uma cópia"${multiplicador >= MULT_MAX ? " disabled" : ""}>+</button>`;
 
   return `<div class="guardar">
     <div class="mults" role="group" aria-label="Quantas cópias guardar por toque">${chips}</div>
@@ -731,7 +740,16 @@ function precoHtml(cardId, regiao) {
  */
 const LIMIAR_GRADUACAO_USD = 50;
 
-function gradedHtml(cardId) {
+/**
+ * Dica de graduação.
+ *
+ * `soSeVale` existe para a tela de leitura. Ali o bloco custava 32px de um
+ * painel de 270px para dizer "provavelmente não" — que é o caso da imensa
+ * maioria das cartas e não muda nada do que a pessoa vai fazer. Na tela de
+ * leitura ele só aparece quando a resposta é SIM, que é quando altera a
+ * decisão. A ficha mostra sempre, porque lá há espaço e quem abriu quer ler.
+ */
+function gradedHtml(cardId, soSeVale = false) {
   const mercados = prices[cardId] || [];
   if (!mercados.length) return "";
 
@@ -747,7 +765,8 @@ function gradedHtml(cardId) {
   if (base === null) return "";
 
   const vale = base >= LIMIAR_GRADUACAO_USD;
-  return `<details class="bloco-det graded">
+  if (soSeVale && !vale) return "";
+  return `<details class="bloco-det graded"${vale ? " open" : ""}>
     <summary>Vale graduar? <strong>${vale ? "provavelmente sim" : "provavelmente não"}</strong></summary>
     <p class="graded-nota">
       Vale <strong>US$ ${base.toFixed(2)}</strong> sem graduação${convertido ? " (convertido)" : ""}.
@@ -816,7 +835,7 @@ function cartaHtml(r, results) {
   return `<article class="hit top tocavel${incerto ? " incerto" : ""}${
         eFoil(raridade) ? " foil" : ""}${
         caminho ? " com-mini" : ""}" style="--tipo:${cor}" data-ficha="${escapeHtml(id)}">
-    ${caminho ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
+    ${caminho ? `<img class="miniatura" alt="" loading="lazy" decoding="async"
          src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
     <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
     <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>certeza</small></div>
@@ -847,7 +866,7 @@ function alternativasHtml(results) {
     </button>`;
   }).join("");
   return `<div class="alts">
-    <p class="alts-titulo">Não é essa? Toque na certa:</p>
+    <p class="alts-titulo">Não é essa?</p>
     ${itens}
   </div>`;
 }
@@ -867,7 +886,7 @@ function motivoSemPreco(cardId, regiao) {
  * dados da carta, impressões irmãs — mora na ficha, a um toque.
  */
 function detalhesHtml(cardId, regiao, results) {
-  return `${gradedHtml(cardId)}${avisoDeLimite(results)}`;
+  return `${gradedHtml(cardId, true)}${avisoDeLimite(results)}`;
 }
 
 function render(results) {
@@ -904,6 +923,8 @@ function carregarCarta(cardId) {
   if (!caminho) return Promise.reject(new Error("carta sem arte conhecida"));
   return new Promise((res, rej) => {
     const img = new Image();
+    // Este continua: o demo desenha a arte num canvas e le os pixels de
+    // volta para simular uma leitura. Sem CORS o canvas fica contaminado.
     img.crossOrigin = "anonymous";
     img.onload = () => res(img);
     img.onerror = () => rej(new Error("não foi possível carregar a arte"));
@@ -944,8 +965,10 @@ els.toggle.addEventListener("click", async () => {
     stopCamera();
     els.stage.classList.add("paused");
     els.stage.classList.remove("detectado", "travado");
+    document.body.classList.remove("travado");
     els.achado.hidden = true;
     els.barra.hidden = true;
+    document.body.classList.remove("lendo");
     els.toggle.textContent = "Ligar leitor";
     els.hint.textContent = "Câmera parada";
     som.somDesligou();
@@ -961,12 +984,20 @@ els.toggle.addEventListener("click", async () => {
   els.barra.hidden = false;
   els.capturar.hidden = false;
   els.retomar.hidden = true;
+  // Com a camera ligada, a barra larga de "Desligar" some e vira um botao
+  // pequeno ao lado da captura. Ela custava ~10% da altura da tela, o tempo
+  // todo, para uma acao que quase nunca se usa — e a tela toda e disputada
+  // pela unica coisa que importa aqui, que e ver a carta.
+  document.body.classList.add("lendo");
   els.toggle.textContent = "Desligar";
   els.hint.textContent = "Aponte para a carta";
   som.somLigou();
   manterTelaAcesa();
   tick();
 });
+
+// O botao pequeno so encaminha para o mesmo controle: um estado, um caminho.
+els.desligar.addEventListener("click", () => els.toggle.click());
 
 // `error` de <img> nao borbulha: precisa da fase de captura. Sem isto, a
 // arte que nao carrega deixa um retangulo escuro no miolo de papel — no
@@ -976,15 +1007,17 @@ els.results.addEventListener("error", (ev) => {
 }, true);
 
 els.results.addEventListener("click", (ev) => {
-  const chip = ev.target.closest(".mult");
+  const chip = ev.target.closest(".mult-pm");
   if (chip) {
-    multiplicador = Number(chip.dataset.mult);
+    multiplicador = Math.min(MULT_MAX,
+      Math.max(1, multiplicador + Number(chip.dataset.passo)));
     // Reescreve só os rótulos. Chamar render() aqui recomeçaria do resultado
     // corrente e desfaria a escolha de alternativa feita antes.
-    for (const c of els.results.querySelectorAll(".mult")) {
-      const ativo = Number(c.dataset.mult) === multiplicador;
-      c.classList.toggle("ativo", ativo);
-      c.setAttribute("aria-pressed", String(ativo));
+    const mostrador = els.results.querySelector(".mult-n");
+    if (mostrador) mostrador.textContent = `${multiplicador}×`;
+    for (const c of els.results.querySelectorAll(".mult-pm")) {
+      const passo = Number(c.dataset.passo);
+      c.disabled = passo < 0 ? multiplicador <= 1 : multiplicador >= MULT_MAX;
     }
     for (const b of els.results.querySelectorAll(".guardar-btn:not(.feito)")) {
       const mais = b.querySelector(".mais");
