@@ -1328,3 +1328,52 @@ body.lendo:not(.travado) .sheet .hit-meta::after {
   .sheet .hit-name { padding-right: 4.4rem; font-size: 0.98rem; }
   .sheet .hit-conf small { display: none; }   /* "certeza" some, o número fica */
 }
+
+/* `flex: 1 1 auto` cresce a partir de bases diferentes: "+ normal" ficava
+   com 123px e "+ reverse" com 254px na mesma linha. Base zero divide o
+   espaço igualmente; a largura mínima acima impede o colapso que a base zero
+   sozinha causaria. */
+.sheet .guardar-btn { flex: 1 1 0; }
+
+/* Os botões não tinham larguras diferentes por acaso: estavam em LINHAS
+   diferentes. Com `flex-wrap`, cabia [seletor][+ normal] na primeira e
+   [+ reverse] sozinho na segunda, ocupando a largura toda — daí 123px contra
+   254px. Flex decide isso por sobra de espaço, que muda a cada carta (uma
+   variante, duas, três) e a cada largura de tela.
+
+   Grade torna previsível: as colunas de botão são sempre iguais entre si.
+   Acima de 360px cabe tudo numa linha; abaixo, o seletor sobe para a sua e
+   os botões dividem a de baixo — em qualquer caso, simétricos. */
+.sheet .guardar {
+  display: grid;
+  grid-template-columns: auto repeat(auto-fit, minmax(84px, 1fr));
+  align-items: center;
+}
+.sheet .mults { justify-self: start; }
+.sheet .guardar-btn { width: 100%; }
+
+@media (max-width: 360px) {
+  .sheet .guardar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sheet .mults { grid-column: 1 / -1; }
+}
+
+/* `repeat(auto-fit, …)` não pode conviver com uma faixa `auto` na mesma
+   declaração — a regra inteira é descartada, e era por isso que os botões
+   continuavam em linhas separadas mesmo com a grade. Com contêiner próprio,
+   cada nível faz uma coisa só: a linha posiciona seletor e bloco de botões;
+   o bloco divide o espaço igualmente entre quantos botões existirem, sejam
+   dois (normal/reverse) ou três. */
+.sheet .guardar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.sheet .mults { flex: 0 0 auto; }
+.guardar-btns {
+  flex: 1 1 200px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 0.45rem;
+}
+.sheet .guardar-btn { width: auto; min-width: 0; }

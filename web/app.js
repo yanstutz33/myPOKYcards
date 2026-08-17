@@ -655,7 +655,7 @@ function guardarHtml(cardId, variantes) {
 
   return `<div class="guardar">
     <div class="mults" role="group" aria-label="Quantas cópias guardar por toque">${chips}</div>
-    ${botoes}
+    <div class="guardar-btns">${botoes}</div>
     ${jaTem ? `<span class="guardar-tem">${jaTem} desta carta na coleção</span>` : ""}
   </div>`;
 }
