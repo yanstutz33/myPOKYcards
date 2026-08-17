@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>myPOKYcards · Cobertura de arte</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 0.3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.2rem; max-width:78ch; }
+    table { border-collapse:collapse; width:100%; max-width:760px; font-size:0.9rem; }
+    th,td { text-align:left; padding:0.45rem 0.7rem; border-bottom:1px solid #263041; }
+    th { font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:0.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    #verdict { margin-top:1.2rem; padding:1rem 1.2rem; border-radius:8px; max-width:760px;
+               border:1px solid #263041; background:#10151E; }
+    #falhas { margin-top:1rem; max-width:760px; font-size:0.8rem; color:#F0788A; }
+  </style>
+</head>
+<body>
+  <h1>Cobertura de arte: quantas cartas mostram foto de verdade</h1>
+  <p class="sub">
+    Do teste em aparelho real: "tem muita carta ficando preta". As URLs
+    respondem 200 quando testadas por fora, então a pergunta que importa não é
+    se o arquivo existe — é se ele <em>chega e pinta</em> no navegador, que é
+    onde o <code>crossorigin</code>, o tamanho do arquivo e a rede do celular
+    entram. Aqui as imagens são carregadas de verdade, uma a uma, e contadas.
+    A meta declarada é 90%.
+  </p>
+  <table id="out">
+    <thead><tr><th>Região</th><th>Testadas</th><th>Pintaram</th><th>Falharam</th><th>Cobertura</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">rodando…</div>
+  <div id="falhas"></div>
+
+<script type="module">
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+const listaFalhas = document.getElementById("falhas");
+
+const AMOSTRA = Number(new URLSearchParams(location.search).get("n") || 300);
+const QUALIDADE = new URLSearchParams(location.search).get("q") || "low";
+const META = 0.90;
+
+/* Carrega de verdade e diz se PINTOU. `naturalWidth` é o teste honesto:
+   um `onload` pode disparar para uma resposta de erro decodificável, e um
+   <img> com 0 de largura é exatamente o retângulo vazio que apareceu na
+   tela do aparelho. */
+function carrega(url, msLimite = 15000) {
+  return new Promise((res) => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    const t = setTimeout(() => res({ ok: false, motivo: "estourou o tempo" }), msLimite);
+    i.onload = () => {
+      clearTimeout(t);
+      res(i.naturalWidth > 0
+        ? { ok: true, bytes: null, w: i.naturalWidth }
+        : { ok: false, motivo: "carregou com largura zero" });
+    };
+    i.onerror = () => { clearTimeout(t); res({ ok: false, motivo: "erro de rede ou CORS" }); };
+    i.src = url;
+  });
+}
+
+(async () => {
+  const cards = await fetch("data/cards.json").then(r => r.json());
+  const n = cards.count;
+
+  // Amostra determinística e espalhada pelo índice inteiro: pegar as N
+  // primeiras leria um punhado de sets e descreveria aqueles, não o catálogo.
+  const passo = Math.max(1, Math.floor(n / AMOSTRA));
+  const itens = [];
+  for (let i = 0; i < n && itens.length < AMOSTRA; i += passo) {
+    itens.push({ id: cards.ids[i], caminho: cards.meta[i][7], regiao: cards.meta[i][4] });
+  }
+
+  const porRegiao = {};
+  const falhas = [];
+  let feitos = 0;
+
+  // Em lotes: 300 imagens de uma vez estrangulam a conexão e o teste passaria
+  // a medir a fila do navegador em vez da disponibilidade da arte.
+  const LOTE = 12;
+  for (let k = 0; k < itens.length; k += LOTE) {
+    const lote = itens.slice(k, k + LOTE);
+    const rs = await Promise.all(lote.map(async (it) => {
+      if (!it.caminho) return { it, r: { ok: false, motivo: "sem caminho no índice" } };
+      return { it, r: await carrega(`${cards.cdn}/${it.caminho}/${QUALIDADE}.png`) };
+    }));
+    for (const { it, r } of rs) {
+      const g = porRegiao[it.regiao] ||= { n: 0, ok: 0 };
+      g.n++;
+      if (r.ok) g.ok++; else falhas.push(`${it.id} (${it.regiao}) — ${r.motivo}`);
+    }
+    feitos += lote.length;
+    verdict.textContent = `rodando… ${feitos}/${itens.length}`;
+  }
+
+  let totN = 0, totOk = 0;
+  tbody.innerHTML = "";
+  for (const [reg, g] of Object.entries(porRegiao)) {
+    totN += g.n; totOk += g.ok;
+    const cob = g.ok / g.n;
+    tbody.insertAdjacentHTML("beforeend", `<tr>
+      <td>${reg}</td><td>${g.n}</td><td>${g.ok}</td><td>${g.n - g.ok}</td>
+      <td class="${cob >= META ? "ok" : "bad"}">${(cob * 100).toFixed(1)}%</td></tr>`);
+  }
+  const cobertura = totOk / totN;
+  tbody.insertAdjacentHTML("beforeend", `<tr>
+    <td><b>total</b></td><td><b>${totN}</b></td><td><b>${totOk}</b></td>
+    <td><b>${totN - totOk}</b></td>
+    <td class="${cobertura >= META ? "ok" : "bad"}"><b>${(cobertura * 100).toFixed(1)}%</b></td></tr>`);
+
+  verdict.innerHTML = `<span class="${cobertura >= META ? "ok" : "bad"}">
+      ${(cobertura * 100).toFixed(1)}% das cartas amostradas pintaram a arte</span>
+      (qualidade <code>${QUALIDADE}</code>, meta ${META * 100}%).`;
+  if (falhas.length) {
+    listaFalhas.innerHTML = `<b>Falhas (${falhas.length}):</b><br>` +
+      falhas.slice(0, 40).map(f => `· ${f}`).join("<br>");
+  }
+})().catch(e => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>

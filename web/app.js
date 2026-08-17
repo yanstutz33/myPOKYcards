@@ -34,42 +34,7 @@ const els = {
   lanterna: document.getElementById("lanterna"),
   audio: document.getElementById("audio"),
   sheet: document.getElementById("sheet"),
-  hero: document.getElementById("hero"),
-  heroNum: document.getElementById("heroNum"),
-  heroSub: document.getElementById("heroSub"),
 };
-
-/**
- * O valor sobre a câmera.
- *
- * Fica separado de `render` porque muda em momento diferente: o painel se
- * refaz a cada leitura, e o destaque só faz sentido quando existe uma carta
- * escolhida. Sem cotação ele mostra o motivo em corpo menor — nunca some e
- * nunca vira "R$ 0,00", que seria afirmar um preço que não temos.
- */
-function destacarValor(r) {
-  if (!r) {
-    els.hero.hidden = true;
-    return;
-  }
-  const id = catalog.ids[r.i];
-  const regiao = catalog.meta[r.i][4];
-  const m = precoDestaque(id);
-  els.hero.hidden = false;
-  els.hero.classList.toggle("sem", !m);
-  if (m) {
-    els.heroNum.textContent = `${SIMBOLO[m.c] || m.c} ${m.ref.toFixed(2)}`;
-    // O destaque leva o valor nativo E a conversão: são as duas coisas que se
-    // quer de relance. A procedência completa (mercado, idade da cotação)
-    // continua no painel, que é onde se lê com calma.
-    els.heroSub.innerHTML =
-      `${converter(m.ref, m.c)}<span class="hero-fonte">${
-        escapeHtml(m.v)} · ${escapeHtml(m.f)}</span>`;
-  } else {
-    els.heroNum.textContent = motivoSemPreco(id, regiao);
-    els.heroSub.textContent = "";
-  }
-}
 
 /**
  * Publica a altura real da faixa superior.
@@ -90,7 +55,6 @@ addEventListener("orientationchange", medirTopbar);
 /** Sem resultado o painel sai da tela inteira e a câmera fica com tudo. */
 function painelVazio(vazio) {
   els.sheet.classList.toggle("vazio", vazio);
-  if (vazio) els.hero.hidden = true;
 }
 
 let trilha = null;        // MediaStreamTrack de vídeo
@@ -153,6 +117,12 @@ async function boot() {
     worker.onmessage = onWorkerMessage;
     worker.onerror = (e) => fatal("Falha no worker: " + e.message);
 
+    // O botao narra o proprio estado. Cinza escrito "Ligar leitor" com um
+    // "carregando..." discreto no canto foi lido, no teste real, como camera
+    // bloqueada — a conclusao mais razoavel diante daquela tela.
+    els.toggle.textContent = "Baixando o índice…";
+    setStatus("baixando índice…");
+
     const [binRes, jsonRes] = await Promise.all([
       fetch("data/index.bin"),
       fetch("data/cards.json"),
@@ -160,12 +130,10 @@ async function boot() {
     if (!binRes.ok || !jsonRes.ok) {
       throw new Error("índice não encontrado — rode export_web_index.py");
     }
+    els.toggle.textContent = "Preparando o leitor…";
+    setStatus("preparando…");
     const buffer = await binRes.arrayBuffer();
     catalog = await jsonRes.json();
-    // Preço é opcional por desenho: o leitor tem que funcionar sem ele, e
-    // dizer que não tem, em vez de quebrar ou mostrar zero.
-    prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
-    fx = await fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
     ficha.configurar({
       get catalog() { return catalog; },
       get prices() { return prices; },
@@ -173,16 +141,50 @@ async function boot() {
       converter, corDaCarta, energiasHtml,
     });
     ficha.ligarControles();
+
+    // O leitor libera AQUI, com indice e catalogo. O preco vem depois.
     worker.postMessage({ type: "load", buffer }, [buffer]);
+    carregarPrecos();
   } catch (err) {
     fatal(err.message);
   }
+}
+
+/**
+ * Preco em segundo plano.
+ *
+ * O comentario aqui dizia ha muito tempo que "preco e opcional por desenho:
+ * o leitor tem que funcionar sem ele". O codigo fazia o contrario: dava
+ * `await` em prices.json antes de entregar o indice ao worker, e o botao
+ * "Ligar leitor" so saia do cinza depois disso.
+ *
+ * O custo medido, em conexao boa: 1.226 KB de indice + 714 KB de catalogo
+ * seriam suficientes para ler carta, mas era preciso esperar mais ~800 KB de
+ * preco e o JSON.parse de 5,9 MB. Numa rede de celular dentro de uma loja
+ * isso vira dezenas de segundos com o botao apagado e a mensagem
+ * "carregando..." parada — indistinguivel de app quebrado. Foi exatamente
+ * assim que o primeiro teste em aparelho real terminou, com a conclusao
+ * razoavel de que a camera nao estava sendo liberada.
+ *
+ * Falhar aqui tambem nao pode derrubar o leitor: sem cotacao ele ainda diz
+ * QUE carta e, que e a metade que nao depende de mercado nenhum.
+ */
+let precosProntos = false;
+
+async function carregarPrecos() {
+  prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  fx = await fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  precosProntos = true;
+  // Se ja houve leitura enquanto o preco vinha, o painel mostrava "buscando
+  // preco"; agora tem o numero e precisa se refazer.
+  if (ultimosResultados) render(ultimosResultados);
 }
 
 function onWorkerMessage(ev) {
   const msg = ev.data;
   if (msg.type === "ready") {
     setStatus(`${msg.count.toLocaleString("pt-BR")} cartas`, "on");
+    els.toggle.textContent = "Ligar leitor";
     els.toggle.disabled = false;
     const q = new URLSearchParams(location.search);
     if (q.has("demo")) demo(q.get("demo") || undefined);
@@ -205,6 +207,7 @@ function onWorkerMessage(ev) {
 
 function fatal(message) {
   setStatus("erro", "err");
+  els.toggle.textContent = "Não carregou — recarregue a página";
   els.results.innerHTML =
     `<div class="nodata"><b>Não foi possível iniciar.</b><br>${escapeHtml(message)}</div>`;
     painelVazio(false);
@@ -803,7 +806,15 @@ function cartaHtml(r, results) {
        </div>`
     : `<div class="valor sem">${motivoSemPreco(id, regiao)}</div>`;
 
-  return `<article class="hit top tocavel${eFoil(raridade) ? " foil" : ""}${
+  // Abaixo do limiar de travamento, o leitor NAO tem resposta — tem palpite.
+  // Medido neste projeto: com a carta ausente do indice, a confianca do
+  // palpite errado fica entre 71% e 89%. Mostrar "Kingdra ex" com € 56,79 em
+  // corpo grande a 66% e afirmar o que nao se sabe, e foi o que aconteceu no
+  // teste real, com um Inteleon na mao. O numero encolhe e o aviso aparece.
+  const incerto = r.confidence < TRAVA_CONF;
+
+  return `<article class="hit top tocavel${incerto ? " incerto" : ""}${
+        eFoil(raridade) ? " foil" : ""}${
         caminho ? " com-mini" : ""}" style="--tipo:${cor}" data-ficha="${escapeHtml(id)}">
     ${caminho ? `<img class="miniatura" alt="" loading="lazy" crossorigin="anonymous"
          src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
@@ -815,6 +826,8 @@ function cartaHtml(r, results) {
       <span>${regiao === "asia" ? "JA" : "INTL"}</span>
       <span class="toque-dica">toque para ver tudo →</span>
     </div>
+    ${incerto ? `<p class="incerto-aviso">Não tenho certeza desta.
+        Confira o número impresso, ou toque para ver as outras candidatas.</p>` : ""}
     ${preco}
     ${guardarHtml(id, variantes)}
     ${detalhesHtml(id, regiao, results)}
@@ -840,6 +853,7 @@ function alternativasHtml(results) {
 }
 
 function motivoSemPreco(cardId, regiao) {
+  if (!precosProntos) return "buscando preço…";
   return digital(cardId)
     ? "Carta do TCG Pocket — jogo digital, sem mercado físico"
     : regiao === "asia"
@@ -865,7 +879,6 @@ function render(results) {
 
   els.results.innerHTML =
     cartaHtml(results[escolhido], results) + alternativasHtml(results);
-  destacarValor(results[escolhido]);
   painelVazio(false);
   ultimosResultados = results;
   if (ambiguo) els.results.classList.add("ambiguo");
@@ -954,6 +967,13 @@ els.toggle.addEventListener("click", async () => {
   manterTelaAcesa();
   tick();
 });
+
+// `error` de <img> nao borbulha: precisa da fase de captura. Sem isto, a
+// arte que nao carrega deixa um retangulo escuro no miolo de papel — no
+// teste real pareceu defeito de renderizacao.
+els.results.addEventListener("error", (ev) => {
+  if (ev.target?.classList?.contains("miniatura")) ev.target.style.display = "none";
+}, true);
 
 els.results.addEventListener("click", (ev) => {
   const chip = ev.target.closest(".mult");

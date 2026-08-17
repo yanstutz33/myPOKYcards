@@ -120,9 +120,10 @@ export function abrir(cardId) {
       </div>
 
       <div class="ficha-corpo">
-        ${caminho ? `<img class="ficha-arte" alt="${esc(nome)}" crossorigin="anonymous"
-             src="${ctx.catalog.cdn}/${esc(caminho)}/high.png"
-             onerror="this.src='${ctx.catalog.cdn}/${esc(caminho)}/low.png'">` : ""}
+        ${caminho ? `<figure class="ficha-arte-caixa" data-arte="${esc(caminho)}">
+             <img class="ficha-arte" alt="${esc(nome)}" crossorigin="anonymous"
+                  src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">
+           </figure>` : `<p class="ficha-sem-arte">Sem arte para esta carta.</p>`}
 
         <section class="ficha-bloco">
           <h3>Preço por mercado</h3>
@@ -158,7 +159,49 @@ export function abrir(cardId) {
 
   alvo.hidden = false;
   document.body.classList.add("com-ficha");
+  melhorarArte(alvo);
   document.getElementById("fecharFicha").focus();
+}
+
+/**
+ * Mostra `low` na hora e sobe para `high` só se a `high` existir de fato.
+ *
+ * A ficha pedia `high.png` direto, com queda para `low` no `onerror`. Duas
+ * coisas davam errado nisso, e as duas apareceram no teste com aparelho real
+ * como "carta preta":
+ *
+ *   * `high` NAO existe para boa parte do catálogo. Medido em
+ *     web/teste-arte.html, amostra espalhada pelo índice: `low` pinta em
+ *     100% das cartas, `high` em 81,7% — e só 75,6% nas internacionais,
+ *     porque os sets antigos (e-Card, EX, DP, HGSS, Platinum, B&W, XY) não
+ *     têm versão grande.
+ *   * mesmo quando existe, `high` é grande. Numa rede de celular a queda
+ *     para `low` só acontece DEPOIS de o download falhar, e até lá a tela
+ *     mostra um retângulo vazio — que é indistinguível de defeito.
+ *
+ * Invertido: `low` entra imediatamente e é o que garante os 100%. A `high`
+ * é carregada em segundo plano e só substitui quando terminou de decodificar,
+ * então a troca nunca deixa buraco na tela. Se não existir, ninguém percebe.
+ */
+function melhorarArte(raiz) {
+  const caixa = raiz.querySelector(".ficha-arte-caixa");
+  const img = caixa?.querySelector(".ficha-arte");
+  if (!caixa || !img) return;
+
+  // `naturalWidth` é o teste honesto de "pintou": `onload` pode disparar para
+  // resposta de erro decodificável, e uma imagem de largura zero é exatamente
+  // o retângulo vazio que apareceu no aparelho.
+  const pintou = () => caixa.classList.toggle("vazia", !img.naturalWidth);
+  img.addEventListener("load", pintou);
+  img.addEventListener("error", () => caixa.classList.add("vazia"));
+  if (img.complete) pintou();
+
+  const grande = new Image();
+  grande.crossOrigin = "anonymous";
+  grande.onload = () => {
+    if (grande.naturalWidth > img.naturalWidth) img.src = grande.src;
+  };
+  grande.src = `${ctx.catalog.cdn}/${caixa.dataset.arte}/high.png`;
 }
 
 export function fechar() {

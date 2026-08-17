@@ -971,3 +971,169 @@ body.com-ficha { overflow: hidden; }
 .passo h3 { font-family: var(--font-titulo); color: #fff; }
 .limite h3 { font-family: var(--font-titulo); color: var(--led-ambar); }
 .lp-tipos li { height: 7px; border-radius: 3px; }
+
+/* ================================================ painel compacto (v2)
+   Do teste em aparelho real: "está ficando na frente da carta". Estava
+   mesmo. O painel ocupava ~46% da tela e o valor flutuava sobre o meio do
+   visor, justamente onde a carta fica.
+
+   Duas causas, e as duas eram de layout, não de conteúdo:
+
+   1. TRÊS COLUNAS não cabem. Miniatura (52px) + selo de certeza (~80px,
+      "CERTEZA" em maiúsculas espaçadas) deixavam ~145px para o nome num
+      painel de 300px. "SVP Black Star Promos · 131" quebrava em quatro
+      linhas e empurrava todo o resto para baixo.
+   2. Tudo estava aberto ao mesmo tempo, embora a ficha completa já exista a
+      um toque de distância.
+
+   Agora são duas colunas, a certeza vira selo no canto, e o painel diz o
+   essencial: que carta é, quanto vale, e quanto disso é chute. */
+
+.sheet .hit {
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.6rem;
+  padding: 0.45rem 0.5rem;
+  align-items: start;
+}
+
+/* Certeza como selo, fora do fluxo: para de disputar largura com o nome. */
+.sheet .hit-conf {
+  position: absolute;
+  top: 0.55rem; right: 0.6rem;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  text-align: right;
+}
+.sheet .hit-conf b { display: inline; font-size: 0.95rem; }
+.sheet .hit-conf small { font-size: 0.55rem; }
+
+/* O nome não pode brigar com o selo: reserva o espaço dele. */
+.sheet .hit-name {
+  padding-right: 5.2rem;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.sheet .hit-meta {
+  padding-right: 0.2rem;
+  font-size: 0.74rem;
+  gap: 0.3rem 0.45rem;
+}
+.sheet .miniatura { width: 46px; margin: 0.15rem 0 0 0.15rem; }
+
+/* Valor: continua sendo o maior número do painel, agora sem cobrir carta
+   nenhuma. Ocupa as duas colunas para ganhar a largura toda. */
+.sheet .valor {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.4rem;
+}
+.sheet .valor-num { font-size: 1.5rem; }
+.sheet .valor-src { flex: 1 0 100%; font-size: 0.68rem; }
+
+/* Ações numa linha só. */
+.sheet .guardar { margin-top: 0.5rem; gap: 0.35rem; }
+.sheet .mults { flex: 0 0 auto; }
+.sheet .mult { min-width: 38px; min-height: 38px; font-size: 0.78rem; }
+.sheet .guardar-btn { min-height: 40px; font-size: 0.85rem; }
+
+/* Alternativas viram tira horizontal: três candidatos empilhados custavam
+   mais visor que o resultado em si. */
+.sheet .alts {
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+.sheet .alts::-webkit-scrollbar { display: none; }
+.sheet .alts-titulo { flex: 0 0 auto; align-self: center; margin: 0; font-size: 0.68rem; }
+.sheet .alt {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 40px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+/* Teto menor: o resultado inteiro cabe, e o que sobra é câmera. */
+.sheet { max-height: 38dvh; }
+
+/* --------------------------------------------- quando é palpite, não some
+   O selo de certeza no canto era discreto demais para o que informa. Abaixo
+   do limiar de travamento o painel inteiro muda de tom: o valor encolhe, a
+   moldura fica âmbar, e o aviso vem antes do preço — não depois. */
+.sheet .hit.incerto { background: linear-gradient(180deg, #E8B23C, #C8901F); }
+.sheet .hit.incerto .hit-conf b { color: #8A5A00; }
+
+.incerto-aviso {
+  grid-column: 1 / -1;
+  margin: 0.45rem 0 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(138, 90, 0, 0.14);
+  border: 1px solid rgba(138, 90, 0, 0.35);
+  color: #6B4500;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.sheet .hit.incerto .valor-num { font-size: 1.05rem; opacity: 0.75; }
+
+.miniatura { background: var(--carta-papel); }
+
+/* ------------------------------------------------- arte da ficha, sem buraco
+   O retângulo escuro que aparecia enquanto a imagem não vinha era
+   indistinguível de defeito. Agora a caixa se anuncia enquanto carrega e diz
+   o que houve se realmente não vier. */
+.ficha-arte-caixa {
+  position: relative;
+  margin: 0 auto;
+  max-width: 260px;
+  aspect-ratio: 63 / 88;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(110deg,
+    rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.05) 70%) var(--surface-2, #171B22);
+  background-size: 300% 100%;
+  animation: arte-esperando 1.4s ease-in-out infinite;
+}
+.ficha-arte-caixa:has(.ficha-arte[src]:not([src=""])) { animation-play-state: running; }
+@keyframes arte-esperando {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+.ficha-arte-caixa .ficha-arte {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  position: relative; z-index: 1;
+}
+
+/* Imagem que realmente não veio: texto, não retângulo mudo. */
+.ficha-arte-caixa.vazia { animation: none; }
+.ficha-arte-caixa.vazia::after {
+  content: "arte indisponível";
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft, #97A3B6);
+}
+.ficha-sem-arte {
+  margin: 0 0 0.8rem;
+  padding: 1rem;
+  text-align: center;
+  border-radius: 12px;
+  background: var(--surface-2, #171B22);
+  color: var(--ink-soft, #97A3B6);
+  font-size: 0.85rem;
+}
