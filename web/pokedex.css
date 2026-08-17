@@ -1313,3 +1313,18 @@ body.lendo:not(.travado) .sheet .hit-meta::after {
   body.lendo .topnav a { padding: 0.26rem 0.5rem; font-size: 0.68rem; }
   body.lendo.travado .sheet { max-height: 46dvh; }
 }
+
+/* Em 320px os botões de variante, com `nowrap` e `flex: 1 1 0`, encolhiam
+   abaixo do próprio texto e viravam "+ + nomrreverse" — dois rótulos
+   sobrepostos. Largura mínima real e permissão para quebrar: numa tela larga
+   continuam lado a lado, numa estreita descem para a linha de baixo. Botão
+   ilegível é pior que botão numa segunda linha. */
+.sheet .guardar { flex-wrap: wrap; }
+.sheet .guardar-btn { flex: 1 1 auto; min-width: 84px; }
+
+/* O nome reservava 5,2rem para o selo de certeza; em tela estreita isso
+   sobra e joga o nome para duas linhas sem necessidade. */
+@media (max-width: 360px) {
+  .sheet .hit-name { padding-right: 4.4rem; font-size: 0.98rem; }
+  .sheet .hit-conf small { display: none; }   /* "certeza" some, o número fica */
+}
