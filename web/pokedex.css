@@ -1469,3 +1469,85 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   .confere { padding: 0.35rem; gap: 0.35rem; }
   body.lendo.travado .sheet { max-height: 60dvh; }
 }
+
+/* =============================================== busca por cima do leitor
+   Para as 11.411 cartas (27,4%) que existem no catálogo e não têm imagem em
+   fonte nenhuma. Abre sobreposta em vez de navegar: sair da tela derruba a
+   câmera, e voltar exige pedir permissão e recarregar o índice de novo. */
+.busca-rapida {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  align-items: start;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(4px);
+  padding: 0.6rem;
+  padding-top: calc(0.6rem + env(safe-area-inset-top));
+}
+.busca-rapida[hidden] { display: none; }
+
+.br-caixa {
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  border-radius: 16px;
+  border: 3px solid var(--chassi-borda);
+  background: var(--casco);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.br-topo {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 60%);
+  border-bottom: 3px solid var(--chassi-borda);
+}
+#brCampo {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 1rem;
+}
+#brCampo::placeholder { color: rgba(255, 255, 255, 0.6); }
+.br-fechar {
+  flex: 0 0 auto;
+  width: 44px; min-height: 44px;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.br-nota {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+.br-lista { overflow-y: auto; padding: 0.4rem; }
+.br-vazio { padding: 1.2rem 0.7rem; text-align: center; color: var(--ink-soft); font-size: 0.9rem; }
+
+/* O atalho dentro do aviso de incerteza. */
+.buscar-manual {
+  display: block;
+  margin-top: 0.45rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 2px solid rgba(107, 69, 0, 0.5);
+  background: rgba(255, 255, 255, 0.55);
+  color: #5A3A00;
+  font-weight: 700;
+  font-size: 0.82rem;
+}

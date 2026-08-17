@@ -214,6 +214,17 @@ def run(cards_db: Path, out_db: Path, workers: int, quality: str,
     stats = {"ok": 0, "fail": 0}
     t0 = time.monotonic()
 
+    def marcar():
+        """Progresso e commit. Chamada com o lock ja tomado, pelos dois caminhos."""
+        n = stats["ok"] + stats["fail"]
+        if n % 200:
+            return
+        conn.commit()
+        taxa = n / max(time.monotonic() - t0, 1e-9)
+        eta = (len(todo) - n) / max(taxa, 1e-9) / 60
+        print(f"  {n}/{len(todo)}  ok={stats['ok']} fail={stats['fail']}  "
+              f"{taxa:.1f}/s  ETA {eta:.0f}min", flush=True)
+
     def work(row):
         card_id, region, local_id, set_id, serie = row
         idiomas = FALLBACK_LANGS.get(region, [LANG_BY_REGION.get(region, "en")])
@@ -239,6 +250,7 @@ def run(cards_db: Path, out_db: Path, workers: int, quality: str,
                 except sqlite3.OperationalError:
                     pass   # registrar a falha nao pode derrubar a rodada
                 stats["fail"] += 1
+                marcar()
             return
         with lock:
             conn.execute(
@@ -250,14 +262,7 @@ def run(cards_db: Path, out_db: Path, workers: int, quality: str,
             )
             conn.execute("DELETE FROM failures WHERE card_id = ?", (card_id,))
             stats["ok"] += 1
-        with lock:
-            n = stats["ok"] + stats["fail"]
-            if n % 200 == 0:
-                conn.commit()
-                rate = n / max(time.monotonic() - t0, 1e-9)
-                eta = (len(todo) - n) / max(rate, 1e-9) / 60
-                print(f"  {n}/{len(todo)}  ok={stats['ok']} fail={stats['fail']}  "
-                      f"{rate:.1f}/s  ETA {eta:.0f}min", flush=True)
+            marcar()
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         list(pool.map(work, todo))

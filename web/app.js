@@ -16,6 +16,7 @@ import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz,
          manterTelaAcesa, liberarTela, telaPresa, vibrar } from "./camera.js";
 import * as som from "./som.js";
 import * as ficha from "./ficha.js";
+import * as busca from "./buscar.js";
 
 const els = {
   video: document.getElementById("video"),
@@ -180,6 +181,9 @@ async function boot() {
       gradedHtml: (id) => gradedHtml(id, false),
     });
     ficha.ligarControles();
+    // A busca compartilha catalogo e precos com o leitor: um indice na
+    // memoria, nao dois.
+    busca.configurar(catalog, prices);
 
     // O leitor libera AQUI, com indice e catalogo. O preco vem depois.
     worker.postMessage({ type: "load", buffer }, [buffer]);
@@ -214,6 +218,9 @@ async function carregarPrecos() {
   prices = await fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   fx = await fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
   precosProntos = true;
+  // A busca guardou a referencia do objeto vazio do inicio; sem isto o
+  // desempate por preco nunca acontece e TCG Pocket volta a aparecer primeiro.
+  busca.atualizarPrecos(prices);
   // Se ja houve leitura enquanto o preco vinha, o painel mostrava "buscando
   // preco"; agora tem o numero e precisa se refazer.
   if (ultimosResultados) render(ultimosResultados);
@@ -902,7 +909,9 @@ function cartaHtml(r, results) {
     </div>
     ${comparacaoHtml(caminho)}
     ${incerto ? `<p class="incerto-aviso">Não tenho certeza desta.
-        Confira o número impresso, ou toque para ver as outras candidatas.</p>` : ""}
+        Confira o número impresso — ou a carta pode não ter imagem no catálogo,
+        e aí só a busca acha.
+        <button class="buscar-manual" type="button">Buscar pelo nome</button></p>` : ""}
     ${preco}
     ${guardarHtml(id, variantes)}
     ${detalhesHtml(id, regiao, results)}
@@ -1144,6 +1153,74 @@ async function lerDeFoto(arquivo) {
 }
 
 els.fotoInput.addEventListener("change", (ev) => lerDeFoto(ev.target.files?.[0]));
+
+/**
+ * Busca pelo nome, sem sair do leitor.
+ *
+ * Existe porque 11.411 cartas do catalogo (27,4%) NAO tem imagem em fonte
+ * nenhuma — quase todas asiaticas, mas 1.804 internacionais, e foi
+ * exatamente uma delas que apareceu no teste real: mep-047, Cyndaquil, que
+ * existe com nome, numero e preco e simplesmente nao pode ser reconhecida por
+ * foto. Sem esta saida o leitor tinha um unico caminho — devolver o vizinho
+ * mais parecido — e a pessoa ficava sem alternativa.
+ *
+ * Abre por cima em vez de navegar para outra tela: sair do leitor derruba a
+ * camera, e voltar exige pedir permissao e recarregar o indice.
+ */
+const brEls = {
+  raiz: document.getElementById("buscaRapida"),
+  campo: document.getElementById("brCampo"),
+  lista: document.getElementById("brLista"),
+  fechar: document.getElementById("brFechar"),
+};
+
+function abrirBusca(termo = "") {
+  brEls.raiz.hidden = false;
+  document.body.classList.add("com-busca");
+  brEls.campo.value = termo;
+  desenharBusca();
+  brEls.campo.focus();
+}
+
+function fecharBusca() {
+  brEls.raiz.hidden = true;
+  document.body.classList.remove("com-busca");
+}
+
+function desenharBusca() {
+  const achados = busca.buscar(brEls.campo.value, 24);
+  if (!achados.length) {
+    brEls.lista.innerHTML = brEls.campo.value.trim().length < 2
+      ? `<p class="br-vazio">Digite pelo menos duas letras.</p>`
+      : `<p class="br-vazio">Nada com esse nome no catálogo.</p>`;
+    return;
+  }
+  brEls.lista.innerHTML = achados.map((i) => busca.linhaHtml(i)).join("");
+}
+
+brEls.campo.addEventListener("input", desenharBusca);
+brEls.fechar.addEventListener("click", fecharBusca);
+brEls.raiz.addEventListener("click", (ev) => {
+  if (ev.target === brEls.raiz) fecharBusca();
+});
+addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape" && !brEls.raiz.hidden) fecharBusca();
+});
+
+// Um toque no resultado abre a ficha, de onde da para guardar — o mesmo
+// destino do resultado da camera, entao nao ha dois caminhos a manter.
+brEls.lista.addEventListener("click", (ev) => {
+  const alvo = ev.target.closest("[data-card]");
+  if (!alvo) return;
+  fecharBusca();
+  ficha.abrir(alvo.dataset.card);
+});
+
+els.results.addEventListener("click", (ev) => {
+  if (!ev.target.closest(".buscar-manual")) return;
+  ev.stopPropagation();          // nao abrir a ficha do palpite errado
+  abrirBusca();
+});
 
 // `error` de <img> nao borbulha: precisa da fase de captura. Sem isto, a
 // arte que nao carrega deixa um retangulo escuro no miolo de papel — no

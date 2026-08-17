@@ -126,6 +126,23 @@
 
   </div><!-- /base-stack -->
 
+  <!-- Saida para as 11.411 cartas do catalogo que NAO tem imagem em fonte
+       nenhuma (27,4%): elas existem, tem nome e preco, e simplesmente nao
+       podem ser reconhecidas por foto. Sem isto o leitor so tinha um caminho
+       — chutar o vizinho mais parecido — e a pessoa ficava sem saida. -->
+  <div class="busca-rapida" id="buscaRapida" hidden>
+    <div class="br-caixa" role="dialog" aria-modal="true" aria-label="Buscar carta pelo nome">
+      <header class="br-topo">
+        <input type="search" id="brCampo" placeholder="Nome da carta, expansão ou número"
+               autocomplete="off" enterkeyhint="search" aria-label="Buscar carta">
+        <button class="br-fechar" id="brFechar" aria-label="Fechar busca">✕</button>
+      </header>
+      <p class="br-nota">Nem toda carta pode ser reconhecida por foto — 27% do
+        catálogo não tem imagem em fonte nenhuma. Aqui elas aparecem.</p>
+      <div class="br-lista" id="brLista"></div>
+    </div>
+  </div>
+
   <div class="ficha" id="ficha" hidden></div>
 
   <script type="module" src="app.js"></script>

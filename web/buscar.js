@@ -91,3 +91,19 @@ export function configurar(cat, prc) {
   precos = prc;
   construirIndice();
 }
+
+/**
+ * Troca a tabela de precos sem refazer o indice.
+ *
+ * Necessario porque na tela de leitura o preco chega DEPOIS: o leitor libera
+ * assim que o indice carrega e busca a cotacao em segundo plano. `configurar`
+ * guarda a referencia recebida, entao sem isto a busca ficava com o objeto
+ * vazio do inicio — e o desempate por preco, que existe justamente para nao
+ * jogar TCG Pocket na frente, nunca acontecia.
+ *
+ * Refazer o indice aqui seria 30 mil strings normalizadas de novo para uma
+ * informacao que nao participa dele.
+ */
+export function atualizarPrecos(prc) {
+  precos = prc || {};
+}
