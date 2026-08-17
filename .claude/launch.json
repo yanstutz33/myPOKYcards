@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "yami-web",
+      "name": "poky-web",
       "runtimeExecutable": "python",
       "runtimeArgs": [
         "pipeline/servir.py"

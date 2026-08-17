@@ -1,12 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
-  <rect width="192" height="192" fill="#06080C"/>
-  <rect width="192" height="192" rx="34" fill="#06080C"/>
-  <g transform="translate(96 96) scale(0.72) translate(-96 -96)">
-  <rect x="58" y="34" width="76" height="106" rx="9"
-        fill="none" stroke="#3FE0D0" stroke-width="7"/>
-  <path d="M46 62V44a10 10 0 0 1 10-10h18M146 62V44a10 10 0 0 0-10-10h-18
-           M46 130v18a10 10 0 0 0 10 10h18M146 130v18a10 10 0 0 1-10 10h-18"
-        fill="none" stroke="#3FE0D0" stroke-width="8" stroke-linecap="round"/>
-  <rect x="58" y="84" width="76" height="5" fill="#3FE0D0" opacity=".85"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img"
+     aria-label="myPOKYcards">
+  <!-- Versao maskable: o Android recorta este icone na forma que o aparelho
+       usa (circulo, squircle, gota). Duas diferencas obrigatorias em relacao
+       ao icone normal:
+
+         1. Fundo sangrando ate a borda, SEM canto arredondado — o recorte e
+            do sistema, e canto proprio aparece como falha dentro da mascara.
+         2. Todo o desenho dentro da "zona segura": o circulo central de 80%
+            da largura. Fora dali o recorte come. Por isso a lente aqui e
+            menor que a do icone normal.
+
+       Sem essas duas coisas o atalho sai com a borda cortada ou com o
+       desenho decepado — o tipo de defeito que so aparece no aparelho de
+       quem instalou, nunca em quem desenvolve. -->
+  <defs>
+    <linearGradient id="mchassi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9483C"/>
+      <stop offset=".55" stop-color="#B0241C"/>
+      <stop offset="1" stop-color="#6E140F"/>
+    </linearGradient>
+    <linearGradient id="mlente" x1=".25" y1="0" x2=".75" y2="1">
+      <stop offset="0" stop-color="#5FA0E8"/>
+      <stop offset=".5" stop-color="#2C6FC9"/>
+      <stop offset="1" stop-color="#17427C"/>
+    </linearGradient>
+    <linearGradient id="mpapel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF6E9"/>
+      <stop offset="1" stop-color="#E4DCC6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="192" height="192" fill="url(#mchassi)"/>
+
+  <circle cx="96" cy="96" r="48" fill="#0B1A2E"/>
+  <circle cx="96" cy="96" r="42" fill="url(#mlente)"/>
+
+  <g transform="rotate(-9 96 96)">
+    <rect x="77" y="66" width="38" height="54" rx="5" fill="#E3BE3C"/>
+    <rect x="82" y="71" width="28" height="33" rx="2.5" fill="url(#mpapel)"/>
+    <rect x="82" y="108" width="28" height="7" rx="2" fill="#F7F0DC"
+          opacity=".92"/>
   </g>
+
+  <path d="M64 70a42 42 0 0 1 49-11 42 42 0 0 0-55 35z" fill="#A8D8FF"
+        opacity=".55"/>
 </svg>

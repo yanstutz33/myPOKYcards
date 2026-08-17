@@ -7,6 +7,11 @@
  * ruído. Os pontos sensíveis estão marcados abaixo.
  */
 
+// Layout do index.bin que este leitor sabe ler. Precisa acompanhar
+// VERSION em pipeline/export_web_index.py e FORMATO_DADOS em sw.js — os
+// três são checados juntos por um teste de invariante.
+const FORMATO = 1;
+
 const FIELDS = 6; // phash, dhash, ahash, dhash_r, dhash_g, dhash_b
 const WEIGHTS = [1.0, 1.0, 0.4, 0.4, 0.4, 0.4];
 const MAX_DIST = WEIGHTS.reduce((a, b) => a + b, 0) * 64;
@@ -171,6 +176,19 @@ self.onmessage = (ev) => {
     );
     if (magic !== "YTCG") {
       self.postMessage({ type: "error", message: "index.bin inválido" });
+      return;
+    }
+    // A assinatura já era conferida; a VERSÃO não era, e é ela que pega o
+    // caso perigoso. Assinatura certa com layout diferente não dá erro:
+    // dá reconhecimento errado, silencioso, que parece "o leitor piorou".
+    // Acontece de verdade quando o arquivo vem do cache offline e o código
+    // já é novo. Melhor recusar e pedir recarga do que responder besteira.
+    const versao = view.getUint16(4, true);
+    if (versao !== FORMATO) {
+      self.postMessage({
+        type: "error",
+        message: `índice em formato v${versao}, este leitor espera v${FORMATO} — recarregue a página`,
+      });
       return;
     }
     count = view.getUint32(6, true);

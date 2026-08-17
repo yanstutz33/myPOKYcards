@@ -17,9 +17,31 @@
  * para guardar.
  */
 
+/* As duas versões são SEPARADAS de propósito — e essa é a correção mais
+ * importante deste arquivo.
+ *
+ * `VERSAO` é carimbada pelo deploy com o hash do commit, para que código
+ * novo nunca seja servido de um cache velho. Enquanto o cache de DADOS
+ * usava a mesma constante, todo deploy renomeava os dois, o `activate`
+ * apagava o que não batia, e o aparelho rebaixava 2,5 MB de índice.
+ *
+ * O detalhe que transformava isso em custo diário: o robô de preço publica
+ * TODO DIA. Ou seja, todo dia o usuário rebaixava `index.bin` (1,39 MB) e
+ * `cards.json` — arquivos que praticamente nunca mudam — para receber a
+ * atualização de `prices.json`. Exatamente o oposto do que o comentário
+ * lá em cima diz que a estratégia faz.
+ *
+ * `FORMATO_DADOS` muda na mão, só quando o LAYOUT dos arquivos muda, e é
+ * amarrado ao `VERSION` de `export_web_index.py` por um teste de
+ * invariante — cache velho com formato novo é bug silencioso, o tipo caro.
+ *
+ * A frescura do dado não depende dessa versão: o `fetch` abaixo responde do
+ * cache e revalida pela rede, então preço novo entra na abertura seguinte. */
 const VERSAO = "v1";
-const CACHE_APP = `yami-app-${VERSAO}`;
-const CACHE_DADOS = `yami-dados-${VERSAO}`;
+const FORMATO_DADOS = "1";
+
+const CACHE_APP = `poky-app-${VERSAO}`;
+const CACHE_DADOS = `poky-dados-${FORMATO_DADOS}`;
 
 const ESSENCIAIS = [
   "./", "./index.html", "./style.css", "./tema.css", "./scan.css",
@@ -29,8 +51,10 @@ const ESSENCIAIS = [
   "./buscar.html", "./buscar.js", "./busca-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
   "./sobre.html", "./sobre.js", "./sobre.css",
-  "./pokedex.css", "./scan.css", "./pwa.js",
-  "./manifest.json", "./icone.svg",
+  "./pokedex.css", "./pwa.js",
+  // O ícone maskable é o que o Android usa na tela de início. Faltava aqui:
+  // instalar o app sem sinal deixava o atalho sem ícone próprio.
+  "./manifest.json", "./icone.svg", "./icone-maskable.svg",
 ];
 
 self.addEventListener("install", (ev) => {

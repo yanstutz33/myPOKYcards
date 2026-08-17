@@ -13,6 +13,7 @@ Roda sem dependência externa:
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import sys
 from pathlib import Path
@@ -247,13 +248,90 @@ def testar_javascript() -> None:
            ", ".join(problemas[:6]))
 
 
+def testar_formato_do_indice() -> None:
+    """A versao do index.bin declarada em tres lugares tem que bater.
+
+    Quem escreve o arquivo (export_web_index), quem le (matcher.worker) e
+    quem decide guardar ou jogar fora o cache offline (sw) carregam cada um
+    o seu numero de formato. Se sairem de sincronia o sintoma nao e erro: e
+    leitor devolvendo carta errada com confianca alta, porque assinatura
+    certa e layout diferente passa pela unica checagem que existia.
+
+    Numero baixo demais no sw.js tem o efeito oposto e igualmente ruim: o
+    aparelho fica com um indice antigo para sempre.
+    """
+    print("\nFORMATO DO INDICE")
+
+    def constante(caminho: str, padrao: str) -> int | None:
+        m = re.search(padrao, (RAIZ / caminho).read_text(encoding="utf-8"),
+                      re.M)   # os tres estao em inicio de linha, nao do arquivo
+        return int(m.group(1)) if m else None
+
+    achados = {
+        "export_web_index.py": constante("pipeline/export_web_index.py",
+                                         r"^VERSION\s*=\s*(\d+)"),
+        "matcher.worker.js": constante("web/matcher.worker.js",
+                                       r"^const FORMATO\s*=\s*(\d+)"),
+        "sw.js": constante("web/sw.js",
+                           r'^const FORMATO_DADOS\s*=\s*"(\d+)"'),
+    }
+    ausentes = [k for k, v in achados.items() if v is None]
+    checar(not ausentes, "os tres declaram a versao do formato",
+           f"nao encontrei em: {ausentes}")
+    if ausentes:
+        return
+    checar(len(set(achados.values())) == 1,
+           "escritor, leitor e cache concordam na versao do formato",
+           " != ".join(f"{k}={v}" for k, v in achados.items()))
+
+    # O cache de dados NAO pode ser versionado pelo commit: o robo de preco
+    # publica diariamente, e isso obrigaria o aparelho a rebaixar o indice
+    # inteiro todo dia para receber so o arquivo de preco.
+    sw = (RAIZ / "web" / "sw.js").read_text(encoding="utf-8")
+    m = re.search(r"const CACHE_DADOS\s*=\s*`[^`]*\$\{(\w+)\}", sw)
+    checar(m is not None and m.group(1) == "FORMATO_DADOS",
+           "cache de dados versionado pelo formato, nao pelo commit",
+           f"usa ${{{m.group(1)}}}" if m else "expressao nao reconhecida")
+
+
+def testar_precache() -> None:
+    """Tudo que o sw promete guardar precisa existir e ser servido.
+
+    Arquivo listado e inexistente vira falha silenciosa: o `catch(() => {})`
+    do install engole, e o app so quebra offline, no balcao da loja, que e
+    exatamente onde ninguem consegue depurar.
+    """
+    print("\nPRECACHE OFFLINE")
+    web = RAIZ / "web"
+    sw = (web / "sw.js").read_text(encoding="utf-8")
+    bloco = re.search(r"const ESSENCIAIS = \[(.*?)\];", sw, re.S)
+    checar(bloco is not None, "sw.js declara a lista de essenciais")
+    if not bloco:
+        return
+
+    listados = [x for x in re.findall(r'"\./([^"]*)"', bloco.group(1)) if x]
+    sumidos = [x for x in listados if not (web / x).is_file()]
+    checar(not sumidos, "todo arquivo do precache existe em web/", str(sumidos))
+
+    repetidos = sorted({x for x in listados if listados.count(x) > 1})
+    checar(not repetidos, "nenhum arquivo listado duas vezes", str(repetidos))
+
+    # Toda tela que da para abrir tem que estar guardada. Uma pagina fora da
+    # lista vira tela branca offline, sem aviso nenhum.
+    telas = {p.name for p in web.glob("*.html")} - {"selftest.html"}
+    fora = sorted(telas - set(listados))
+    checar(not fora, "toda tela navegavel esta no precache", str(fora))
+
+
 if __name__ == "__main__":
-    print("Invariantes do YAMI-TCG")
+    print("Invariantes do myPOKYcards")
     print("=" * 60)
     testar_catalogo()
     testar_indice()
     testar_precos()
     testar_traducao_variante()
+    testar_formato_do_indice()
+    testar_precache()
     testar_javascript()
 
     print("\n" + "=" * 60)
