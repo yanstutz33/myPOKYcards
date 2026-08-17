@@ -415,3 +415,21 @@ body.lendo #desligar { display: grid; }
 /* O painel encolhe junto: sem a barra embaixo, o teto pode ser menor sem
    esconder nada — o conteúdo rola e a ficha tem tudo. */
 body.lendo .sheet { max-height: 34dvh; margin-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
+
+/* O <label> embrulha um <input type=file> escondido: no iPhone isso abre a
+   câmera nativa com foco travado, exposição medida e resolução cheia — que é
+   exatamente o que falta num quadro de vídeo em luz ruim. */
+.foto { position: relative; overflow: hidden; cursor: pointer; }
+.foto input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0;
+  width: 100%; height: 100%;
+  cursor: pointer;
+}
+.foto[hidden] { display: none; }
+
+.visualmente-oculto {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}

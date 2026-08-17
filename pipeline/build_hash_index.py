@@ -46,6 +46,24 @@ UA = "myPOKYcards/0.1 (indexador de catalogo; github.com/yanstutz33/myPOKYcards)
 # depois por OCR (ver agente tcg-vision).
 LANG_BY_REGION = {"intl": "en", "asia": "ja"}
 
+# Ordem de tentativa quando o idioma principal devolve 404.
+#
+# O indexador tentava UM idioma por regiao e desistia. Medido numa amostra de
+# 60 cartas hoje sem hash: 8% delas tem arte em algum outro idioma — pt, pt-br
+# ou zh-tw. Nao e muito, mas sao ~900 cartas que o leitor simplesmente nao
+# conseguia reconhecer, e o caso que levou a isto foi uma carta REAL do
+# usuario (mep-047, Cyndaquil) que existe no catalogo e nao tinha hash.
+#
+# A arte e a mesma entre idiomas; muda o texto do nome e dos ataques. Isso
+# desloca alguns bits do hash, mas hash de arte certa em outro idioma e
+# incomparavelmente melhor que carta ausente do indice — sem hash a carta nao
+# tem como ser achada, e o leitor devolve o vizinho mais parecido com ar de
+# certeza. A coluna `lang` registra de onde veio cada uma.
+FALLBACK_LANGS = {
+    "intl": ["en", "pt", "pt-br", "es", "fr", "de", "it"],
+    "asia": ["ja", "zh-tw", "zh-cn", "ko", "en"],
+}
+
 
 # ---------------------------------------------------------------- hashing
 
@@ -186,22 +204,40 @@ def run(cards_db: Path, out_db: Path, workers: int, quality: str,
         return
     print(f"{len(todo)} cartas pendentes | {workers} workers | qualidade={quality}")
 
-    conn = sqlite3.connect(out_db, check_same_thread=False)
+    # `timeout` NAO e detalhe: dezesseis threads escrevem no mesmo arquivo, e
+    # sem ele qualquer disputa de lock derruba a rodada inteira com
+    # "database is locked" — foi o que aconteceu, e as duas horas de download
+    # anteriores foram perdidas. Com timeout, a thread espera a vez.
+    conn = sqlite3.connect(out_db, check_same_thread=False, timeout=60)
+    conn.execute("PRAGMA busy_timeout = 60000")
     lock = threading.Lock()
     stats = {"ok": 0, "fail": 0}
     t0 = time.monotonic()
 
     def work(row):
         card_id, region, local_id, set_id, serie = row
-        lang = LANG_BY_REGION.get(region, "en")
-        url = image_url(lang, serie, set_id, local_id, quality)
-        try:
-            h = hashes_for(fetch(url))
-        except Exception as exc:  # noqa: BLE001 — uma carta ruim nao para o indice
-            reason = f"HTTP {exc.code}" if isinstance(exc, urllib.error.HTTPError) else str(exc)[:120]
+        idiomas = FALLBACK_LANGS.get(region, [LANG_BY_REGION.get(region, "en")])
+        h = url = None
+        ultima_falha = "sem tentativa"
+        for lang in idiomas:
+            url = image_url(lang, serie, set_id, local_id, quality)
+            try:
+                h = hashes_for(fetch(url))
+                break
+            except urllib.error.HTTPError as exc:
+                ultima_falha = f"HTTP {exc.code}"
+                if exc.code != 404:
+                    break        # 500 ou 403 nao melhoram trocando de idioma
+            except Exception as exc:  # noqa: BLE001 — uma carta ruim nao para o indice
+                ultima_falha = str(exc)[:120]
+                break
+        if h is None:
             with lock:
-                conn.execute("INSERT OR REPLACE INTO failures(card_id,url,reason) VALUES (?,?,?)",
-                             (card_id, url, reason))
+                try:
+                    conn.execute("INSERT OR REPLACE INTO failures(card_id,url,reason) VALUES (?,?,?)",
+                                 (card_id, url, f"{ultima_falha} (tentou {len(idiomas)} idiomas)"))
+                except sqlite3.OperationalError:
+                    pass   # registrar a falha nao pode derrubar a rodada
                 stats["fail"] += 1
             return
         with lock:
@@ -214,6 +250,7 @@ def run(cards_db: Path, out_db: Path, workers: int, quality: str,
             )
             conn.execute("DELETE FROM failures WHERE card_id = ?", (card_id,))
             stats["ok"] += 1
+        with lock:
             n = stats["ok"] + stats["fail"]
             if n % 200 == 0:
                 conn.commit()

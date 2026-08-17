@@ -34,6 +34,8 @@ const els = {
   lanterna: document.getElementById("lanterna"),
   audio: document.getElementById("audio"),
   desligar: document.getElementById("desligar"),
+  fotoBtn: document.getElementById("fotoBtn"),
+  fotoInput: document.getElementById("fotoInput"),
   sheet: document.getElementById("sheet"),
 };
 
@@ -229,6 +231,10 @@ function onWorkerMessage(ev) {
   }
   if (msg.type === "error") return fatal(msg.message);
   if (msg.type === "result") {
+    // Pedidos da leitura por foto tem dono proprio: sao comparados entre si
+    // antes de virar tela, entao nao podem entrar no fluxo ao vivo.
+    const dono = pedidosFoto.get(msg.seq);
+    if (dono) { pedidosFoto.delete(msg.seq); dono(msg); return; }
     if (msg.seq !== seq) return;           // resultado de frame vencido
     render(msg.results);
     if (!frozen) orientar(msg.results);
@@ -1020,6 +1026,7 @@ els.toggle.addEventListener("click", async () => {
     els.achado.hidden = true;
     els.barra.hidden = true;
     document.body.classList.remove("lendo");
+    els.fotoBtn.hidden = true;
     els.toggle.textContent = "Ligar leitor";
     els.hint.textContent = "Câmera parada";
     som.somDesligou();
@@ -1040,6 +1047,7 @@ els.toggle.addEventListener("click", async () => {
   // todo, para uma acao que quase nunca se usa — e a tela toda e disputada
   // pela unica coisa que importa aqui, que e ver a carta.
   document.body.classList.add("lendo");
+  els.fotoBtn.hidden = false;
   els.toggle.textContent = "Desligar";
   els.hint.textContent = "Aponte para a carta";
   som.somLigou();
@@ -1049,6 +1057,93 @@ els.toggle.addEventListener("click", async () => {
 
 // O botao pequeno so encaminha para o mesmo controle: um estado, um caminho.
 els.desligar.addEventListener("click", () => els.toggle.click());
+
+/**
+ * Ler de uma foto parada.
+ *
+ * NAO substitui a leitura ao vivo — ela continua sendo o caminho principal e
+ * o que diferencia este leitor. Isto e a saida para as condicoes em que um
+ * quadro de video simplesmente nao tem informacao suficiente:
+ *
+ *   * luz baixa, onde o sensor sobe o ganho e a arte vira granulado;
+ *   * holo e plastificada, que espelham a lampada num quadro e no seguinte
+ *     nao — a leitura ao vivo pega justamente o quadro ruim;
+ *   * mao tremendo, que borra o texto e as bordas usadas na deteccao.
+ *
+ * A camera nativa resolve isso porque faz o que o `getUserMedia` nao faz:
+ * trava o foco, mede a exposicao com calma, junta varios quadros (HDR) e
+ * entrega a resolucao cheia do sensor em vez do stream reduzido. O resto do
+ * caminho e IDENTICO — mesma deteccao de borda, mesmo desentortamento, mesmo
+ * hash. Nada aqui e um segundo reconhecedor a manter.
+ */
+const pedidosFoto = new Map();
+
+/** Uma leitura avulsa, fora do ciclo ao vivo. */
+function medir(payload) {
+  return new Promise((ok) => {
+    seq++;
+    pedidosFoto.set(seq, ok);
+    worker.postMessage({ type: "match", seq, k: 3, ...payload });
+  });
+}
+
+async function lerDeFoto(arquivo) {
+  if (!arquivo) return;
+  const url = URL.createObjectURL(arquivo);
+  try {
+    const img = await new Promise((ok, erro) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => erro(new Error("não consegui abrir essa imagem"));
+      i.src = url;
+    });
+
+    // A foto inteira e a regiao de busca: aqui nao existe moldura na tela
+    // para sugerir onde olhar, e a pessoa enquadrou a carta ao tirar.
+    const tudo = { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
+    const achado = detectarCarta(img, tudo);
+    ultimaDeteccao = achado;
+
+    // DUAS hipoteses, e vence a que o indice reconhece melhor.
+    //
+    // Na leitura ao vivo nao da para fazer isso: sao 450 ms por quadro e a
+    // borda detectada e sempre a aposta certa, porque a carta esta no meio de
+    // uma mesa. Numa foto nao e: se a pessoa ja enquadrou so a carta, a
+    // deteccao de borda vai achar a borda mais forte DENTRO da arte e
+    // recortar um pedaco. Medido: mandando a arte de swsh3-136 como foto, o
+    // recorte por deteccao devolvia "Ambipom" a 79%.
+    //
+    // Aqui ha tempo de sobra — a pessoa acabou de tirar a foto e espera — e
+    // cada leitura custa 14 ms. Comparar as duas custa nada e remove a
+    // classe inteira de erro.
+    els.hint.textContent = "Lendo a foto…";
+    els.hint.classList.remove("alerta");
+
+    const opcoes = [{ nome: "imagem inteira", rect: tudo }];
+    if (achado) opcoes.push({ nome: "borda detectada", rect: achado });
+
+    const lidas = await Promise.all(
+      opcoes.map(async (o) => ({ ...o, r: await medir(capture(img, o.rect)) })));
+    const melhor = lidas.reduce((a, b) =>
+      (b.r.results[0]?.confidence ?? 0) > (a.r.results[0]?.confidence ?? 0) ? b : a);
+
+    ultimaDeteccao = melhor.rect === achado ? achado : null;
+    ultimoRecorte = melhor.rect;
+    // Refaz o recorte vencedor para que a foto da comparacao seja a dele.
+    capture(img, melhor.rect);
+    render(melhor.r.results);
+    if (melhor.r.results[0]) travar(catalog.ids[melhor.r.results[0].i], true);
+    if (DIAG) mostrarDiag(melhor.r);
+  } catch (err) {
+    els.hint.textContent = err.message;
+    els.hint.classList.add("alerta");
+  } finally {
+    URL.revokeObjectURL(url);
+    els.fotoInput.value = "";   // permite reenviar a MESMA foto
+  }
+}
+
+els.fotoInput.addEventListener("change", (ev) => lerDeFoto(ev.target.files?.[0]));
 
 // `error` de <img> nao borbulha: precisa da fase de captura. Sem isto, a
 // arte que nao carrega deixa um retangulo escuro no miolo de papel — no
