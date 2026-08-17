@@ -110,12 +110,8 @@ function vertical(src, w, inH, outH) {
 }
 
 let _srcCtx = null;
-function sourcePixels(source, rect) {
-  const sx = rect ? rect.x : 0;
-  const sy = rect ? rect.y : 0;
-  const sw = rect ? rect.w : (source.videoWidth || source.naturalWidth || source.width);
-  const sh = rect ? rect.h : (source.videoHeight || source.naturalHeight || source.height);
 
+function contextoDe(sw, sh) {
   if (!_srcCtx) {
     _srcCtx = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
   }
@@ -123,10 +119,47 @@ function sourcePixels(source, rect) {
     _srcCtx.canvas.width = sw;
     _srcCtx.canvas.height = sh;
   }
+  // Fundo branco: sobra de borda vira papel, não buraco preto, que seria uma
+  // aresta forte inventada bem onde o dHash compara vizinhos.
   _srcCtx.fillStyle = "#fff";
   _srcCtx.fillRect(0, 0, sw, sh);
-  _srcCtx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
-  return { data: _srcCtx.getImageData(0, 0, sw, sh).data, w: sw, h: sh };
+  return _srcCtx;
+}
+
+/**
+ * Recorta a carta DESENTORTADA quando o detector devolveu ângulo.
+ *
+ * Sem isto, carta inclinada é recortada numa caixa alinhada aos eixos e os
+ * quatro cantos da caixa são fundo — mesa, mão, outra carta. Esse fundo entra
+ * no hash como se fosse arte, e o hash é da carta INTEIRA: não há como o
+ * matcher separar "arte" de "sobra". É a mesma perda que o autoteste já media
+ * na degradação de rotação.
+ *
+ * A rotação é feita pelo próprio canvas, com a transformação inversa: leva o
+ * centro da carta à origem, desgira, e desenha. O resultado é a carta reta e
+ * sozinha no quadro.
+ */
+function sourcePixels(source, rect) {
+  if (rect && typeof rect.ang === "number" && Math.abs(rect.ang) > 0.004) {
+    const sw = Math.max(2, Math.round(rect.cw));
+    const sh = Math.max(2, Math.round(rect.ch));
+    const ctx = contextoDe(sw, sh);
+    ctx.save();
+    ctx.translate(sw / 2, sh / 2);
+    ctx.rotate(-rect.ang);
+    ctx.translate(-rect.cx, -rect.cy);
+    ctx.drawImage(source, 0, 0);
+    ctx.restore();
+    return { data: ctx.getImageData(0, 0, sw, sh).data, w: sw, h: sh };
+  }
+
+  const sx = rect ? rect.x : 0;
+  const sy = rect ? rect.y : 0;
+  const sw = rect ? rect.w : (source.videoWidth || source.naturalWidth || source.width);
+  const sh = rect ? rect.h : (source.videoHeight || source.naturalHeight || source.height);
+  const ctx = contextoDe(sw, sh);
+  ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+  return { data: ctx.getImageData(0, 0, sw, sh).data, w: sw, h: sh };
 }
 
 /** Reduz para w x h com LANCZOS e devolve RGBA de 8 bits. */

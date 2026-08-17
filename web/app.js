@@ -326,12 +326,28 @@ function desenharAchado(a) {
   const escala = Math.max(box.width / vw, box.height / vh);
   const offX = (box.width - vw * escala) / 2;
   const offY = (box.height - vh * escala) / 2;
-  Object.assign(els.achado.style, {
-    left: `${a.x * escala + offX}px`,
-    top: `${a.y * escala + offY}px`,
-    width: `${a.w * escala}px`,
-    height: `${a.h * escala}px`,
-  });
+
+  // Com ângulo, o contorno acompanha a carta de verdade: fica sobre o
+  // retângulo inclinado, centrado e girado. Antes era a caixa envolvente, que
+  // numa carta a 12° sobra visivelmente nos quatro cantos e sugere que o
+  // leitor está recortando mais do que recorta.
+  if (typeof a.ang === "number") {
+    Object.assign(els.achado.style, {
+      left: `${a.cx * escala + offX}px`,
+      top: `${a.cy * escala + offY}px`,
+      width: `${a.cw * escala}px`,
+      height: `${a.ch * escala}px`,
+      transform: `translate(-50%, -50%) rotate(${a.ang}rad)`,
+    });
+  } else {
+    Object.assign(els.achado.style, {
+      left: `${a.x * escala + offX}px`,
+      top: `${a.y * escala + offY}px`,
+      width: `${a.w * escala}px`,
+      height: `${a.h * escala}px`,
+      transform: "none",
+    });
+  }
   els.achado.hidden = false;
   els.stage.classList.add("detectado");
 }
@@ -511,7 +527,11 @@ function mostrarDiag(msg) {
   const d = ultimaDeteccao;
   const linhas = [
     `busca      ${msg.ms.toFixed(0)} ms`,
-    `borda      ${d ? `${d.w}x${d.h}  proporcao ${(d.w / d.h).toFixed(3)}  conf ${(d.confianca * 100).toFixed(0)}%` : "NAO DETECTADA (usando moldura)"}`,
+    `borda      ${d ? `${Math.round(d.cw ?? d.w)}x${Math.round(d.ch ?? d.h)}  proporcao ${((d.cw ?? d.w) / (d.ch ?? d.h)).toFixed(3)}  conf ${(d.confianca * 100).toFixed(0)}%` : "NAO DETECTADA (usando moldura)"}`,
+    // O angulo entra no diagnostico porque separa duas causas que produzem o
+    // mesmo sintoma: carta inclinada de verdade, e detector travando num
+    // angulo errado. Sem ele, "confianca baixa" nao diz qual dos dois e.
+    `inclinacao ${d && typeof d.ang === "number" ? `${(d.ang * 180 / Math.PI).toFixed(1)} graus${Math.abs(d.ang) > 0.004 ? "  (recorte desentortado)" : ""}` : "-"}`,
     `recorte    ${ultimoRecorte ? `${ultimoRecorte.w}x${ultimoRecorte.h}` : "-"}`,
     `luz        ${ultimaLuz ? `media ${ultimaLuz.media.toFixed(0)}  estourado ${(ultimaLuz.fracaoEstourada * 100).toFixed(0)}%` + (ultimaLuz.estourado ? "  REFLEXO" : "") + (ultimaLuz.escuro ? "  ESCURO" : "") : "-"}`,
     `lanterna   ${trilha ? (temLanterna(trilha) ? (lanternaLigada ? "ligada" : "disponivel") : "nao suportada") : "-"}`,

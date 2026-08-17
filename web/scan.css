@@ -374,3 +374,30 @@
   font-size: 0.82rem;
   font-weight: 600;
 }
+
+/* ------------------------------------------- o resultado como objeto solto
+   Rodapé colado nas bordas lê como "parte do aparelho" e divide a tela em
+   duas metades. Solto, com margem e sombra, lê como uma carta pousada SOBRE
+   a câmera: dá para ver o vídeo em volta dele, e fica claro que é o
+   resultado de uma leitura, não uma seção fixa da tela. */
+.sheet {
+  margin: 0 0.6rem 0.5rem;
+  border-radius: 16px;
+  border: 3px solid var(--chassi-borda, #4A0D09);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  max-height: 46dvh;
+}
+
+/* A barra de captura passa a respirar sobre o painel. */
+.barra { padding-bottom: 0.7rem; }
+
+.acoes-base {
+  margin: 0 0.6rem calc(0.5rem + env(safe-area-inset-bottom));
+  border-radius: 14px;
+  border: 3px solid var(--chassi-borda, #4A0D09);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
+}
+
+/* O contorno gira junto com a carta; a animação precisa acompanhar o
+   transform, não só posição e tamanho. */
+.achado { transform-origin: center; will-change: transform; }

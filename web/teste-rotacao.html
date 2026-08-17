@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>myPOKYcards · Rotação: detecção e recorte</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 0.3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.5rem; max-width:78ch; }
+    table { border-collapse:collapse; width:100%; max-width:1000px; font-size:0.9rem; }
+    th,td { text-align:left; padding:0.45rem 0.7rem; border-bottom:1px solid #263041; }
+    th { font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:0.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    #verdict { margin-top:1.5rem; padding:1rem 1.2rem; border-radius:8px; max-width:1000px;
+               border:1px solid #263041; background:#10151E; }
+  </style>
+</head>
+<body>
+  <h1>Rotação: o ângulo é achado? o recorte melhora?</h1>
+  <p class="sub">
+    Carta na mão nunca está reta. O detector projetava a energia de gradiente
+    em X e Y, o que só enxerga carta alinhada, e o recorte saía numa caixa
+    alinhada aos eixos — os quatro cantos dela são fundo, e fundo entra no
+    hash como se fosse arte.
+    Aqui a mesma carta é desenhada girada por um ângulo <em>conhecido</em>,
+    sobre um fundo que não é liso, e se compara o recorte antigo (caixa) com o
+    novo (desentortado). Duas perguntas: o ângulo recuperado bate com o real,
+    e o recorte desentortado reconhece melhor.
+  </p>
+  <table id="out">
+    <thead><tr>
+      <th>Carta</th><th>Ângulo real</th><th>Achado</th><th>Erro</th>
+      <th>Caixa: conf.</th><th>Desentortado: conf.</th><th>Ganho</th><th></th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">rodando…</div>
+
+<script type="module">
+import { capture } from "./capture.js";
+import { detectarCarta } from "./detectar.js";
+
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+
+const load = (src) => new Promise((res, rej) => {
+  const i = new Image();
+  i.crossOrigin = "anonymous";
+  i.onload = () => res(i); i.onerror = () => rej(new Error("falhou: " + src));
+  i.src = src;
+});
+
+/* Cena sintética: a carta girada sobre um fundo COM textura.
+   Fundo liso tornaria a detecção trivial e o teste inútil — a mesa de uma
+   loja tem outras cartas, madeira e reflexo, e é isso que confunde a
+   projeção de gradiente. */
+function cena(img, graus, largura = 640, altura = 900) {
+  const cv = document.createElement("canvas");
+  cv.width = largura; cv.height = altura;
+  const g = cv.getContext("2d");
+
+  g.fillStyle = "#3a4250";
+  g.fillRect(0, 0, largura, altura);
+  g.strokeStyle = "rgba(255,255,255,0.10)";
+  g.lineWidth = 3;
+  for (let i = -altura; i < largura; i += 37) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + altura, altura); g.stroke();
+  }
+
+  const escala = Math.min(largura / img.width, altura / img.height) * 0.62;
+  const cw = img.width * escala, ch = img.height * escala;
+  g.save();
+  g.translate(largura / 2, altura / 2);
+  g.rotate(graus * Math.PI / 180);
+  g.drawImage(img, -cw / 2, -ch / 2, cw, ch);
+  g.restore();
+  return cv;
+}
+
+(async () => {
+  const worker = new Worker("matcher.worker.js");
+  const [bin, cards] = await Promise.all([
+    fetch("data/index.bin").then(r => r.arrayBuffer()),
+    fetch("data/cards.json").then(r => r.json()),
+  ]);
+
+  const manifest = [];
+  for (let k = 0; k < 5; k++) {
+    const i = (k * 7717) % cards.count;
+    if (cards.meta[i][7]) manifest.push({ card_id: cards.ids[i], caminho: cards.meta[i][7] });
+  }
+
+  await new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "ready") res(); };
+    worker.postMessage({ type: "load", buffer: bin }, [bin]);
+  });
+
+  const match = (payload) => new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "result") res(e.data); };
+    worker.postMessage({ type: "match", seq: 0, k: 3, ...payload });
+  });
+
+  const ANGULOS = [0, 3, -5, 8, -11, 14];
+  let erros = [], ganhos = [], achouTudo = true;
+  let acertosCaixa = 0, acertosNovo = 0, total = 0, tempo = 0;
+
+  for (const item of manifest) {
+    const img = await load(`${cards.cdn}/${item.caminho}/low.png`);
+
+    for (const graus of ANGULOS) {
+      const cv = cena(img, graus);
+      const busca = { x: 0, y: 0, w: cv.width, h: cv.height };
+
+      const t0 = performance.now();
+      const achado = detectarCarta(cv, busca);
+      tempo += performance.now() - t0;
+      total++;
+
+      if (!achado) {
+        achouTudo = false;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td><code>${item.card_id}</code></td><td>${graus}°</td>
+          <td colspan="5" class="bad">não detectou</td>`;
+        tbody.appendChild(tr);
+        continue;
+      }
+
+      const grausAchado = achado.ang * 180 / Math.PI;
+      const erro = Math.abs(grausAchado - graus);
+      erros.push(erro);
+
+      // Caixa alinhada aos eixos: o comportamento anterior.
+      const caixa = await match(capture(cv, { x: achado.x, y: achado.y, w: achado.w, h: achado.h }));
+      // Desentortado: usa cx/cy/cw/ch/ang.
+      const novo = await match(capture(cv, achado));
+
+      const idsC = caixa.results.map(r => cards.ids[r.i]);
+      const idsN = novo.results.map(r => cards.ids[r.i]);
+      const okC = idsC[0] === item.card_id, okN = idsN[0] === item.card_id;
+      if (okC) acertosCaixa++;
+      if (okN) acertosNovo++;
+
+      const cC = caixa.results[0].confidence, cN = novo.results[0].confidence;
+      const ganho = (cN - cC) * 100;
+      ganhos.push(ganho);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><code>${item.card_id}</code></td>
+        <td>${graus}°</td>
+        <td>${grausAchado.toFixed(1)}°</td>
+        <td class="${erro <= 1.5 ? "ok" : "bad"}">${erro.toFixed(1)}°</td>
+        <td class="${okC ? "" : "bad"}">${(cC * 100).toFixed(1)}%${okC ? "" : " (errou)"}</td>
+        <td class="${okN ? "" : "bad"}">${(cN * 100).toFixed(1)}%${okN ? "" : " (errou)"}</td>
+        <td class="${ganho >= 0 ? "ok" : "bad"}">${ganho >= 0 ? "+" : ""}${ganho.toFixed(1)} pp</td>
+        <td class="${okN ? "ok" : "bad"}">${okN ? "OK" : "FALHOU"}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  const med = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
+  const erroMedio = med(erros), erroMax = Math.max(...erros);
+  const ganhoMedio = med(ganhos);
+
+  verdict.innerHTML = `
+    <p style="margin:0 0 0.6rem">
+      Ângulo: erro médio <code>${erroMedio.toFixed(2)}°</code>,
+      pior <code>${erroMax.toFixed(2)}°</code> · detectou em
+      <code>${total - (achouTudo ? 0 : 1)}/${total}</code> cenas ·
+      custo <code>${(tempo / total).toFixed(1)} ms</code> por detecção
+    </p>
+    <p style="margin:0 0 0.6rem">
+      Top-1 com caixa alinhada: <code>${acertosCaixa}/${total}</code> ·
+      desentortado: <code>${acertosNovo}/${total}</code> ·
+      ganho médio de confiança <code>${ganhoMedio >= 0 ? "+" : ""}${ganhoMedio.toFixed(1)} pp</code>
+    </p>
+    <p style="margin:0" class="${acertosNovo >= acertosCaixa && ganhoMedio > 0 ? "ok" : "bad"}">
+      ${acertosNovo >= acertosCaixa && ganhoMedio > 0
+        ? "Desentortar vale: mesmo acerto ou melhor, com confiança maior."
+        : "Desentortar NÃO se pagou nesta medição — não vale ligar."}
+    </p>`;
+})().catch(e => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>
