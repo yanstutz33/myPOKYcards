@@ -1303,3 +1303,13 @@ body.lendo:not(.travado) .sheet .hit-meta::after {
   flex: 0 0 auto;
   align-self: center;
 }
+
+/* Em tela estreita (320px ainda existe), marca + navegação + som não cabem
+   numa linha e a faixa volta a 82px. Durante a leitura a marca é a primeira
+   coisa dispensável: quem está com a carta na mão já sabe onde está. A
+   navegação, que é o que se usa, fica. */
+@media (max-width: 360px) {
+  body.lendo .topbar .brand { display: none; }
+  body.lendo .topnav a { padding: 0.26rem 0.5rem; font-size: 0.68rem; }
+  body.lendo.travado .sheet { max-height: 46dvh; }
+}
