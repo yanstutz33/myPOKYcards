@@ -52,6 +52,13 @@
     </div>
     <div class="achado" id="achado" hidden></div>
 
+    <!-- O valor sobre a câmera, e não dentro do painel. É a resposta que a
+         pessoa veio buscar; ficar atrás de rolagem é enterrar o produto. -->
+    <output class="hero" id="hero" hidden>
+      <span class="hero-num" id="heroNum"></span>
+      <span class="hero-sub" id="heroSub"></span>
+    </output>
+
     <p class="hint" id="hint">Aponte para a carta</p>
 
     <!-- Diagnóstico: liga com ?diag. Existe para calibrar limiar com
@@ -59,6 +66,12 @@
          perfeita do catálogo. -->
     <pre class="diag" id="diag" hidden></pre>
   </main>
+
+  <!-- Tudo que não é câmera vive nesta pilha, SOBRE a câmera. Antes eram
+       linhas de grade dividindo a tela, e a câmera ficava com 37% dela —
+       303px para enquadrar uma carta. Empilhado por cima, o vídeo ocupa a
+       tela inteira e só o que está em uso cobre alguma parte dele. -->
+  <div class="base-stack">
 
   <!-- Barra de captura: sempre disponível, independente do automático.
        O usuário nunca pode ficar preso esperando o leitor decidir. -->
@@ -80,16 +93,17 @@
     </button>
   </div>
 
-  <section class="sheet" id="sheet" aria-live="polite">
-    <div class="results" id="results">
-      <p class="empty">Ligue o leitor e aponte para uma carta.<br>
-        Não precisa encaixar exato — ele acha a borda sozinho.</p>
-    </div>
+  <!-- Nasce vazio: a instrução já está sobre a câmera, em .hint, e repetir
+       aqui custaria 40% do visor para dizer duas vezes a mesma coisa. -->
+  <section class="sheet vazio" id="sheet" aria-live="polite">
+    <div class="results" id="results"></div>
   </section>
 
   <div class="acoes-base">
     <button id="toggle" class="primary" disabled>Ligar leitor</button>
   </div>
+
+  </div><!-- /base-stack -->
 
   <div class="ficha" id="ficha" hidden></div>
 

@@ -2,12 +2,14 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "poky-web",
+      "name": "poky-dev",
       "runtimeExecutable": "python",
       "runtimeArgs": [
-        "pipeline/servir.py"
+        "pipeline/servir.py",
+        "--porta",
+        "8141"
       ],
-      "port": 8137
+      "port": 8141
     }
   ]
 }

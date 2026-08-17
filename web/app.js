@@ -33,7 +33,65 @@ const els = {
   diag: document.getElementById("diag"),
   lanterna: document.getElementById("lanterna"),
   audio: document.getElementById("audio"),
+  sheet: document.getElementById("sheet"),
+  hero: document.getElementById("hero"),
+  heroNum: document.getElementById("heroNum"),
+  heroSub: document.getElementById("heroSub"),
 };
+
+/**
+ * O valor sobre a câmera.
+ *
+ * Fica separado de `render` porque muda em momento diferente: o painel se
+ * refaz a cada leitura, e o destaque só faz sentido quando existe uma carta
+ * escolhida. Sem cotação ele mostra o motivo em corpo menor — nunca some e
+ * nunca vira "R$ 0,00", que seria afirmar um preço que não temos.
+ */
+function destacarValor(r) {
+  if (!r) {
+    els.hero.hidden = true;
+    return;
+  }
+  const id = catalog.ids[r.i];
+  const regiao = catalog.meta[r.i][4];
+  const m = precoDestaque(id);
+  els.hero.hidden = false;
+  els.hero.classList.toggle("sem", !m);
+  if (m) {
+    els.heroNum.textContent = `${SIMBOLO[m.c] || m.c} ${m.ref.toFixed(2)}`;
+    // O destaque leva o valor nativo E a conversão: são as duas coisas que se
+    // quer de relance. A procedência completa (mercado, idade da cotação)
+    // continua no painel, que é onde se lê com calma.
+    els.heroSub.innerHTML =
+      `${converter(m.ref, m.c)}<span class="hero-fonte">${
+        escapeHtml(m.v)} · ${escapeHtml(m.f)}</span>`;
+  } else {
+    els.heroNum.textContent = motivoSemPreco(id, regiao);
+    els.heroSub.textContent = "";
+  }
+}
+
+/**
+ * Publica a altura real da faixa superior.
+ *
+ * O destaque de valor flutua sobre a câmera e precisa começar abaixo dela.
+ * A altura NAO é fixa: em tela estreita a navegação quebra para uma segunda
+ * linha e a faixa passa de ~48px para ~94px. Número cravado no CSS acerta um
+ * tamanho de tela e esconde o preço em todos os outros.
+ */
+function medirTopbar() {
+  const t = document.querySelector(".topbar");
+  if (t) document.body.style.setProperty("--topbar-h", `${t.offsetHeight}px`);
+}
+medirTopbar();
+addEventListener("resize", medirTopbar);
+addEventListener("orientationchange", medirTopbar);
+
+/** Sem resultado o painel sai da tela inteira e a câmera fica com tudo. */
+function painelVazio(vazio) {
+  els.sheet.classList.toggle("vazio", vazio);
+  if (vazio) els.hero.hidden = true;
+}
 
 let trilha = null;        // MediaStreamTrack de vídeo
 let lanternaLigada = false;
@@ -149,6 +207,7 @@ function fatal(message) {
   setStatus("erro", "err");
   els.results.innerHTML =
     `<div class="nodata"><b>Não foi possível iniciar.</b><br>${escapeHtml(message)}</div>`;
+    painelVazio(false);
   els.toggle.disabled = true;
 }
 
@@ -167,6 +226,7 @@ async function startCamera() {
       : err.message;
     els.results.innerHTML =
       `<div class="nodata"><b>Câmera indisponível.</b><br>${escapeHtml(motivo)}</div>`;
+    painelVazio(false);
     return false;
   }
   els.video.srcObject = stream;
@@ -430,6 +490,11 @@ function destravar() {
   els.stage.style.removeProperty("--tipo");
   els.stage.querySelector(".travado-selo")?.remove();
   els.hint.textContent = "Aponte para a carta";
+  // "Ler outra" devolve a tela inteira à câmera. Manter o resultado anterior
+  // no rodapé enquanto se enquadra a próxima carta só rouba visor e engana:
+  // o painel estaria descrevendo uma carta que já saiu da mão.
+  painelVazio(true);
+  els.results.innerHTML = "";
   tick();
 }
 
@@ -521,6 +586,21 @@ function irmasHtml(cardId) {
  */
 const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited"];
 
+/**
+ * Quantidade por toque.
+ *
+ * `colecao.adicionar` sempre aceitou quantidade; a tela nunca ofereceu, e
+ * guardava de uma em uma. Quem abre um lote tem quatro cópias da mesma carta
+ * na mão — eram quatro leituras da MESMA carta para registrar o que é um
+ * dado só. Agora escolhe o número e guarda de uma vez.
+ *
+ * Fica fora do `render` porque precisa sobreviver ao painel se refazendo a
+ * cada leitura: escolher "4×" e ver voltar para "1×" no quadro seguinte
+ * seria pior que não ter.
+ */
+let multiplicador = 1;
+const MULTIPLOS = [1, 2, 3, 4];
+
 function guardarHtml(cardId, variantes) {
   const uteis = (variantes || []).filter((v) => VARIANTES_UTEIS.includes(v));
   const lista = uteis.length ? uteis : ["normal"];
@@ -532,11 +612,18 @@ function guardarHtml(cardId, variantes) {
     const n = colecao.quantidade(cardId, v);
     return `<button class="guardar-btn${n ? " feito" : ""}"
       data-card="${escapeHtml(cardId)}" data-var="${escapeHtml(v)}">
-      + ${escapeHtml(v)}${n ? ` <small>${n} guardada${n > 1 ? "s" : ""}</small>` : ""}
+      <span class="mais">+${multiplicador > 1 ? multiplicador : ""}</span> ${escapeHtml(v)}${
+        n ? ` <small>${n} guardada${n > 1 ? "s" : ""}</small>` : ""}
     </button>`;
   }).join("");
 
-  return `<div class="guardar">${botoes}
+  const chips = MULTIPLOS.map((n) => `<button class="mult${
+      n === multiplicador ? " ativo" : ""}" data-mult="${n}"
+      aria-pressed="${n === multiplicador}">${n}×</button>`).join("");
+
+  return `<div class="guardar">
+    <div class="mults" role="group" aria-label="Quantas cópias guardar por toque">${chips}</div>
+    ${botoes}
     ${jaTem ? `<span class="guardar-tem">${jaTem} desta carta na coleção</span>` : ""}
   </div>`;
 }
@@ -758,6 +845,8 @@ function render(results) {
 
   els.results.innerHTML =
     cartaHtml(results[escolhido], results) + alternativasHtml(results);
+  destacarValor(results[escolhido]);
+  painelVazio(false);
   ultimosResultados = results;
   if (ambiguo) els.results.classList.add("ambiguo");
   else els.results.classList.remove("ambiguo");
@@ -847,9 +936,27 @@ els.toggle.addEventListener("click", async () => {
 });
 
 els.results.addEventListener("click", (ev) => {
+  const chip = ev.target.closest(".mult");
+  if (chip) {
+    multiplicador = Number(chip.dataset.mult);
+    // Reescreve só os rótulos. Chamar render() aqui recomeçaria do resultado
+    // corrente e desfaria a escolha de alternativa feita antes.
+    for (const c of els.results.querySelectorAll(".mult")) {
+      const ativo = Number(c.dataset.mult) === multiplicador;
+      c.classList.toggle("ativo", ativo);
+      c.setAttribute("aria-pressed", String(ativo));
+    }
+    for (const b of els.results.querySelectorAll(".guardar-btn:not(.feito)")) {
+      const mais = b.querySelector(".mais");
+      if (mais) mais.textContent = `+${multiplicador > 1 ? multiplicador : ""}`;
+    }
+    som.somClique();
+    return;
+  }
+
   const btn = ev.target.closest(".guardar-btn");
   if (!btn) return;
-  const n = colecao.adicionar(btn.dataset.card, btn.dataset.var);
+  const n = colecao.adicionar(btn.dataset.card, btn.dataset.var, multiplicador);
   if (n === null) {
     btn.textContent = "sem espaço no navegador";
     return;
@@ -859,7 +966,8 @@ els.results.addEventListener("click", (ev) => {
   som.somGuardou();
   if (!frozen) travar(btn.dataset.card, true);
   btn.classList.add("feito");
-  btn.innerHTML = `✓ ${escapeHtml(btn.dataset.var)} <small>${n} guardada${n > 1 ? "s" : ""}</small>`;
+  btn.innerHTML = `✓ ${multiplicador > 1 ? `${multiplicador}× ` : ""}${
+    escapeHtml(btn.dataset.var)} <small>${n} guardada${n > 1 ? "s" : ""}</small>`;
 });
 
 els.results.addEventListener("click", (ev) => {
