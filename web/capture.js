@@ -150,6 +150,7 @@ function sourcePixels(source, rect) {
     ctx.translate(-rect.cx, -rect.cy);
     ctx.drawImage(source, 0, 0);
     ctx.restore();
+    guardarMiniatura(ctx.canvas);
     return { data: ctx.getImageData(0, 0, sw, sh).data, w: sw, h: sh };
   }
 
@@ -159,12 +160,52 @@ function sourcePixels(source, rect) {
   const sh = rect ? rect.h : (source.videoHeight || source.naturalHeight || source.height);
   const ctx = contextoDe(sw, sh);
   ctx.drawImage(source, sx, sy, sw, sh, 0, 0, sw, sh);
+  guardarMiniatura(ctx.canvas);
   return { data: ctx.getImageData(0, 0, sw, sh).data, w: sw, h: sh };
 }
 
 /** Reduz para w x h com LANCZOS e devolve RGBA de 8 bits. */
 export function reduce(px, w, h) {
   return vertical(horizontal(px.data, px.w, px.h, w), w, px.h, h);
+}
+
+/**
+ * Miniatura do que o leitor REALMENTE recortou.
+ *
+ * Existe para a comparação lado a lado: a sua foto ao lado da carta que o
+ * índice devolveu. Uma porcentagem de confiança é abstrata — "69%" não diz a
+ * ninguém se acertou. Duas imagens lado a lado resolvem em meio segundo, com
+ * os olhos, e ainda mostram o que atrapalhou: reflexo, corte torto, borda
+ * pegando a mesa.
+ *
+ * É desenhada a cada leitura porque precisa ser o MESMO quadro que gerou o
+ * resultado; guardar só no travamento pegaria o quadro seguinte. Desenhar num
+ * canvas de 150px é barato — o custo real (`toDataURL`) só é pago quando
+ * alguém vai olhar.
+ */
+let _miniCtx = null;
+const MINI_LARG = 150;
+
+function guardarMiniatura(origem) {
+  if (!_miniCtx) {
+    _miniCtx = document.createElement("canvas").getContext("2d");
+  }
+  const alt = Math.round(MINI_LARG * (origem.height / origem.width));
+  if (_miniCtx.canvas.width !== MINI_LARG || _miniCtx.canvas.height !== alt) {
+    _miniCtx.canvas.width = MINI_LARG;
+    _miniCtx.canvas.height = alt;
+  }
+  _miniCtx.drawImage(origem, 0, 0, MINI_LARG, alt);
+}
+
+/** JPEG da última leitura, ou null se ainda não houve nenhuma. */
+export function fotoDoRecorte() {
+  if (!_miniCtx || !_miniCtx.canvas.width) return null;
+  try {
+    return _miniCtx.canvas.toDataURL("image/jpeg", 0.72);
+  } catch {
+    return null;   // canvas contaminado: sem foto, o resto segue
+  }
 }
 
 /** As três escalas que o matcher consome, na ordem esperada pelo worker. */

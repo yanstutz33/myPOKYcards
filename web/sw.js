@@ -57,12 +57,34 @@ const ESSENCIAIS = [
   "./manifest.json", "./icone.svg", "./icone-maskable.svg",
 ];
 
+/**
+ * Instalação: uma GERAÇÃO inteira, buscada da rede, ou nenhuma.
+ *
+ * O defeito que isto conserta apareceu no aparelho do usuário como painel
+ * quebrado — conteúdo empurrado para fora da caixa, metade da tela vazia. Não
+ * era CSS errado: era CSS de uma versão desenhando o HTML de outra.
+ *
+ * Como acontecia: `cache.add()` usa o cache HTTP do navegador. O GitHub Pages
+ * serve os arquivos com `max-age=600`, então logo depois de publicar o
+ * navegador ainda tem a versão anterior guardada. O service worker novo
+ * instalava, montava um cache com nome novo (o hash do commit) e o enchia com
+ * uma MISTURA: os arquivos que já tinham expirado vinham novos, os que não,
+ * vinham velhos. Nome de geração nova, conteúdo de duas gerações.
+ *
+ * `cache: "reload"` obriga cada busca a ignorar o cache HTTP. E se qualquer
+ * arquivo essencial falhar, a instalação inteira falha: o service worker
+ * antigo continua no ar, coerente consigo mesmo. Meia atualização é pior que
+ * atualização nenhuma, porque nenhum dos dois lados funciona.
+ */
 self.addEventListener("install", (ev) => {
   ev.waitUntil((async () => {
     const c = await caches.open(CACHE_APP);
-    // addAll falha inteiro se um arquivo faltar; individual é mais tolerante
-    // a um arquivo renomeado do que deixar a instalação toda sem cache.
-    await Promise.all(ESSENCIAIS.map((u) => c.add(u).catch(() => {})));
+    await Promise.all(ESSENCIAIS.map(async (u) => {
+      const r = await fetch(new Request(u, { cache: "reload" }));
+      if (!r.ok) throw new Error(`essencial faltando: ${u} (${r.status})`);
+      // A chave é a URL limpa, para o `match` do fetch encontrar.
+      await c.put(u, r);
+    }));
     await self.skipWaiting();
   })());
 });
@@ -101,13 +123,24 @@ self.addEventListener("fetch", (ev) => {
     return;
   }
 
+  // Código do app: SÓ do cache desta geração, sem revalidar por arquivo.
+  //
+  // A estratégia anterior era stale-while-revalidate: respondia do cache e
+  // atualizava por baixo, arquivo a arquivo. Para código isso é errado, e foi
+  // a segunda metade do mesmo bug: cada arquivo se atualizava no seu próprio
+  // ritmo, então uma abertura qualquer podia pegar app.js novo com
+  // pokedex.css velho. Não existe "meio atualizado" que funcione — HTML, CSS
+  // e JS mudam juntos ou não mudam.
+  //
+  // Como CACHE_APP carrega o hash do commit e nasce completo na instalação,
+  // responder só dele garante que tudo na tela veio da mesma geração. A
+  // troca acontece de uma vez, quando o service worker novo assume.
   ev.respondWith((async () => {
     const cache = await caches.open(CACHE_APP);
-    const salvo = await cache.match(req);
-    const rede = fetch(req).then((r) => {
-      if (r.ok) cache.put(req, r.clone());
-      return r;
-    }).catch(() => null);
-    return salvo || (await rede) || new Response("", { status: 504 });
+    const salvo = await cache.match(req, { ignoreSearch: true });
+    if (salvo) return salvo;
+    const rede = await fetch(req).catch(() => null);
+    if (rede?.ok) cache.put(req, rede.clone());
+    return rede || new Response("", { status: 504 });
   })());
 });

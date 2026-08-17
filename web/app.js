@@ -8,7 +8,7 @@
  * canvas garantido em todos os navegadores móveis.
  */
 
-import { capture } from "./capture.js";
+import { capture, fotoDoRecorte } from "./capture.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
@@ -52,6 +52,41 @@ function medirTopbar() {
 medirTopbar();
 addEventListener("resize", medirTopbar);
 addEventListener("orientationchange", medirTopbar);
+
+/**
+ * Sua foto ao lado da carta encontrada.
+ *
+ * É a resposta ao problema que apareceu no teste real duas vezes: o leitor
+ * afirmando "Kingdra ex" com um Inteleon na mão, e "69% de certeza" numa
+ * carta que não era aquela. Uma porcentagem não diz a ninguém se acertou —
+ * 69% e 89% parecem a mesma coisa, e este projeto já mediu que a faixa de um
+ * palpite errado se sobrepõe inteira à de um acerto.
+ *
+ * Duas imagens lado a lado não têm essa ambiguidade: qualquer pessoa julga em
+ * meio segundo, sem saber o que é hash perceptual. E quando erra, mostra POR
+ * QUE — reflexo cobrindo a arte, recorte pegando a mesa, carta cortada.
+ *
+ * Mostra o que o leitor REALMENTE recortou, já desentortado: é o que foi
+ * comparado, não o que aparecia na tela.
+ */
+function comparacaoHtml(caminho) {
+  if (!fotoTravada) return "";
+  return `<div class="confere">
+    <figure class="confere-lado">
+      <img src="${fotoTravada}" alt="A foto que o leitor recortou">
+      <figcaption>sua foto</figcaption>
+    </figure>
+    <span class="confere-vs" aria-hidden="true">≟</span>
+    <figure class="confere-lado">
+      ${caminho
+        ? `<img src="${catalog.cdn}/${escapeHtml(caminho)}/low.png" alt="A carta encontrada no catálogo" decoding="async">`
+        : `<span class="confere-sem">sem arte</span>`}
+      <figcaption>o que ele achou</figcaption>
+    </figure>
+  </div>`;
+}
+
+let fotoTravada = null;
 
 /** Sem resultado o painel sai da tela inteira e a câmera fica com tudo. */
 function painelVazio(vazio) {
@@ -485,6 +520,14 @@ function travar(cardId, manual = false) {
   // esta trocando a cada leitura e a tela toda serve para enquadrar; travado,
   // acabou a mira e o painel pode ocupar o espaco que a decisao exige.
   document.body.classList.add("travado");
+  // A foto é tirada AQUI porque só aqui ela para de mudar. Enquanto mira, o
+  // recorte muda a cada 450 ms e uma comparação piscando não deixa ninguém
+  // julgar nada.
+  fotoTravada = fotoDoRecorte();
+  // O painel já foi desenhado quando este resultado chegou — `render` roda
+  // antes de `avaliarTrava`. Sem redesenhar, a comparação só apareceria na
+  // leitura seguinte, que nunca vem porque travar para o ciclo.
+  if (ultimosResultados) render(ultimosResultados);
 
   const meta = catalog.meta[catalog.ids.indexOf(cardId)];
   const nome = meta?.[0] || cardId;
@@ -513,6 +556,7 @@ function destravar() {
   els.capturar.hidden = false;
   els.stage.classList.remove("paused", "travado");
   document.body.classList.remove("travado");
+  fotoTravada = null;
   els.stage.style.removeProperty("--tipo");
   els.stage.querySelector(".travado-selo")?.remove();
   els.hint.textContent = "Aponte para a carta";
@@ -832,7 +876,12 @@ function cartaHtml(r, results) {
   // teste real, com um Inteleon na mao. O numero encolhe e o aviso aparece.
   const incerto = r.confidence < TRAVA_CONF;
 
+  // Com a comparação na tela, a miniatura do cabeçalho vira a MESMA arte do
+  // catálogo aparecendo duas vezes. Sai, e o espaço vai para quem informa.
+  const comConfere = Boolean(fotoTravada);
+
   return `<article class="hit top tocavel${incerto ? " incerto" : ""}${
+        comConfere ? " com-confere" : ""}${
         eFoil(raridade) ? " foil" : ""}${
         caminho ? " com-mini" : ""}" style="--tipo:${cor}" data-ficha="${escapeHtml(id)}">
     ${caminho ? `<img class="miniatura" alt="" loading="lazy" decoding="async"
@@ -845,6 +894,7 @@ function cartaHtml(r, results) {
       <span>${regiao === "asia" ? "JA" : "INTL"}</span>
       <span class="toque-dica">toque para ver tudo →</span>
     </div>
+    ${comparacaoHtml(caminho)}
     ${incerto ? `<p class="incerto-aviso">Não tenho certeza desta.
         Confira o número impresso, ou toque para ver as outras candidatas.</p>` : ""}
     ${preco}
@@ -966,6 +1016,7 @@ els.toggle.addEventListener("click", async () => {
     els.stage.classList.add("paused");
     els.stage.classList.remove("detectado", "travado");
     document.body.classList.remove("travado");
+  fotoTravada = null;
     els.achado.hidden = true;
     els.barra.hidden = true;
     document.body.classList.remove("lendo");
