@@ -351,13 +351,56 @@ let ultimaDeteccao = null;
  * porque o hash é da carta inteira e sobra de fundo entra como se fosse
  * arte. Sem detecção confiável, cai de volta na moldura.
  */
+/**
+ * Onde procurar: no VIDEO, nao no que aparece na tela.
+ *
+ * Este era o defeito que fazia o leitor parecer quebrado, e ele nasceu de uma
+ * mudanca anterior minha. A regiao de busca vinha da moldura desenhada,
+ * mapeada para coordenadas do video. Isso funcionava quando a camera ocupava
+ * uma faixa no meio da tela. Quando a camera passou a ocupar a tela INTEIRA,
+ * a conta virou outra: `object-fit: cover` num video 1280x720 (paisagem)
+ * dentro de uma tela 375x800 (retrato) mostra uma fatia vertical estreita —
+ * de x=470 a x=808 dos 1280. Uma carta centrada ocupa de 454 a 826.
+ *
+ * Ou seja: as duas laterais da carta ficavam FORA da regiao de busca. O
+ * detector procura pares de picos de gradiente nas bordas; sem borda esquerda
+ * e direita ele nao acha nada e devolve null, quadro apos quadro.
+ *
+ * Medido, no mesmo video e no mesmo instante: com a regiao vinda da moldura,
+ * 0 de 30 quadros detectados; com a regiao vinda do video, 30 de 30, com
+ * nitidez entre 9,4 e 16,8.
+ *
+ * A moldura volta a ser o que ela diz ser — uma sugestao visual de onde
+ * apontar. A busca acontece no quadro inteiro que a camera entrega, que e o
+ * unico lugar onde a carta realmente esta.
+ */
+function regiaoDoVideo() {
+  const vw = els.video.videoWidth, vh = els.video.videoHeight;
+  if (!vw || !vh) return null;
+  // Quase o quadro todo: sobra so uma margem para nao colar na borda, onde a
+  // lente distorce e a projecao de gradiente perde o pico.
+  const m = 0.04;
+  return { x: vw * m, y: vh * m, w: vw * (1 - 2 * m), h: vh * (1 - 2 * m) };
+}
+
+/** Retângulo com proporção de carta no centro do vídeo, para quando a
+ *  detecção falha: melhor recortar algo com a forma certa do que a tela toda. */
+function centroDoVideo() {
+  const vw = els.video.videoWidth, vh = els.video.videoHeight;
+  if (!vw || !vh) return null;
+  const h = vh * 0.86;
+  const w = h * CARD_RATIO;
+  return { x: Math.round((vw - w) / 2), y: Math.round((vh - h) / 2),
+           w: Math.round(w), h: Math.round(h) };
+}
+
 function recorteAtual() {
-  const guia = cropRect();
-  if (!guia) return null;
-  const achado = detectarCarta(els.video, regiaoDeBusca(guia, els.video));
+  const area = regiaoDoVideo();
+  if (!area) return null;
+  const achado = detectarCarta(els.video, area);
   ultimaDeteccao = achado;
   desenharAchado(achado);
-  return achado || guia;
+  return achado || centroDoVideo();
 }
 
 /**
@@ -535,22 +578,94 @@ let pendenteTravar = false;
  * Exigir N leituras iguais evita travar num frame borrado que acertou por
  * sorte durante o movimento.
  */
-function margem(results) {
-  return results.length > 1 ? results[1].score - results[0].score : Infinity;
+/**
+ * Margem ate o primeiro candidato que e OUTRA CARTA.
+ *
+ * A margem existe para responder uma pergunta so: "a carta que estou vendo
+ * esta no indice, ou este e o vizinho mais parecido de uma carta que nao
+ * esta?". Quando a carta esta ausente, os tres candidatos sao cartas
+ * diferentes e parecidas por acaso, e os scores ficam colados.
+ *
+ * Mas eles tambem ficam colados no caso OPOSTO e perfeitamente saudavel: a
+ * mesma arte impressa em varios sets. Sao 4.867 grupos cobrindo 10.737
+ * cartas — um quarto do indice. Comparar com o vizinho imediato nesses casos
+ * media a distancia entre duas impressoes da MESMA carta, que e proxima de
+ * zero por construcao, e a margem nunca passava do minimo.
+ *
+ * O efeito era severo e invisivel: essas 10.737 cartas NUNCA podiam travar.
+ * Medido numa cena dura, sv03-125 (Charizard ex) era reconhecido e ficava
+ * lendo para sempre, porque o segundo colocado era SV4a-121 — o mesmo
+ * Charizard em outro set.
+ *
+ * Pular as irmas responde a pergunta certa. Se so ha irmas, nao existe
+ * candidato concorrente e a margem e infinita: o leitor sabe QUE carta e, e
+ * a duvida que sobra — qual impressao — nao se resolve por imagem e ja e
+ * apresentada como lista.
+ */
+function mesmaCarta(a, b) {
+  const ga = catalog.meta[a.i][8];
+  const gb = catalog.meta[b.i][8];
+  // Grupo -1 significa "sem irmas conhecidas"; ai so o proprio id vale.
+  if (ga !== -1 && ga === gb) return true;
+  return catalog.ids[a.i] === catalog.ids[b.i];
 }
+
+function margem(results) {
+  const topo = results[0];
+  if (!topo) return Infinity;
+  for (let i = 1; i < results.length; i++) {
+    if (!mesmaCarta(topo, results[i])) return results[i].score - topo.score;
+  }
+  return Infinity;   // so impressoes irmas: nao ha concorrente de verdade
+}
+
+/**
+ * Decide travar olhando uma JANELA de leituras, nao duas seguidas.
+ *
+ * O defeito que isto conserta e o mais grave que apareceu, e o que faz o
+ * leitor parecer "nao funcional": numa cena dura — luz baixa, reflexo de holo
+ * varrendo a carta, tremor de mao — ele acertava a carta em 16 de 16 leituras
+ * seguidas, com 85% de confianca e margem 18,4 (limites: 82% e 8), e NUNCA
+ * travava. Ficava lendo para sempre.
+ *
+ * A causa era a exigencia de dois quadros bons CONSECUTIVOS com zeragem a
+ * cada quadro ruim. Com reflexo passando pela carta, um quadro em cada dois
+ * ou tres fica abaixo do limiar; a contagem subia para 1, zerava, subia para
+ * 1 de novo. Nunca chegava a 2.
+ *
+ * Consecutivo era a regra errada. O que importa e CONCORDANCIA: quantas das
+ * ultimas leituras boas apontam a mesma carta. Um quadro ruim no meio nao e
+ * evidencia contra — e so um quadro sem informacao, e jogar fora o que ja se
+ * sabia por causa dele e perder memoria de graca.
+ *
+ * As garantias continuam: cada leitura que conta ainda precisa passar em
+ * confianca E em margem, e ainda sao precisas duas concordando. O que muda e
+ * que elas nao precisam ser vizinhas.
+ */
+const JANELA_TRAVA = 5;          // leituras lembradas (~2,2 s a 450 ms)
+const recentes = [];             // ids das leituras BOAS na janela
 
 function avaliarTrava(results) {
   const topo = results[0];
-  if (!topo || topo.confidence < TRAVA_CONF || margem(results) < MARGEM_MIN) {
-    ultimoTopo = null;
-    repeticoes = 0;
-    return;
-  }
-  const id = catalog.ids[topo.i];
-  repeticoes = id === ultimoTopo ? repeticoes + 1 : 1;
-  ultimoTopo = id;
+  const bom = topo && topo.confidence >= TRAVA_CONF && margem(results) >= MARGEM_MIN;
 
-  if (repeticoes >= TRAVA_FRAMES) travar(id);
+  // Quadro ruim entra como buraco, nao como apagador: a janela anda, e o que
+  // ja concordava continua valendo ate sair pelo tempo.
+  recentes.push(bom ? catalog.ids[topo.i] : null);
+  if (recentes.length > JANELA_TRAVA) recentes.shift();
+
+  const votos = new Map();
+  for (const id of recentes) {
+    if (id) votos.set(id, (votos.get(id) || 0) + 1);
+  }
+  let vencedor = null, maior = 0;
+  for (const [id, n] of votos) if (n > maior) { maior = n; vencedor = id; }
+
+  // Espelha na variavel que o diagnostico mostra.
+  repeticoes = maior;
+  ultimoTopo = vencedor;
+
+  if (vencedor && maior >= TRAVA_FRAMES) travar(vencedor);
 }
 
 function travar(cardId, manual = false) {
@@ -562,6 +677,7 @@ function travar(cardId, manual = false) {
   vibrar(manual ? 14 : [12, 40, 22]);
   frozen = true;
   repeticoes = 0;
+  recentes.length = 0;
   els.retomar.hidden = false;
   els.capturar.hidden = true;
   els.stage.classList.add("paused", "travado");
@@ -601,6 +717,7 @@ function destravar() {
   frozen = false;
   ultimoTopo = null;
   repeticoes = 0;
+  recentes.length = 0;
   els.retomar.hidden = true;
   els.capturar.hidden = false;
   els.stage.classList.remove("paused", "travado");
@@ -648,7 +765,8 @@ function mostrarDiag(msg) {
     "",
     `margem     ${margem(r).toFixed(1)}  (minimo ${MARGEM_MIN})`,
     `travaria   conf>=${(TRAVA_CONF * 100).toFixed(0)}% ${r[0]?.confidence >= TRAVA_CONF ? "OK" : "NAO"}` +
-      `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  repet ${repeticoes}/${TRAVA_FRAMES}`,
+      `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  concordam ${repeticoes}/${TRAVA_FRAMES}` +
+      `  janela [${recentes.map((x) => (x ? "x" : ".")).join("")}]`,
   ];
   els.diag.textContent = linhas.join("\n");
   els.diag.hidden = false;
