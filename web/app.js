@@ -132,6 +132,46 @@ const TRAVA_FRAMES = 2;
 // possivel. Mas impede que o leitor TRAVE numa carta errada com ar de certeza.
 const MARGEM_MIN = 8;
 
+/**
+ * Separacao RELATIVA entre o primeiro e o segundo candidato.
+ *
+ * A margem em bits absolutos tem um defeito que so aparece em condicao ruim,
+ * e e ele que fazia o leitor acertar a carta e nunca travar.
+ *
+ * Quando o quadro degrada — luz baixa, reflexo, borrao — TODAS as distancias
+ * sobem juntas, porque o hash da foto se afasta de tudo. Num quadro limpo o
+ * primeiro fica a 34 e o segundo a 53: diferenca 19. No mesmo par com quadro
+ * ruim, 88 e 101: diferenca 13, com a MESMA relacao entre eles. O limiar
+ * absoluto reprova o segundo caso sem que nada tenha piorado de verdade na
+ * decisao — o vencedor continua tao destacado quanto antes.
+ *
+ * A razao nao sofre disso: 53/34 = 1,56 e 101/88 = 1,15... nao, e justamente
+ * aqui que ela mostra o que interessa. Quando a degradacao e uniforme a razao
+ * se mantem; quando ela achata a diferenca de verdade, a razao cai. E isso
+ * que se quer medir.
+ *
+ * Os dois criterios ficam, em OU: passa quem tem folga absoluta confortavel
+ * (quadro bom) ou folga proporcional (quadro ruim mas decisao clara). O que
+ * nao passa em nenhum dos dois e o caso que a margem existe para pegar — a
+ * carta ausente do indice, onde os candidatos sao cartas diferentes coladas
+ * por acaso e nem a diferenca nem a razao se destacam.
+ */
+const SEPARACAO_MIN = 1.18;
+
+function separacao(results) {
+  const topo = results[0];
+  if (!topo || topo.score <= 0) return Infinity;
+  for (let i = 1; i < results.length; i++) {
+    if (!mesmaCarta(topo, results[i])) return results[i].score / topo.score;
+  }
+  return Infinity;
+}
+
+/** Decide se o primeiro colocado esta destacado o bastante para travar. */
+function destacado(results) {
+  return margem(results) >= MARGEM_MIN || separacao(results) >= SEPARACAO_MIN;
+}
+
 let worker = null;
 let catalog = null;
 let prices = {};
@@ -671,7 +711,8 @@ const recentes = [];             // { id, conf, margem } de cada leitura da jane
 function avaliarTrava(results) {
   const topo = results[0];
   recentes.push(topo
-    ? { id: catalog.ids[topo.i], conf: topo.confidence, mg: margem(results) }
+    ? { id: catalog.ids[topo.i], conf: topo.confidence,
+        mg: margem(results), ok: destacado(results) }
     : null);
   if (recentes.length > JANELA_TRAVA) recentes.shift();
 
@@ -679,10 +720,10 @@ function avaliarTrava(results) {
   for (const r of recentes) {
     if (!r) continue;
     const atual = porCarta.get(r.id);
-    if (!atual) porCarta.set(r.id, { n: 1, conf: r.conf, mg: r.mg });
+    if (!atual) porCarta.set(r.id, { n: 1, conf: r.conf, mg: r.mg, ok: r.ok });
     else {
       atual.n++;
-      if (r.conf > atual.conf) { atual.conf = r.conf; atual.mg = r.mg; }
+      if (r.conf > atual.conf) { atual.conf = r.conf; atual.mg = r.mg; atual.ok = r.ok; }
     }
   }
 
@@ -695,7 +736,7 @@ function avaliarTrava(results) {
   ultimoTopo = vencedor;
 
   if (vencedor && melhor.n >= TRAVA_FRAMES
-      && melhor.conf >= TRAVA_CONF && melhor.mg >= MARGEM_MIN) {
+      && melhor.conf >= TRAVA_CONF && melhor.ok) {
     travar(vencedor);
   }
 }
@@ -795,7 +836,9 @@ function mostrarDiag(msg) {
     ...r.map((x, i) =>
       `${i + 1}. ${catalog.ids[x.i].padEnd(15)} conf ${(x.confidence * 100).toFixed(1)}%  dist ${x.score.toFixed(1)}`),
     "",
-    `margem     ${margem(r).toFixed(1)}  (minimo ${MARGEM_MIN})`,
+    `margem     ${margem(r).toFixed(1)} bits (min ${MARGEM_MIN})  |  ` +
+      `separacao ${separacao(r).toFixed(2)}x (min ${SEPARACAO_MIN})  ` +
+      `${destacado(r) ? "DESTACADO" : "colado"}`,
     `travaria   conf>=${(TRAVA_CONF * 100).toFixed(0)}% ${r[0]?.confidence >= TRAVA_CONF ? "OK" : "NAO"}` +
       `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  concordam ${repeticoes}/${TRAVA_FRAMES}` +
       `  janela [${recentes.map((x) => (x ? "x" : ".")).join("")}]` +
