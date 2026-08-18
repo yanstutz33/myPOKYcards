@@ -38,6 +38,8 @@
     <tbody></tbody>
   </table>
   <div id="verdict">rodando…</div>
+  <div id="nitidez" style="margin-top:1rem;padding:1rem 1.2rem;border-radius:8px;
+       max-width:1000px;border:1px solid #263041;background:#10151E"></div>
 
 <script type="module">
 import { capture } from "./capture.js";
@@ -57,6 +59,30 @@ const load = (src) => new Promise((res, rej) => {
    Fundo liso tornaria a detecção trivial e o teste inútil — a mesa de uma
    loja tem outras cartas, madeira e reflexo, e é isso que confunde a
    projeção de gradiente. */
+/* Cena SEM carta: so o fundo. Existe para medir o que o detector responde
+   quando nao ha nada para achar — sem esse numero, qualquer limiar de
+   "isto e mesmo uma carta?" seria chute. Foi o que apareceu no teste real:
+   o contorno perseguindo a quina da mesa e o teclado. */
+function cenaVazia(largura = 640, altura = 900) {
+  const cv = document.createElement("canvas");
+  cv.width = largura; cv.height = altura;
+  const g = cv.getContext("2d");
+  g.fillStyle = "#3a4250";
+  g.fillRect(0, 0, largura, altura);
+  g.strokeStyle = "rgba(255,255,255,0.10)";
+  g.lineWidth = 3;
+  for (let i = -altura; i < largura; i += 37) {
+    g.beginPath(); g.moveTo(i, 0); g.lineTo(i + altura, altura); g.stroke();
+  }
+  // Quinas e retangulos aleatorios, como mesa, celular e caixa no quadro.
+  g.fillStyle = "rgba(20,24,32,0.85)";
+  g.fillRect(60, 120, 300, 180);
+  g.fillRect(330, 560, 260, 300);
+  g.fillStyle = "rgba(240,240,245,0.9)";
+  g.fillRect(120, 640, 380, 120);
+  return cv;
+}
+
 function cena(img, graus, largura = 640, altura = 900) {
   const cv = document.createElement("canvas");
   cv.width = largura; cv.height = altura;
@@ -159,6 +185,32 @@ function cena(img, graus, largura = 640, altura = 900) {
       tbody.appendChild(tr);
     }
   }
+
+  // Mede a nitidez em cenas COM carta e SEM carta. A separacao entre as duas
+  // e o que permite escolher um limiar por medicao em vez de por intuicao.
+  const nitCarta = [], nitVazio = [];
+  for (const item of manifest) {
+    const img = await load(`${cards.cdn}/${item.caminho}/low.png`);
+    for (const graus of [0, 7, -11]) {
+      const a = detectarCarta(cena(img, graus), { x: 0, y: 0, w: 640, h: 900 });
+      if (a) nitCarta.push(a.nitidez);
+    }
+  }
+  for (let k = 0; k < 15; k++) {
+    const a = detectarCarta(cenaVazia(), { x: 0, y: 0, w: 640, h: 900 });
+    if (a) nitVazio.push(a.nitidez);
+  }
+  const ord = (a) => [...a].sort((x, y) => x - y);
+  const pct = (a, q) => ord(a)[Math.floor((a.length - 1) * q)];
+  document.getElementById("nitidez").innerHTML = nitCarta.length ? `
+    <p style="margin:0 0 .4rem"><b>Nitidez da borda</b> — o que separa carta de cenário:</p>
+    <p style="margin:0">com carta (${nitCarta.length} cenas):
+      mínimo <code>${Math.min(...nitCarta).toFixed(1)}</code> ·
+      mediana <code>${pct(nitCarta, 0.5).toFixed(1)}</code></p>
+    <p style="margin:0">sem carta (${nitVazio.length} cenas, ${
+      nitVazio.length ? "detectou algo mesmo assim" : "não detectou nada"}):
+      ${nitVazio.length ? `máximo <code>${Math.max(...nitVazio).toFixed(1)}</code> ·
+      mediana <code>${pct(nitVazio, 0.5).toFixed(1)}</code>` : "—"}</p>` : "";
 
   const med = (a) => a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN;
   const erroMedio = med(erros), erroMax = Math.max(...erros);

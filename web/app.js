@@ -360,9 +360,45 @@ function recorteAtual() {
   return achado || guia;
 }
 
+/**
+ * Suavização do contorno entre leituras.
+ *
+ * Do teste real: "o scan não centraliza, fica se mexendo continuamente". Duas
+ * causas, e esta é a segunda. A detecção roda do zero a cada 450 ms e acerta
+ * a borda com precisão de alguns pixels — mas esses poucos pixels de
+ * diferença, redesenhados oito vezes por segundo, viram tremor.
+ *
+ * O filtro é exponencial e só age em movimento PEQUENO: se a carta mudou de
+ * lugar de verdade (mais de um sexto da largura), o contorno salta na hora,
+ * porque arrastar suavemente até a posição nova seria pior — ficaria
+ * mostrando por meio segundo um recorte que já não é o que está sendo lido.
+ */
+const SUAVE = 0.45;              // peso da leitura nova quando o movimento é pequeno
+let contornoSuave = null;
+
+function suavizar(a) {
+  if (!a || typeof a.ang !== "number") { contornoSuave = null; return a; }
+  const p = contornoSuave;
+  const saltou = !p || Math.hypot(a.cx - p.cx, a.cy - p.cy) > a.cw / 6
+    || Math.abs(a.cw - p.cw) > a.cw / 6;
+  if (saltou) {
+    contornoSuave = { cx: a.cx, cy: a.cy, cw: a.cw, ch: a.ch, ang: a.ang };
+  } else {
+    const m = (novo, velho) => velho + (novo - velho) * SUAVE;
+    contornoSuave = {
+      cx: m(a.cx, p.cx), cy: m(a.cy, p.cy),
+      cw: m(a.cw, p.cw), ch: m(a.ch, p.ch),
+      // Ângulo interpolado pelo caminho curto, senão 179° -> -179° gira tudo.
+      ang: p.ang + Math.atan2(Math.sin(a.ang - p.ang), Math.cos(a.ang - p.ang)) * SUAVE,
+    };
+  }
+  return { ...a, ...contornoSuave };
+}
+
 /** Desenha na tela a borda que está sendo recortada de fato. */
 let tinhaBorda = false;
-function desenharAchado(a) {
+function desenharAchado(bruto) {
+  const a = suavizar(bruto);
   // Só na transição: bipe a cada 450 ms de leitura seria insuportável em
   // dois minutos de uso na loja.
   if (Boolean(a) !== tinhaBorda) {
@@ -599,6 +635,9 @@ function mostrarDiag(msg) {
     // mesmo sintoma: carta inclinada de verdade, e detector travando num
     // angulo errado. Sem ele, "confianca baixa" nao diz qual dos dois e.
     `inclinacao ${d && typeof d.ang === "number" ? `${(d.ang * 180 / Math.PI).toFixed(1)} graus${Math.abs(d.ang) > 0.004 ? "  (recorte desentortado)" : ""}` : "-"}`,
+    // Medido: carta de verdade da 10,5 ou mais; cenario (mesa, teclado, caixa)
+    // fica em 3,7. O piso e 6.
+    `nitidez    ${d?.nitidez != null ? `${d.nitidez.toFixed(1)}  (piso 6; carta >=10, cenario ~4)` : "-"}`,
     `recorte    ${ultimoRecorte ? `${ultimoRecorte.w}x${ultimoRecorte.h}` : "-"}`,
     `luz        ${ultimaLuz ? `media ${ultimaLuz.media.toFixed(0)}  estourado ${(ultimaLuz.fracaoEstourada * 100).toFixed(0)}%` + (ultimaLuz.estourado ? "  REFLEXO" : "") + (ultimaLuz.escuro ? "  ESCURO" : "") : "-"}`,
     `lanterna   ${trilha ? (temLanterna(trilha) ? (lanternaLigada ? "ligada" : "disponivel") : "nao suportada") : "-"}`,

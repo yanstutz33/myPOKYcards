@@ -48,6 +48,27 @@ const LARGURA_ANALISE = 160;
  * Grosso e depois fino, para não pagar 40 passadas: ~2,9° cobrindo ±17°,
  * depois ~0,7° em volta do melhor.
  */
+/* Piso de nitidez: abaixo disto não é carta, é cenário.
+ *
+ * No teste real o contorno perseguia a quina da mesa e o teclado, tremendo a
+ * cada leitura. A causa: proporção sozinha aceita qualquer retângulo entre
+ * ~0,52 e ~0,92, e uma mesa cheia de coisas sempre tem algum recorte assim.
+ *
+ * O número saiu de medição, não de tentativa — web/teste-rotacao.html mede a
+ * nitidez em cenas COM carta e em cenas só de fundo com quinas e retângulos:
+ *
+ *     com carta   mínimo 10,5   mediana 15,4
+ *     sem carta   máximo  3,7   mediana  3,7
+ *
+ * O vão entre 3,7 e 10,5 é largo. Seis fica no meio, com fator ~1,6 de folga
+ * para os dois lados: aguenta carta real em luz ruim (que borra a borda e
+ * derruba a nitidez) sem voltar a aceitar quina de móvel.
+ *
+ * Recusar aqui não desliga o leitor: sem detecção ele volta a recortar pela
+ * moldura, que é o comportamento antigo. O que para é o contorno mentindo
+ * sobre o que está sendo lido. */
+const NITIDEZ_MIN = 6;
+
 const ANGULO_MAX = 0.30;        // ±17°; além disso a pessoa está virando o celular
 const PASSO_GROSSO = 0.05;      // ~2,9°
 const PASSO_FINO = 0.012;       // ~0,7°
@@ -226,6 +247,7 @@ export function detectarCarta(video, busca) {
   const alt = melhor.alt / escala;
   if (larg < busca.w * 0.25 || alt < busca.h * 0.25) return null;
   if (melhor.erro > TOLERANCIA_RAZAO) return null;
+  if (melhor.nitidez < NITIDEZ_MIN) return null;   // cenário, não carta
 
   // Cantos no referencial girado -> volta para coordenadas de imagem.
   // De u = x·cos + y·sen e v = −x·sen + y·cos segue x = u·cos − v·sen e
@@ -251,6 +273,11 @@ export function detectarCarta(video, busca) {
     // O retângulo REAL da carta, que é o que o recorte deve usar.
     cx, cy, cw: larg, ch: alt, ang: melhor.ang, quad,
     confianca: 1 - melhor.erro / TOLERANCIA_RAZAO,
+    // Nitidez do pico de borda, em multiplos da media do perfil. Ja era
+    // calculada para escolher o angulo; sai daqui porque distingue "achei a
+    // borda de uma carta" de "achei uma quina qualquer da mesa com proporcao
+    // parecida" — que e o que fazia o contorno perseguir o cenario.
+    nitidez: melhor.nitidez,
   };
 }
 

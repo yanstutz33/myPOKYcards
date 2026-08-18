@@ -1551,3 +1551,37 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   font-weight: 700;
   font-size: 0.82rem;
 }
+
+/* ============================== por que o cartão aparecia vazio e cortado
+   Reproduzido no aparelho: cartão creme quase todo vazio, "69% CERTEZA" no
+   canto, e nome e expansão espremidos numa tira de ~20px na direita.
+
+   NÃO era cache nem falta de espaço. É uma regra do CSS Grid que morde
+   exatamente esta combinação:
+
+     grid-template-columns: auto minmax(0, 1fr)
+     ...e vários filhos com grid-column: 1 / -1
+
+   Itens que ATRAVESSAM as duas colunas ainda contribuem para o tamanho das
+   faixas. Como a segunda faixa tem mínimo ZERO (`minmax(0, 1fr)`, que eu pus
+   justamente para permitir encolher), ela não absorve nada: a largura mínima
+   inteira do item que atravessa vai para a faixa `auto`. Basta um preço, uma
+   linha de guardar ou um aviso um pouco mais largo para a primeira coluna
+   inchar e a segunda colapsar — e o conteúdo some para a direita.
+
+   A correção é tirar a decisão do algoritmo: a primeira coluna existe só
+   para a miniatura e tem o tamanho dela. Sem miniatura, uma coluna só. */
+.sheet .hit { grid-template-columns: 46px minmax(0, 1fr); }
+.sheet .hit.com-confere { grid-template-columns: minmax(0, 1fr); }
+.sheet .hit.com-confere .hit-name,
+.sheet .hit.com-confere .hit-meta,
+.sheet .hit.com-confere .valor,
+.sheet .hit.com-confere .guardar,
+.sheet .hit.com-confere .confere,
+.sheet .hit.com-confere .incerto-aviso,
+.sheet .hit.com-confere .bloco-det { grid-column: 1 / -1; }
+
+/* Sem arte, a primeira coluna não precisa reservar espaço nenhum. */
+.sheet .hit:not(.com-mini) { grid-template-columns: minmax(0, 1fr); }
+.sheet .hit:not(.com-mini) .hit-name,
+.sheet .hit:not(.com-mini) .hit-meta { grid-column: 1 / -1; }
