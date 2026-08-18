@@ -643,29 +643,61 @@ function margem(results) {
  * que elas nao precisam ser vizinhas.
  */
 const JANELA_TRAVA = 5;          // leituras lembradas (~2,2 s a 450 ms)
-const recentes = [];             // ids das leituras BOAS na janela
+const recentes = [];             // { id, conf, margem } de cada leitura da janela
 
+/**
+ * Concordancia na janela + o MELHOR quadro precisa passar nos limiares.
+ *
+ * A versao anterior exigia que CADA leitura contada passasse em confianca e
+ * margem. Numa cena com reflexo varrendo a carta isso e severo demais: o
+ * leitor acertava a carta em 16 de 16 leituras e mesmo assim quase nunca
+ * juntava duas aprovadas, porque a faixa de luz derruba a confianca de um
+ * quadro em cada dois ou tres.
+ *
+ * Julgar cada quadro isolado joga fora informacao que ja esta na mao. Varias
+ * leituras independentes apontando a mesma carta sao evidencia; o quadro
+ * menos estragado pela luz e o que melhor representa a carta.
+ *
+ * Entao: a concordancia conta o top-1 de TODAS as leituras, e o teste duro —
+ * confianca e margem — e aplicado ao MELHOR quadro daquela carta na janela.
+ *
+ * Isto NAO afrouxa a protecao contra carta ausente do indice, que e a razao
+ * de a margem existir. Quando a carta nao esta no indice, os candidatos sao
+ * cartas diferentes coladas por acaso e a margem fica baixa em TODOS os
+ * quadros, inclusive no melhor — este projeto ja mediu mediana 4,2 contra
+ * 22,6 quando a carta esta presente. O melhor quadro de um palpite errado
+ * continua reprovando.
+ */
 function avaliarTrava(results) {
   const topo = results[0];
-  const bom = topo && topo.confidence >= TRAVA_CONF && margem(results) >= MARGEM_MIN;
-
-  // Quadro ruim entra como buraco, nao como apagador: a janela anda, e o que
-  // ja concordava continua valendo ate sair pelo tempo.
-  recentes.push(bom ? catalog.ids[topo.i] : null);
+  recentes.push(topo
+    ? { id: catalog.ids[topo.i], conf: topo.confidence, mg: margem(results) }
+    : null);
   if (recentes.length > JANELA_TRAVA) recentes.shift();
 
-  const votos = new Map();
-  for (const id of recentes) {
-    if (id) votos.set(id, (votos.get(id) || 0) + 1);
+  const porCarta = new Map();
+  for (const r of recentes) {
+    if (!r) continue;
+    const atual = porCarta.get(r.id);
+    if (!atual) porCarta.set(r.id, { n: 1, conf: r.conf, mg: r.mg });
+    else {
+      atual.n++;
+      if (r.conf > atual.conf) { atual.conf = r.conf; atual.mg = r.mg; }
+    }
   }
-  let vencedor = null, maior = 0;
-  for (const [id, n] of votos) if (n > maior) { maior = n; vencedor = id; }
 
-  // Espelha na variavel que o diagnostico mostra.
-  repeticoes = maior;
+  let vencedor = null, melhor = null;
+  for (const [id, v] of porCarta) {
+    if (!melhor || v.n > melhor.n) { melhor = v; vencedor = id; }
+  }
+
+  repeticoes = melhor ? melhor.n : 0;
   ultimoTopo = vencedor;
 
-  if (vencedor && maior >= TRAVA_FRAMES) travar(vencedor);
+  if (vencedor && melhor.n >= TRAVA_FRAMES
+      && melhor.conf >= TRAVA_CONF && melhor.mg >= MARGEM_MIN) {
+    travar(vencedor);
+  }
 }
 
 function travar(cardId, manual = false) {
@@ -766,7 +798,13 @@ function mostrarDiag(msg) {
     `margem     ${margem(r).toFixed(1)}  (minimo ${MARGEM_MIN})`,
     `travaria   conf>=${(TRAVA_CONF * 100).toFixed(0)}% ${r[0]?.confidence >= TRAVA_CONF ? "OK" : "NAO"}` +
       `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  concordam ${repeticoes}/${TRAVA_FRAMES}` +
-      `  janela [${recentes.map((x) => (x ? "x" : ".")).join("")}]`,
+      `  janela [${recentes.map((x) => (x ? "x" : ".")).join("")}]` +
+      `  melhor ${(() => {
+        const v = recentes.filter((x) => x && x.id === ultimoTopo);
+        if (!v.length) return "-";
+        const b = v.reduce((a, c) => (c.conf > a.conf ? c : a));
+        return `conf ${(b.conf * 100).toFixed(0)}% margem ${b.mg.toFixed(1)}`;
+      })()}`,
   ];
   els.diag.textContent = linhas.join("\n");
   els.diag.hidden = false;
