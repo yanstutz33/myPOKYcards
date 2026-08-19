@@ -13,6 +13,7 @@
  */
 
 import * as colecao from "./colecao.js";
+import * as mercado from "./mercado.js";
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
@@ -152,6 +153,8 @@ export function abrir(cardId) {
               esc(NOME_IDIOMA[l] || l)).join(" · "))}
           </dl>
         </section>
+
+        ${mercado.blocoHtml(nome, set, numero)}
 
         ${ctx.gradedHtml ? (() => {
           const g = ctx.gradedHtml(cardId);

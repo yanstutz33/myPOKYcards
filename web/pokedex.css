@@ -1585,3 +1585,28 @@ body.lendo.travado .sheet { max-height: 52dvh; }
 .sheet .hit:not(.com-mini) { grid-template-columns: minmax(0, 1fr); }
 .sheet .hit:not(.com-mini) .hit-name,
 .sheet .hit:not(.com-mini) .hit-meta { grid-column: 1 / -1; }
+
+/* ------------------------------------------------- comprar ou vender
+   Aparece só na ficha, depois do preço e dos dados — quem chegou aqui já
+   sabe o que tem na mão. Botão de loja com a cara do chassi, não banner. */
+.mkt-lojas { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 0.5rem; }
+.mkt-loja {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 46px; padding: 0 0.7rem;
+  border-radius: 10px;
+  border: 2px solid var(--chassi-borda);
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  color: #fff; font-weight: 700; font-size: 0.85rem;
+  text-decoration: none; text-align: center;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.mkt-loja:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda); }
+/* A Liga entra sem comissão, e a diferença é visível de propósito. */
+.mkt-liga {
+  background: linear-gradient(180deg, #3A4150, #232833);
+  border-color: #12151C; box-shadow: 0 3px 0 #12151C;
+}
+.mkt-aviso {
+  margin: 0.6rem 0 0; font-size: 0.72rem; line-height: 1.4;
+  color: var(--ink-soft);
+}

@@ -46,7 +46,8 @@ const CACHE_DADOS = `poky-dados-${FORMATO_DADOS}`;
 const ESSENCIAIS = [
   "./", "./index.html", "./style.css", "./tema.css", "./scan.css",
   "./app.js", "./capture.js", "./detectar.js", "./camera.js",
-  "./tema.js", "./colecao.js", "./som.js", "./ficha.js", "./matcher.worker.js",
+  "./tema.js", "./colecao.js", "./som.js", "./ficha.js", "./mercado.js",
+  "./matcher.worker.js",
   "./colecao.html", "./colecao-tela.js",
   "./buscar.html", "./buscar.js", "./busca-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
