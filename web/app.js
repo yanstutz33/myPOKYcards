@@ -598,15 +598,65 @@ function tick() {
  * carta fora do índice, reflexo de foil. Ficar preso esperando o leitor
  * "decidir" foi a reclamação do primeiro teste com carta real.
  */
-function capturarAgora() {
+/**
+ * Captura: uma leitura PESADA, porque aqui existe tempo.
+ *
+ * A leitura ao vivo tem 450 ms por quadro e roda enquanto a pessoa mira, num
+ * quadro de video com borrao de movimento. Ela precisa ser barata: uma
+ * hipotese, uma passada. E por isso que ela erra mais.
+ *
+ * Ao tocar, o contexto e outro: a pessoa parou, esta esperando, e cada leitura
+ * custa 14 ms. Gastar dez leituras aqui e imperceptivel e muda o resultado,
+ * porque o erro dominante nao e do indice — e do RECORTE. Um recorte 3% maior
+ * ou 3% menor que a carta desloca o hash inteiro, e o hash e da carta inteira.
+ *
+ * Entao a captura testa varios recortes em volta do que o detector achou e
+ * fica com o que o indice reconhece melhor. E a mesma ideia que ja tinha sido
+ * medida no caminho da foto, onde testar duas hipoteses levou o acerto de
+ * "Ambipom a 79%" para a carta certa a 99%.
+ */
+async function capturarAgora() {
   if (!running) return;
-  const rect = recorteAtual() || cropRect();
-  if (!rect) return;
+  const base = recorteAtual() || centroDoVideo();
+  if (!base) return;
+
   frozen = true;
-  seq++;
-  pendenteTravar = true;
-  worker.postMessage({ type: "match", seq, k: 3, ...capture(els.video, rect) });
-  els.hint.textContent = "Lendo…";
+  som.somCapturou();
+  els.hint.textContent = "Analisando…";
+  els.hint.classList.remove("alerta");
+
+  // Variacoes de escala em torno do recorte detectado. A carta tem borda
+  // branca e sangria: um pouco a mais ou a menos muda o que entra no hash, e
+  // qual e o melhor depende da carta e do angulo — nao da para saber antes.
+  const escalas = [1, 0.96, 1.04, 0.92, 1.08];
+  const variantes = escalas.map((k) => {
+    if (typeof base.ang === "number") {
+      return { ...base, cw: base.cw * k, ch: base.ch * k };
+    }
+    const cx = base.x + base.w / 2, cy = base.y + base.h / 2;
+    const w = base.w * k, h = base.h * k;
+    return { x: cx - w / 2, y: cy - h / 2, w, h };
+  });
+
+  const lidas = await Promise.all(
+    variantes.map(async (rect) => ({ rect, r: await medir(capture(els.video, rect)) })));
+
+  const melhor = lidas.reduce((a, b) =>
+    (b.r.results[0]?.confidence ?? 0) > (a.r.results[0]?.confidence ?? 0) ? b : a);
+
+  if (!melhor.r.results?.length) {
+    els.hint.textContent = "Nao consegui ler essa. Tente de novo ou busque pelo nome.";
+    els.hint.classList.add("alerta");
+    frozen = false;
+    return;
+  }
+
+  // Refaz o recorte vencedor para que a foto da comparacao seja a dele.
+  ultimoRecorte = melhor.rect;
+  capture(els.video, melhor.rect);
+  render(melhor.r.results);
+  travar(catalog.ids[melhor.r.results[0].i], true);
+  if (DIAG) mostrarDiag(melhor.r);
 }
 let pendenteTravar = false;
 
