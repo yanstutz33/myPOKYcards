@@ -24,11 +24,7 @@
  * imagem, 9.383 são asiáticas. Fingir que alcança essas seria pior que
  * admitir o limite.
  *
- * Não lê o número impresso. Foi tentado e medido: 0 de 15. O número está lá e
- * é legível a olho — "136/189" no rodapé — mas o motor não extrai nada útil
- * dele nesta resolução. Valeria mais que o nome em população (10.737 cartas
- * de impressões irmãs contra 1.278), e continua em aberto.
- *
+
  * Precisa de internet na primeira vez
  * -----------------------------------
  * O motor e os dados de idioma somam ~7 MB e vêm de CDN sob demanda. Embutir
@@ -56,6 +52,30 @@ const GEOMETRIAS = [
   { rx: 0.150, ry: 0.034, rw: 0.62, rh: 0.062 },
   { rx: 0.080, ry: 0.088, rw: 0.84, rh: 0.075 },
 ];
+
+/* O número impresso, no rodapé.
+ *
+ * Vale mais que o nome em população: resolve os 4.867 grupos de impressões
+ * irmãs, que cobrem 10.737 cartas — onde o app hoje diz "confira o número
+ * você mesmo" porque nenhum algoritmo de imagem separa arte idêntica.
+ *
+ * A primeira tentativa deu 0 de 15 e eu quase descartei o caminho. O erro foi
+ * o mesmo do nome: não olhei o que estava entregando ao motor. Ao renderizar
+ * a tira, "136/189" e "125/197" estavam nítidos — o problema era como a
+ * leitura era pedida.
+ *
+ * Duas mudanças levaram de 0/15 para 4/5:
+ *
+ *   LISTA BRANCA de dígitos e barra. Sem ela o motor lê "1" como "|" ou "l",
+ *   e o padrão numérico nunca casa.
+ *
+ *   MODO 11 (texto esparso) em vez de 7 (uma linha). A faixa do rodapé tem
+ *   símbolo de energia, marca de regulação, o número, um losango de raridade
+ *   e o copyright. Forçar tudo numa linha produzia "2020" — o ano do
+ *   copyright — em vez do número.
+ */
+const GEOMETRIA_NUMERO = { rx: 0.04, ry: 0.925, rw: 0.42, rh: 0.055 };
+const PADRAO_NUMERO = /(\d{1,3})\s*\/\s*(\d{1,3})/;
 
 const MIN_LETRAS = 4;
 
@@ -131,10 +151,10 @@ export const pronto = () => Boolean(motor && vocabulario);
  * inversão existe porque metade das cartas tem nome claro sobre arte escura,
  * e OCR de documento espera o contrário.
  */
-function tira(fonte, geo, inverter) {
+function tira(fonte, geo, inverter, escala = 4) {
   const w = fonte.width || fonte.naturalWidth;
   const h = fonte.height || fonte.naturalHeight;
-  const ESCALA = 4;
+  const ESCALA = escala;
   const cv = document.createElement("canvas");
   cv.width = Math.max(8, Math.round(w * geo.rw * ESCALA));
   cv.height = Math.max(8, Math.round(h * geo.rh * ESCALA));
@@ -172,6 +192,34 @@ function tira(fonte, geo, inverter) {
  * alimenta o hash. Passar o quadro inteiro daria ao motor a mesa, a mão e o
  * texto de ataque para competir com as duas palavras que interessam.
  */
+/**
+ * Lê o número impresso, ou null.
+ *
+ * Devolve só o numerador — "136" de "136/189". O denominador é o tamanho do
+ * set e já está no catálogo; exigir que ele bata também transformaria um erro
+ * de leitura num descarte, e o numerador sozinho já distingue as impressões
+ * irmãs, que é para o que isto existe.
+ */
+export async function lerNumero(fonte) {
+  if (!pronto()) await preparar();
+  await motor.setParameters({
+    tessedit_pageseg_mode: "11",
+    tessedit_char_whitelist: "0123456789/",
+  });
+  let achado = null;
+  try {
+    const cv = tira(fonte, GEOMETRIA_NUMERO, false, 6);
+    const t = (await motor.recognize(cv)).data.text.replace(/\s+/g, " ").trim();
+    const m = t.match(PADRAO_NUMERO);
+    if (m) achado = m[1].replace(/^0+(?=\d)/, "");   // "032" e "32" sao o mesmo
+  } catch { /* segue sem numero */ }
+  // Devolve o motor ao modo do nome: parametros sao globais no worker, e
+  // deixar a lista branca ligada faria a proxima leitura de nome so ver
+  // digitos.
+  await motor.setParameters({ tessedit_pageseg_mode: "7", tessedit_char_whitelist: "" });
+  return achado;
+}
+
 export async function lerNome(fonte) {
   if (!pronto()) await preparar();
 

@@ -657,7 +657,7 @@ async function capturarAgora() {
   ultimoRecorte = melhor.rect;
   capture(els.video, melhor.rect);
 
-  const escolhidos = await conferirComTexto(melhor.r.results);
+  const escolhidos = await desempatarPorNumero(await conferirComTexto(melhor.r.results));
   render(escolhidos);
   travar(catalog.ids[escolhidos[0].i], true);
   if (DIAG) mostrarDiag({ ...melhor.r, results: escolhidos });
@@ -725,6 +725,66 @@ async function conferirComTexto(resultados) {
 }
 
 let ultimoTextoLido = null;
+
+/**
+ * Le o numero impresso para escolher ENTRE impressoes irmas.
+ *
+ * Este e o caso que a imagem nunca resolve, por construcao: sao 4.867 grupos
+ * cobrindo 10.737 cartas com arte identica ou quase, precos diferentes, e o
+ * app ate agora so podia dizer "confira o numero voce mesmo".
+ *
+ * O numero e a unica coisa impressa que as separa — e desde que a leitura
+ * passou a usar lista branca de digitos e modo de texto esparso, ela funciona
+ * (medido: 4 de 5, contra 0 de 15 na primeira tentativa).
+ *
+ * So roda quando ha irmas de verdade. Numa carta sem grupo, gastar 600 ms
+ * para ler um numero que nao vai decidir nada seria puro custo.
+ *
+ * Falha sem consequencia: numero ilegivel deixa a ordem como estava, e a
+ * ficha continua listando as irmas para escolha manual.
+ */
+async function desempatarPorNumero(resultados) {
+  const topo = resultados[0];
+  if (!topo || topo.porTexto) return resultados;
+
+  const grupo = catalog.meta[topo.i]?.[8];
+  if (grupo === undefined || grupo === -1) return resultados;
+  const irmas = catalog.grupos?.[String(grupo)] || [];
+  if (irmas.length < 2) return resultados;
+
+  const fonte = recorteAtualCanvas();
+  if (!fonte) return resultados;
+
+  els.hint.textContent = "Lendo o número…";
+  let numero = null;
+  try {
+    numero = await ocr.lerNumero(fonte);
+  } catch {
+    return resultados;   // sem rede ou sem motor: segue como estava
+  }
+  if (!numero) return resultados;
+
+  // `local_id` do catalogo tem zeros a esquerda em alguns sets ("032"), o
+  // numero lido nao. Compara por valor.
+  const alvo = Number(numero);
+  const casou = irmas.find((i) => Number(catalog.meta[i]?.[2]) === alvo);
+  if (casou === undefined) return resultados;
+
+  ultimoNumeroLido = numero;
+  const jaEsta = resultados.findIndex((r) => r.i === casou);
+  if (jaEsta === 0) return resultados;
+  if (jaEsta > 0) {
+    const r = resultados[jaEsta];
+    return [r, ...resultados.filter((_, k) => k !== jaEsta)];
+  }
+  // A impressao certa nao estava nem entre os candidatos: entra na frente,
+  // com a confianca do primeiro, porque a ARTE e a mesma — o hash acertou a
+  // imagem e errou so a impressao, que e exatamente o que o numero corrige.
+  return [{ i: casou, score: topo.score, confidence: topo.confidence, porNumero: numero },
+          ...resultados];
+}
+
+let ultimoNumeroLido = null;
 let pendenteTravar = false;
 
 /**
@@ -1263,6 +1323,9 @@ function cartaHtml(r, results) {
       <span>${regiao === "asia" ? "JA" : "INTL"}</span>
       <span class="toque-dica">toque para ver tudo →</span>
     </div>
+    ${r.porNumero ? `<p class="por-texto">Impressão escolhida pelo
+        <strong>número ${escapeHtml(r.porNumero)}</strong> lido na carta —
+        a arte é igual em várias, só o número separa.</p>` : ""}
     ${r.porTexto ? `<p class="por-texto">Identificada pelo <strong>nome impresso</strong>,
         não pela imagem — esta carta não tem arte no catálogo. Confira o número
         para escolher a impressão certa.</p>` : ""}
