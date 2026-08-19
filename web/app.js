@@ -8,7 +8,8 @@
  * canvas garantido em todos os navegadores móveis.
  */
 
-import { capture, fotoDoRecorte } from "./capture.js";
+import { capture, fotoDoRecorte, recorteAtualCanvas } from "./capture.js";
+import * as ocr from "./ocr.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
@@ -655,10 +656,75 @@ async function capturarAgora() {
   // Refaz o recorte vencedor para que a foto da comparacao seja a dele.
   ultimoRecorte = melhor.rect;
   capture(els.video, melhor.rect);
-  render(melhor.r.results);
-  travar(catalog.ids[melhor.r.results[0].i], true);
-  if (DIAG) mostrarDiag(melhor.r);
+
+  const escolhidos = await conferirComTexto(melhor.r.results);
+  render(escolhidos);
+  travar(catalog.ids[escolhidos[0].i], true);
+  if (DIAG) mostrarDiag({ ...melhor.r, results: escolhidos });
 }
+
+/**
+ * Confere o palpite do hash lendo o nome impresso.
+ *
+ * Roda SO quando o hash nao resolveu — confianca ou margem abaixo do limiar.
+ * Quando ele resolveu, ler o nome custaria 600 ms para confirmar o que ja
+ * estava confirmado, e a pessoa esta esperando.
+ *
+ * Faz duas coisas, e a segunda e a que este projeto nao tinha:
+ *
+ *   1. REORDENA. Se o nome lido bate com um dos candidatos do hash, ele sobe.
+ *      E o caso comum: o hash tinha a carta certa em segundo lugar.
+ *   2. TRAZ DE FORA. Se o nome bate com uma carta que o hash NAO listou, ela
+ *      entra. E o unico caminho para as 1.278 cartas sem imagem de
+ *      referencia, que o hash nunca pode devolver porque nao estao no indice
+ *      de imagens.
+ *
+ * Falha sem consequencia: sem rede, sem motor, ou sem leitura confiavel, o
+ * resultado do hash segue inalterado. OCR aqui e ganho, nunca dependencia.
+ */
+async function conferirComTexto(resultados) {
+  const topo = resultados[0];
+  if (topo && topo.confidence >= TRAVA_CONF && destacado(resultados)) return resultados;
+
+  const fonte = recorteAtualCanvas();
+  if (!fonte) return resultados;
+
+  els.hint.textContent = "Lendo o nome…";
+  let lido;
+  try {
+    lido = await ocr.lerNome(fonte);
+  } catch {
+    els.hint.textContent = "Analisando…";
+    return resultados;   // sem rede ou sem motor: segue com o hash
+  }
+  if (!lido.candidatos.length) return resultados;
+
+  const posicao = new Map(lido.candidatos.map((id, i) => [id, i]));
+  const dentro = resultados.filter((r) => posicao.has(catalog.ids[r.i]));
+
+  if (dentro.length) {
+    // Reordena: o que o texto confirma vem primeiro.
+    ultimoTextoLido = lido;
+    return [...dentro, ...resultados.filter((r) => !posicao.has(catalog.ids[r.i]))];
+  }
+
+  // Nenhum candidato do hash bate com o nome lido. Traz os do texto, que e o
+  // caso das cartas fora do indice de imagens.
+  const novos = lido.candidatos
+    .map((id) => catalog.ids.indexOf(id))
+    .filter((i) => i >= 0)
+    .slice(0, 3)
+    // `score` e `confidence` vem do texto, nao do hash: a confianca e a nota
+    // de contencao, e a distancia fica indefinida de proposito — nao existe
+    // distancia de hash para uma carta que nao esta no indice de imagens.
+    .map((i) => ({ i, score: NaN, confidence: lido.nota, porTexto: true }));
+
+  if (!novos.length) return resultados;
+  ultimoTextoLido = lido;
+  return [...novos, ...resultados];
+}
+
+let ultimoTextoLido = null;
 let pendenteTravar = false;
 
 /**
@@ -1189,13 +1255,17 @@ function cartaHtml(r, results) {
     ${caminho ? `<img class="miniatura" alt="" loading="lazy" decoding="async"
          src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
     <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
-    <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>certeza</small></div>
+    <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>${
+      r.porTexto ? "pelo nome" : "certeza"}</small></div>
     <div class="hit-meta">
       <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
       ${raridade ? `<span class="selo-raridade">${escapeHtml(raridade)}</span>` : ""}
       <span>${regiao === "asia" ? "JA" : "INTL"}</span>
       <span class="toque-dica">toque para ver tudo →</span>
     </div>
+    ${r.porTexto ? `<p class="por-texto">Identificada pelo <strong>nome impresso</strong>,
+        não pela imagem — esta carta não tem arte no catálogo. Confira o número
+        para escolher a impressão certa.</p>` : ""}
     ${comparacaoHtml(caminho)}
     ${incerto ? `<p class="incerto-aviso">Não tenho certeza desta.
         Confira o número impresso — ou a carta pode não ter imagem no catálogo,

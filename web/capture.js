@@ -198,6 +198,17 @@ function guardarMiniatura(origem) {
   _miniCtx.drawImage(origem, 0, 0, MINI_LARG, alt);
 }
 
+/**
+ * O recorte em tamanho cheio, já desentortado.
+ *
+ * O OCR precisa dele, e não da miniatura de 150px: nome de carta tem poucos
+ * pixels de altura mesmo na imagem inteira, e reduzir antes de ler apaga
+ * justamente o que se quer ler.
+ */
+export function recorteAtualCanvas() {
+  return _srcCtx?.canvas?.width ? _srcCtx.canvas : null;
+}
+
 /** JPEG da última leitura, ou null se ainda não houve nenhuma. */
 export function fotoDoRecorte() {
   if (!_miniCtx || !_miniCtx.canvas.width) return null;

@@ -1610,3 +1610,18 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   margin: 0.6rem 0 0; font-size: 0.72rem; line-height: 1.4;
   color: var(--ink-soft);
 }
+
+/* Carta achada pelo nome impresso, não pela imagem. Precisa dizer isso: a
+   porcentagem ali é nota de leitura de texto, não distância de hash, e
+   apresentar as duas como a mesma coisa seria misturar unidades. */
+.por-texto {
+  grid-column: 1 / -1;
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(44, 111, 201, 0.12);
+  border: 1px solid rgba(44, 111, 201, 0.4);
+  color: var(--carta-tinta);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}

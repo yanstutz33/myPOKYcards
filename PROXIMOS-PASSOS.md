@@ -19,7 +19,25 @@ banco de imagens: lê o nome impresso.
 **Conclusão: existe um segundo caminho de identificação que este projeto
 nunca usou — ler o texto da carta.**
 
-## Etapa 6 (PRIORIDADE): OCR na captura
+## Etapa 6: OCR na captura — FEITA (19/08/2026)
+
+Implementada e medida. `web/ocr.js` le o nome impresso quando o hash nao
+resolve; `pipeline/export_ocr_names.py` gera o vocabulario de todos os
+idiomas. Bancada em `web/teste-ocr.html`.
+
+CORRECAO ao que este documento dizia: OCR latino NAO alcanca as 11.411
+cartas sem imagem. Delas, 9.383 sao asiaticas e exigiriam traineddata
+japonesa sobre fonte estilizada. Sobram 1.278 internacionais — 3,1% do
+catalogo, nao 27%.
+
+Medido: 68% numa amostra de 19 pela bancada, 4/5 no modulo integrado.
+
+EM ABERTO, e vale mais que o nome: ler o NUMERO impresso resolveria os
+4.867 grupos de impressoes irmas, que sao 10.737 cartas. Tentado e medido:
+0 de 15. O numero esta la e e legivel a olho ("136/189" no rodape), mas o
+motor nao extrai nada util nesta resolucao. Nao foi investigado a fundo.
+
+## Etapa 6 (texto original, mantido para contexto)
 
 A carta tem nome e número impressos, grandes e em alto contraste. O catálogo
 já tem nome, número e set das 41.694 cartas, incluindo as 11.411 sem imagem.

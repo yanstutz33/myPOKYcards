@@ -82,6 +82,20 @@ const carregar = (url) => new Promise((ok, no) => {
  * Nao da para saber a categoria antes de ler, entao le-se as duas e fica a
  * que casa melhor com o vocabulario — mesmo padrao ja usado para polaridade
  * e para as cinco escalas da captura. */
+/* O numero impresso, no rodape.
+ *
+ * Vale mais que o nome em populacao: 4.867 grupos de impressoes irmas cobrem
+ * 10.737 cartas onde o app hoje diz "confira o numero voce mesmo". E o
+ * formato e fixo — digitos, barra, digitos — o que permite validar a leitura
+ * por forma, coisa que nome estilizado nao permite.
+ *
+ * A posicao mudou com as eras: moderno (SWSH, SV) fica embaixo a esquerda;
+ * antes ficava embaixo a direita. As duas entram. */
+const GEOMETRIAS_NUMERO = [
+  { nome: "rodape-esq", rx: 0.045, ry: 0.988 - 0.052, rw: 0.34, rh: 0.052 },
+  { nome: "rodape-dir", rx: 0.560, ry: 0.988 - 0.052, rw: 0.40, rh: 0.052 },
+];
+
 const GEOMETRIAS = [
   { nome: "pokemon", rx: 0.175, ry: 0.036, rw: 0.56, rh: 0.058 },
   { nome: "trainer", rx: 0.080, ry: 0.088, rw: 0.84, rh: 0.075 },
@@ -213,7 +227,7 @@ function parecido(lido, nome) {
     }
   }
 
-  let acertos = 0, quase = 0, t0 = performance.now();
+  let acertos = 0, quase = 0, numOk = 0, t0 = performance.now();
   for (const it of itens) {
     let texto = "", erro = null;
     let tira = null;
@@ -237,6 +251,26 @@ function parecido(lido, nome) {
       }
       if (!tira) tira = tiraDoNome(img, false);
     } catch (e) { erro = e.message; }
+
+    // Leitura do numero, em paralelo a do nome.
+    let numero = "";
+    try {
+      const img = await carregar(`${cards.cdn}/${it.caminho}/high.png`)
+        .catch(() => carregar(`${cards.cdn}/${it.caminho}/low.png`));
+      let conf = -1;
+      for (const geo of GEOMETRIAS_NUMERO) {
+        for (const inv of [false, true]) {
+          const r = await motor.recognize(tiraDoNome(img, inv, geo));
+          const t = (r.data.text || "").trim();
+          // So aceita o que TEM forma de numero de carta: digitos, com ou sem
+          // barra. Validar por forma e o que o nome nao permite.
+          const m = t.match(/(\d{1,3})\s*[\/|]\s*(\d{1,3}|[A-Z]{1,4})/i)
+                 || t.match(/(\d{2,3})/);
+          if (m && r.data.confidence > conf) { conf = r.data.confidence; numero = m[1]; }
+        }
+      }
+    } catch { /* segue sem numero */ }
+    it.numeroLido = numero;
 
     const lido = normalizar(texto);
     const tl = trigramas(lido);
@@ -264,7 +298,9 @@ function parecido(lido, nome) {
       <td><code>${erro ? "erro: " + erro : (texto || "(vazio)")}</code></td>
       <td>${melhor || "—"}<br><small>${(nota * 100).toFixed(0)}%</small></td>
       <td class="${certo ? "ok" : nota >= 0.45 ? "warn" : "bad"}">
-        ${certo ? "acertou" : nota >= 0.45 ? "perto" : "errou"}</td></tr>`);
+        ${certo ? "acertou" : nota >= 0.45 ? "perto" : "errou"}
+        <br><small>n&ordm; lido: <code>${it.numeroLido || "—"}</code></small></td></tr>`);
+    if (it.numeroLido && Number(it.numeroLido) === Number(String(it.id).split("-").pop())) numOk++;
   }
 
   await motor.terminate();
@@ -272,7 +308,8 @@ function parecido(lido, nome) {
   const taxa = acertos / itens.length;
   verdict.innerHTML = `<b class="${taxa >= 0.7 ? "ok" : taxa >= 0.4 ? "warn" : "bad"}">
       ${acertos} de ${itens.length}</b> nomes identificados exatamente
-    · ${quase} chegaram perto · <code>${ms.toFixed(0)} ms</code> por carta
+    · ${quase} chegaram perto · <b>numero certo em ${numOk} de ${itens.length}</b>
+    · <code>${ms.toFixed(0)} ms</code> por carta
     <p style="margin:.6rem 0 0;color:#97A3B6">
       Acima de 70% o caminho se paga: ele cobriria as 11.411 cartas que o hash
       nunca alcança. Abaixo de 40% não vale o custo — são 6,4 MB de dados de
