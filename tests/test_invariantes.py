@@ -321,7 +321,7 @@ def testar_precache() -> None:
     # Bancadas de teste ficam de fora: existem para rodar no navegador
     # durante o desenvolvimento e nao sao tela navegavel do app.
     BANCADAS = {"selftest.html", "teste-rotacao.html", "teste-arte.html",
-                "teste-camera.html"}
+                "teste-camera.html", "teste-ocr.html"}
     telas = {p.name for p in web.glob("*.html")} - BANCADAS
     fora = sorted(telas - set(listados))
     checar(not fora, "toda tela navegavel esta no precache", str(fora))
