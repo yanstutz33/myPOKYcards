@@ -101,6 +101,7 @@ let lanternaLigada = false;
 let ultimaLuz = null;
 
 const DIAG = new URLSearchParams(location.search).has("diag");
+if (DIAG) document.getElementById("diagCopiar").hidden = false;
 els.barra.hidden = true;
 
 const CARD_RATIO = 0.716;   // 63mm / 88mm — igual ao CSS
@@ -1354,6 +1355,69 @@ els.toggle.addEventListener("click", async () => {
 
 // O botao pequeno so encaminha para o mesmo controle: um estado, um caminho.
 els.desligar.addEventListener("click", () => els.toggle.click());
+
+/**
+ * Copiar o diagnostico.
+ *
+ * O diagnostico existe desde o inicio e nunca chegou ate mim: tirar print de
+ * texto de 10px sob a camera e ruim de ler e ruim de mandar. Sem ele eu
+ * calibrei limiar tres vezes com cena sintetica minha, e a cena sintetica ja
+ * me enganou — mediu o piso de nitidez so em luz forte e o piso passou a
+ * rejeitar carta real no escuro.
+ *
+ * Vai junto o que muda o resultado e nao aparece na tela: aparelho, tamanho
+ * do quadro que a camera entregou, e a versao publicada — sem ela nao da para
+ * saber se o relato e da versao corrigida ou de uma anterior que ficou em
+ * cache.
+ */
+const diagCopiar = document.getElementById("diagCopiar");
+
+/**
+ * Qual versao esta REALMENTE rodando.
+ *
+ * A pergunta que mais atrapalhou este projeto foi "isso e da versao nova ou
+ * de uma anterior presa em cache?" — e ela custou uma investigacao inteira de
+ * um painel quebrado que ja estava corrigido no servidor.
+ *
+ * O nome do cache do service worker carrega o hash do commit publicado, entao
+ * ele responde de graca e sem chamada de rede. Em localhost nao ha service
+ * worker por desenho, e ai a resposta e "dev", que ja e a informacao certa.
+ */
+async function versaoPublicada() {
+  try {
+    const nomes = await caches.keys();
+    const app = nomes.find((n) => n.startsWith("poky-app-"));
+    return app ? app.replace("poky-app-", "") : "dev (sem service worker)";
+  } catch {
+    return "desconhecida";
+  }
+}
+
+async function copiarDiagnostico() {
+  const v = els.video;
+  const texto = [
+    "myPOKYcards — diagnostico",
+    `versao   ${await versaoPublicada()}`,
+    `aparelho ${navigator.userAgent}`,
+    `tela     ${innerWidth}x${innerHeight} dpr ${devicePixelRatio}`,
+    `camera   ${v.videoWidth}x${v.videoHeight}`,
+    "",
+    els.diag.textContent || "(sem leitura ainda — aponte para a carta antes de copiar)",
+  ].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(texto);
+    diagCopiar.textContent = "copiado";
+  } catch {
+    // Sem permissao de area de transferencia: mostra o texto para selecionar
+    // a mao, que e pior mas nao deixa a pessoa sem saida.
+    els.diag.textContent = texto;
+    diagCopiar.textContent = "selecione o texto acima";
+  }
+  setTimeout(() => { diagCopiar.textContent = "copiar diagnóstico"; }, 2500);
+}
+
+diagCopiar?.addEventListener("click", copiarDiagnostico);
 
 /**
  * Ler de uma foto parada.
