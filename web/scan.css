@@ -433,3 +433,18 @@ body.lendo .sheet { max-height: 34dvh; margin-bottom: calc(0.5rem + env(safe-are
   margin: -1px; padding: 0; border: 0;
   clip-path: inset(50%); overflow: hidden; white-space: nowrap;
 }
+
+/* A foto deixa de ser botão de canto.
+   Medido: pelo caminho da foto o leitor acertou 3 de 3 a 99%, contra 2 de 4
+   pelo quadro de vídeo na mesma cena difícil. A câmera nativa trava o foco,
+   mede a exposição e entrega a resolução cheia do sensor — coisas que um
+   quadro de stream a 450 ms não tem. Esconder o caminho que funciona melhor
+   atrás de um ícone de 48px era desperdício. */
+.foto {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0 0.85rem;
+}
+.foto-rotulo { font-weight: 700; font-size: 0.85rem; }
