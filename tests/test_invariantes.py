@@ -327,6 +327,55 @@ def testar_precache() -> None:
     checar(not fora, "toda tela navegavel esta no precache", str(fora))
 
 
+def testar_publicacao_dos_dados() -> None:
+    """Todo arquivo de dados que o site BUSCA precisa ser publicado.
+
+    Este teste existe por um defeito que eu mesmo criei e quase nao vi. O
+    grafico de historico foi ligado a ficha com um `fetch("data/historico.json")`,
+    e o robo diario nao exportava nem publicava esse arquivo. O grafico
+    funcionaria — mostrando para sempre os cinco dias que eu tinha gerado a
+    mao — e ninguem receberia erro nenhum.
+
+    E o modo de falha que este arquivo inteiro persegue: nada quebra, o
+    numero so para de crescer. A checagem cruza o que o JS pede com o que o
+    fluxo do robo copia para o site.
+    """
+    print("\nPUBLICACAO DOS DADOS")
+    web = RAIZ / "web"
+    fluxo = RAIZ / ".github" / "workflows" / "precos.yml"
+    if not web.is_dir() or not fluxo.exists():
+        print("  (pulando: web/ ou o fluxo nao existem)")
+        return
+
+    # O que o cliente busca em tempo de execucao.
+    pedidos = set()
+    for arq in list(web.glob("*.js")) + list(web.glob("*.html")):
+        if arq.name.startswith("teste-") or arq.name == "selftest.html":
+            continue   # bancadas podem pedir o que quiserem
+        for m in re.finditer(r"data/([\w.-]+\.json)", arq.read_text(encoding="utf-8")):
+            pedidos.add(m.group(1))
+
+    texto = fluxo.read_text(encoding="utf-8")
+    # `cards.json` e `index.bin` sao do indice de reconhecimento e vao pelo
+    # deploy manual, de proposito: o robo diario nao os toca para nao
+    # arriscar publicar um indice pela metade.
+    DO_INDICE = {"cards.json"}
+
+    faltando = sorted(n for n in pedidos - DO_INDICE if n not in texto)
+    checar(not faltando,
+           "todo dado buscado pelo site e publicado pelo robo",
+           f"o site busca mas o robo nao publica: {faltando}")
+
+    # E o inverso: exportador que gera arquivo que ninguem publica e trabalho
+    # jogado fora, e costuma ser sinal de passo esquecido.
+    for script, gera in (("export_historico.py", "historico.json"),
+                         ("export_ocr_names.py", "nomes.json")):
+        if (RAIZ / "pipeline" / script).exists():
+            checar(script in texto,
+                   f"o robo roda {script}",
+                   f"{gera} congelaria na versao gerada a mao")
+
+
 if __name__ == "__main__":
     print("Invariantes do myPOKYcards")
     print("=" * 60)
@@ -336,6 +385,7 @@ if __name__ == "__main__":
     testar_traducao_variante()
     testar_formato_do_indice()
     testar_precache()
+    testar_publicacao_dos_dados()
     testar_javascript()
 
     print("\n" + "=" * 60)

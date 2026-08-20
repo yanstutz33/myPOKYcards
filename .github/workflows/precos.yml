@@ -66,9 +66,19 @@ jobs:
           done
           exit 1
 
-      # Só os três arquivos de preço. index.bin e cards.json descrevem o
-      # índice de reconhecimento, que não muda aqui — reenviá-los seria
-      # arriscar sobrescrever o índice com uma versão incompleta.
+      # Derivados do histórico e do catálogo. Sem estes passos o gráfico da
+      # ficha congelaria no dia em que o arquivo foi gerado à mão, e o
+      # vocabulário do OCR ficaria sem as cartas dos sets novos — os dois
+      # falhando em silêncio, que é o modo de falha que este projeto persegue.
+      - name: Exportar a série histórica
+        run: python pipeline/export_historico.py
+
+      - name: Exportar o vocabulário do OCR
+        run: python pipeline/export_ocr_names.py
+
+      # Só os arquivos derivados de preço e catálogo. index.bin e cards.json
+      # descrevem o índice de reconhecimento, que não muda aqui — reenviá-los
+      # seria arriscar sobrescrever o índice com uma versão incompleta.
       - name: Publicar no site
         run: |
           git fetch origin gh-pages --depth 1
@@ -78,7 +88,7 @@ jobs:
           # preços que já estavam coletados. Se fx.json não veio, o que já
           # está publicado continua valendo — a interface mostra a data da
           # taxa, então cotação velha aparece velha.
-          for f in prices.json prices.json.gz fx.json dashboard.json numeros.json; do
+          for f in prices.json prices.json.gz fx.json dashboard.json numeros.json                    historico.json historico.json.gz nomes.json nomes.json.gz; do
             if [ -f "web/data/$f" ]; then cp "web/data/$f" /tmp/site/data/; else echo "sem $f, mantendo o publicado"; fi
           done
           cd /tmp/site
