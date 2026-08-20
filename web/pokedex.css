@@ -1625,3 +1625,84 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   font-size: 0.76rem;
   line-height: 1.35;
 }
+
+/* ============================================ etapas do processamento
+   Sobre a câmera, no lugar da dica, enquanto o aparelho trabalha. Cada linha
+   aparece quando a etapa começa DE VERDADE e é riscada quando termina — não
+   há lista fixa nem barra de porcentagem, porque nenhuma dessas etapas tem
+   duração previsível e barra que anda sozinha é mentira com animação. */
+.etapas {
+  position: absolute;
+  left: 50%;
+  bottom: 7.4rem;
+  transform: translateX(-50%);
+  z-index: 4;
+  max-width: 90%;
+  padding: 0.6rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(6, 10, 16, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+.etapas[hidden] { display: none; }
+.etapas ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.3rem; }
+
+.etapa {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
+/* O marcador é o estado: girando, feito, ou falhou. */
+.etapa::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--lente-brilho, #A8D8FF);
+  border-top-color: transparent;
+  animation: etapa-gira 0.8s linear infinite;
+}
+.etapa.feita { color: rgba(255, 255, 255, 0.62); }
+.etapa.feita::before {
+  content: "✓";
+  border: 0;
+  color: var(--led-verde, #46D96B);
+  font-size: 0.85rem;
+  line-height: 1;
+  animation: none;
+  text-align: center;
+}
+.etapa.falhou { color: var(--led-ambar, #F2B331); }
+.etapa.falhou::before {
+  content: "—";
+  border: 0;
+  animation: none;
+  text-align: center;
+  color: var(--led-ambar, #F2B331);
+}
+@keyframes etapa-gira { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .etapa::before { animation: none; }
+}
+
+/* O overlay ficava embaixo, com z-index abaixo do painel de resultado — e
+   durante a captura o painel ainda mostra a leitura anterior, então as etapas
+   apareciam ATRÁS dela. Medido: caixa visível em y=487, coberta pelo painel
+   que começa em y=380.
+
+   Vai para o alto da câmera, que é a parte da tela livre nesse momento, e
+   acima de tudo: enquanto processa, isto é o que importa ver. */
+.etapas {
+  top: calc(var(--topbar-h, 5.8rem) + 0.6rem);
+  bottom: auto;
+  z-index: 8;
+}
+
+/* Quebrando em três linhas por etapa, a lista vira parágrafo e perde a
+   leitura de relance que é o motivo dela existir. */
+.etapas { min-width: min(19rem, 88vw); }
+.etapa { font-size: 0.78rem; }

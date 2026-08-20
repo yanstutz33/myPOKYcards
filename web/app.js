@@ -10,6 +10,7 @@
 
 import { capture, fotoDoRecorte, recorteAtualCanvas } from "./capture.js";
 import * as ocr from "./ocr.js";
+import * as etapas from "./etapas.js";
 import * as colecao from "./colecao.js";
 import { corDaCarta, energiasHtml, eFoil } from "./tema.js";
 import { detectarCarta, regiaoDeBusca } from "./detectar.js";
@@ -624,8 +625,10 @@ async function capturarAgora() {
 
   frozen = true;
   som.somCapturou();
-  els.hint.textContent = "Analisando…";
+  els.hint.textContent = "";
   els.hint.classList.remove("alerta");
+  etapas.iniciar();
+  etapas.comecar("recorte", "Recortando a carta");
 
   // Variacoes de escala em torno do recorte detectado. A carta tem borda
   // branca e sangria: um pouco a mais ou a menos muda o que entra no hash, e
@@ -640,6 +643,9 @@ async function capturarAgora() {
     return { x: cx - w / 2, y: cy - h / 2, w, h };
   });
 
+  etapas.concluir("recorte", `${variantes.length} enquadramentos`);
+  etapas.comecar("hash", `Comparando com ${catalog.count.toLocaleString("pt-BR")} cartas`);
+
   const lidas = await Promise.all(
     variantes.map(async (rect) => ({ rect, r: await medir(capture(els.video, rect)) })));
 
@@ -647,6 +653,8 @@ async function capturarAgora() {
     (b.r.results[0]?.confidence ?? 0) > (a.r.results[0]?.confidence ?? 0) ? b : a);
 
   if (!melhor.r.results?.length) {
+    etapas.falhar("hash", "nenhum candidato");
+    etapas.terminar();
     els.hint.textContent = "Nao consegui ler essa. Tente de novo ou busque pelo nome.";
     els.hint.classList.add("alerta");
     frozen = false;
@@ -657,7 +665,10 @@ async function capturarAgora() {
   ultimoRecorte = melhor.rect;
   capture(els.video, melhor.rect);
 
+  etapas.concluir("hash", `${(melhor.r.results[0].confidence * 100).toFixed(0)}% de certeza`);
+
   const escolhidos = await desempatarPorNumero(await conferirComTexto(melhor.r.results));
+  etapas.terminar();
   render(escolhidos);
   travar(catalog.ids[escolhidos[0].i], true);
   if (DIAG) mostrarDiag({ ...melhor.r, results: escolhidos });
@@ -689,15 +700,23 @@ async function conferirComTexto(resultados) {
   const fonte = recorteAtualCanvas();
   if (!fonte) return resultados;
 
-  els.hint.textContent = "Lendo o nome…";
+  // A primeira leitura baixa ~7 MB de motor e dados de idioma. Dizer isso e o
+  // que separa "esta pensando" de "travou".
+  etapas.comecar("texto", ocr.pronto()
+    ? "Lendo o nome impresso"
+    : "Baixando o leitor de texto (uma vez so)");
   let lido;
   try {
     lido = await ocr.lerNome(fonte);
   } catch {
-    els.hint.textContent = "Analisando…";
+    etapas.falhar("texto", "sem conexão");
     return resultados;   // sem rede ou sem motor: segue com o hash
   }
-  if (!lido.candidatos.length) return resultados;
+  if (!lido.candidatos.length) {
+    etapas.falhar("texto", "não deu para ler");
+    return resultados;
+  }
+  etapas.concluir("texto", `"${lido.nome}"`);
 
   const posicao = new Map(lido.candidatos.map((id, i) => [id, i]));
   const dentro = resultados.filter((r) => posicao.has(catalog.ids[r.i]));
@@ -755,14 +774,19 @@ async function desempatarPorNumero(resultados) {
   const fonte = recorteAtualCanvas();
   if (!fonte) return resultados;
 
-  els.hint.textContent = "Lendo o número…";
+  etapas.comecar("numero", `Lendo o número (${irmas.length} impressões iguais)`);
   let numero = null;
   try {
     numero = await ocr.lerNumero(fonte);
   } catch {
+    etapas.falhar("numero", "sem conexão");
     return resultados;   // sem rede ou sem motor: segue como estava
   }
-  if (!numero) return resultados;
+  if (!numero) {
+    etapas.falhar("numero", "não deu para ler");
+    return resultados;
+  }
+  etapas.concluir("numero", numero);
 
   // `local_id` do catalogo tem zeros a esquerda em alguns sets ("032"), o
   // numero lido nao. Compara por valor.
@@ -1610,8 +1634,10 @@ async function lerDeFoto(arquivo) {
     // Aqui ha tempo de sobra — a pessoa acabou de tirar a foto e espera — e
     // cada leitura custa 14 ms. Comparar as duas custa nada e remove a
     // classe inteira de erro.
-    els.hint.textContent = "Lendo a foto…";
+    els.hint.textContent = "";
     els.hint.classList.remove("alerta");
+    etapas.iniciar();
+    etapas.comecar("foto", "Lendo a foto");
 
     const opcoes = [{ nome: "imagem inteira", rect: tudo }];
     if (achado) opcoes.push({ nome: "borda detectada", rect: achado });
@@ -1621,14 +1647,18 @@ async function lerDeFoto(arquivo) {
     const melhor = lidas.reduce((a, b) =>
       (b.r.results[0]?.confidence ?? 0) > (a.r.results[0]?.confidence ?? 0) ? b : a);
 
+    etapas.concluir("foto", melhor.nome);
     ultimaDeteccao = melhor.rect === achado ? achado : null;
     ultimoRecorte = melhor.rect;
     // Refaz o recorte vencedor para que a foto da comparacao seja a dele.
     capture(img, melhor.rect);
-    render(melhor.r.results);
-    if (melhor.r.results[0]) travar(catalog.ids[melhor.r.results[0].i], true);
-    if (DIAG) mostrarDiag(melhor.r);
+    const finais = await desempatarPorNumero(await conferirComTexto(melhor.r.results));
+    etapas.terminar();
+    render(finais);
+    if (finais[0]) travar(catalog.ids[finais[0].i], true);
+    if (DIAG) mostrarDiag({ ...melhor.r, results: finais });
   } catch (err) {
+    etapas.terminar(0);
     els.hint.textContent = err.message;
     els.hint.classList.add("alerta");
   } finally {

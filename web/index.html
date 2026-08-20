@@ -56,6 +56,14 @@
          em cima da carta, que é o único lugar da tela que precisa estar
          livre. O valor voltou para o painel, embaixo, e continua grande. -->
 
+    <!-- Etapas do processamento. Aparecem SO enquanto ele acontece, e SO as
+         que realmente acontecem: leitura de texto entra quando o hash falha,
+         numero entra quando ha impressoes irmas. Lista fixa de etapas
+         inventadas e teatro. -->
+    <div class="etapas" id="etapas" hidden aria-live="polite">
+      <ol id="etapasLista"></ol>
+    </div>
+
     <p class="hint" id="hint">Aponte para a carta</p>
 
     <!-- Diagnóstico: liga com ?diag. Existe para calibrar limiar com
