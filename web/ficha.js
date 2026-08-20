@@ -14,6 +14,7 @@
 
 import * as colecao from "./colecao.js";
 import * as mercado from "./mercado.js";
+import * as grafico from "./grafico.js";
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
@@ -134,6 +135,8 @@ export function abrir(cardId) {
             do mercado brasileiro.</p>
         </section>
 
+        <div id="fichaGrafico"></div>
+
         <section class="ficha-bloco">
           <h3>A carta</h3>
           <dl class="ficha-dados">
@@ -168,6 +171,13 @@ export function abrir(cardId) {
   alvo.hidden = false;
   document.body.classList.add("com-ficha");
   melhorarArte(alvo);
+  // A serie e baixada sob demanda e injetada quando chega: 0,42 MB nao pode
+  // atrasar a abertura da ficha, que e o que a pessoa pediu ao tocar.
+  grafico.carregar().then(() => {
+    if (fichaAberta !== cardId) return;   // ja fechou ou trocou de carta
+    const alvoG = document.getElementById("fichaGrafico");
+    if (alvoG) alvoG.innerHTML = grafico.blocoHtml(cardId);
+  });
   document.getElementById("fecharFicha").focus();
 }
 

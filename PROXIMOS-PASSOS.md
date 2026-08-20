@@ -81,9 +81,14 @@ Combinado: hash resolve rápido as 31.033 com imagem, OCR cobre o resto.
 - **3. Tela de processamento** — compra os 2–3 s da análise pesada e diz o
   que está acontecendo. Vira necessária quando o OCR entrar, porque ele
   aumenta o tempo de resposta.
-- **4. Gráfico de histórico** — `data/price_history.csv.gz` acumula desde
-  15/08 e já tem 266.798 pontos em 4 dias. Nunca foi exportado nem exibido.
-  É o ativo que não se copia: quem começar depois leva meses para ter série.
+- **4. Gráfico de histórico — FEITA (19/08/2026).** `export_historico.py`
+  exporta a série e `web/grafico.js` desenha na ficha, um gráfico por
+  variante × mercado. 333 mil pontos, 5 dias, 0,42 MB comprimido, baixado sob
+  demanda ao abrir a ficha.
+
+  O passado é reduzido a semanal depois de 30 dias. Isso não é economia
+  prematura: cresce ~0,08 MB por dia, e em um ano o arquivo único passaria de
+  25 MB comprimido para mostrar a série de UMA carta.
 
 ## Estado do scanner, sem enfeite
 

@@ -1706,3 +1706,35 @@ body.lendo.travado .sheet { max-height: 52dvh; }
    leitura de relance que é o motivo dela existir. */
 .etapas { min-width: min(19rem, 88vw); }
 .etapa { font-size: 0.78rem; }
+
+/* ================================================ preço ao longo do tempo
+   Um gráfico por série (variante × mercado), na moeda daquele mercado. A cor
+   da linha é a do tipo da carta, que já governa o resto da ficha. */
+.gr { margin: 0 0 0.8rem; }
+.gr:last-of-type { margin-bottom: 0.2rem; }
+
+.gr-topo, .gr-pe {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.gr-quem { text-transform: lowercase; }
+.gr-var { font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Verde e âmbar, não verde e vermelho: queda de preço não é erro, e vermelho
+   nesta interface já significa problema. */
+.gr-var.sobe { color: var(--led-verde, #46D96B); }
+.gr-var.cai { color: var(--led-ambar, #F2B331); }
+
+.gr-svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin: 0.2rem 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+.gr-dias { color: var(--ink-soft); opacity: 0.7; }
