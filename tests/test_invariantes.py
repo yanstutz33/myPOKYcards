@@ -143,6 +143,22 @@ def testar_indice() -> None:
     checar(tamanho_errado == 0, "todos os hashes com 16 dígitos hex",
            f"{tamanho_errado} malformados")
 
+    # Proveniência: o rótulo em `lang` tem que bater com o host de `src_url`.
+    #
+    # Desde 21/08/2026 o índice tem DUAS fontes de arte. O TCGdex é primário;
+    # pokemontcg.io entra só onde ele devolve 404, e essas linhas são marcadas
+    # `en:ptcgio` (ver pipeline/complementar_arte.py).
+    #
+    # Se as duas se misturarem sob o mesmo rótulo, a única pista de onde cada
+    # hash veio desaparece — e no dia em que uma das bases publicar arte
+    # errada não haverá como saber quais linhas revisar. Falha silenciosa,
+    # que é exatamente o modo de falha que estas checagens perseguem.
+    trocado = q("""SELECT COUNT(*) FROM hashes
+                   WHERE (lang LIKE '%ptcgio' AND src_url NOT LIKE '%pokemontcg.io%')
+                      OR (lang NOT LIKE '%ptcgio' AND src_url LIKE '%pokemontcg.io%')""")
+    checar(trocado == 0, "toda linha declara a fonte de arte que realmente usou",
+           f"{trocado} com `lang` e `src_url` de fontes diferentes")
+
     try:
         grupos = q("SELECT COUNT(DISTINCT group_id) FROM art_groups")
         # Distância de hash sozinha fundia 72 cartas distintas num grupo só.

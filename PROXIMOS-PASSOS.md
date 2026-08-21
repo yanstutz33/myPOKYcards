@@ -99,6 +99,58 @@ diagnóstico mostrava `dist 54.8` (acerto limpo fica entre 10 e 30) e
 `nitidez 7.9` (carta nítida fica ≥10), com a carta atrás de um case com
 reflexo.
 
+## Segunda fonte de arte — FEITA (21/08/2026)
+
+Pedido: "EU QUERO TODAS AS CARTAS REGISTRADAS ATE O DIA DE HOJE."
+
+**Catalogo atualizado.** Reconstruido do TCGdex no commit do proprio dia
+21/08. 41.694 -> **41.856 cartas**, 563 -> 564 colecoes. As 162 novas sao
+todas japonesas: M6 (ストームエメラルダ) e promos Mega. Nenhuma carta
+internacional nova — aquele lado ja estava completo. Nenhuma carta sumiu.
+
+**Arte.** O TCGdex chegou ao teto: 10.661 cartas dao 404 em todos os idiomas.
+Conferido por dois caminhos independentes — sonda HEAD em 120 cartas por
+regiao (0 acertos) e a tabela `failures`, que ja registrava as mesmas 10.661.
+As URLs estao bem formadas; comparei com as que funcionam.
+
+Isso e teto de UMA fonte. `pipeline/complementar_arte.py` usa pokemontcg.io
+(gratuita, 174 colecoes em ingles) para o que ficou de fora.
+
+**+554 cartas internacionais recuperadas**, justamente as que mais aparecem
+no uso real: Shining Fates Shiny Vault (122), Dragon Majesty (78), Crown
+Zenith Galarian Gallery (70), Trainer Galleries (120), promos, McDonalds.
+
+| regiao | antes | depois |
+|---|---|---|
+| internacional | 94,6% | **96,9%** |
+| asia | 48,0% | 47,6% * |
+
+\* cai porque entraram 162 cartas japonesas novas sem arte publicada ainda.
+
+**As duas fontes sao compativeis** — medido, nao suposto: mesma carta pelas
+duas CDNs da **0,6 bits** de diferenca somando pHash+dHash+aHash (cartas
+diferentes ficam perto de 96). Testado em 9 cartas de 3 colecoes.
+
+Invariante novo (33 no total): `lang` tem que bater com o host de `src_url`.
+Testado por mutacao — apagar a marca de uma linha faz a checagem falhar.
+
+### O que ainda falta, e por que
+
+- **699 cartas internacionais** (3,0%) sem arte em fonte nenhuma. As maiores:
+  `B2a` Paldean Wonders (131), `mep` (49), promos franceses 2018-19 (81),
+  `mfb` My First Battle (34), Trainer Kits HS (60), `exu` (28).
+- **9.545 cartas asiaticas** (52%). pokemontcg.io e so em ingles, entao nao
+  ajuda aqui. Precisaria de uma terceira fonte japonesa — nao investigado.
+- **162 cartas do M6** — set lancado essa semana, o TCGdex ainda nao subiu a
+  arte. Rodar `build_hash_index.py --retry-failed` daqui a alguns dias.
+
+### Fragilidade conhecida
+
+`data/hashes.db` esta no `.gitignore` e existe SO nesta maquina. As 554
+recuperadas foram para o ar via `deploy_pages.py`, mas o banco em si nao esta
+versionado em lugar nenhum. Perder a maquina hoje custa uma reindexacao de
+~2h. Ha copias em `data/*.bak`, tambem locais.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco
