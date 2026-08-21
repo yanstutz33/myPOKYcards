@@ -144,12 +144,30 @@ Testado por mutacao — apagar a marca de uma linha faz a checagem falhar.
 - **162 cartas do M6** — set lancado essa semana, o TCGdex ainda nao subiu a
   arte. Rodar `build_hash_index.py --retry-failed` daqui a alguns dias.
 
-### Fragilidade conhecida
+### A fragilidade do indice — RESOLVIDA (21/08/2026)
 
-`data/hashes.db` esta no `.gitignore` e existe SO nesta maquina. As 554
-recuperadas foram para o ar via `deploy_pages.py`, mas o banco em si nao esta
-versionado em lugar nenhum. Perder a maquina hoje custa uma reindexacao de
-~2h. Ha copias em `data/*.bak`, tambem locais.
+`data/hashes.db` estava no `.gitignore` e existia so nesta maquina.
+`pipeline/salvar_indice.py` guarda o par hashes.db + cards.db numa release
+do GitHub (tag fixa `indice`, sobrescrita), com sha256 e contagem de linhas
+num manifesto.
+
+    python pipeline/salvar_indice.py --conferir    # local x guardado
+    python pipeline/salvar_indice.py --salvar      # atualiza a copia
+    python pipeline/salvar_indice.py --restaurar   # traz de volta
+
+**O caminho de recuperacao foi testado de verdade**, nao suposto: clone
+limpo do repositorio, `--restaurar`, invariantes. Passou 26 checagens (as 7
+de preco ficam de fora porque `prices.db` nao esta na copia, de proposito).
+
+`--restaurar` confere o sha256 DEPOIS de escrever e aborta se nao bater, e
+se recusa a sobrescrever banco existente sem `--forcar`.
+
+Nao guarda `prices.db`: 76 MB que o robo diario refaz do zero com coleta
+nova. A serie historica, essa sim insubstituivel, esta versionada em
+`data/price_history.csv.gz`.
+
+`deploy_pages.py` lembra de conferir a copia ao fim de cada publicacao —
+que e o unico momento em que o indice pode ter mudado.
 
 ## O que está pendente e é decisão sua, não técnica
 

@@ -134,6 +134,20 @@ def main(repo: Path, dry: bool) -> None:
     print(f"URL: https://{user}.github.io/{nome}/")
     print("\nSe for a primeira vez, habilite em Settings > Pages > branch gh-pages.")
 
+    # O aviso mora aqui porque este e o unico momento em que o indice de
+    # reconhecimento pode ter mudado — publicar e o passo seguinte a
+    # reindexar. `hashes.db` nao esta no git nem no gh-pages (sobe
+    # `index.bin`, ja compilado, do qual nao se volta para o banco), entao a
+    # copia so existe se alguem a fizer.
+    #
+    # E so uma linha impressa, sem chamada de rede: encarecer toda publicacao
+    # com um download de manifesto para lembrar de algo que muda uma vez por
+    # mes seria pior que o esquecimento que evita.
+    if (repo / "web" / "data" / "index.bin").exists():
+        print("\nO indice de reconhecimento mudou? Entao guarde a copia:")
+        print("  python pipeline/salvar_indice.py --conferir   (compara com a guardada)")
+        print("  python pipeline/salvar_indice.py --salvar     (atualiza a copia)")
+
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()

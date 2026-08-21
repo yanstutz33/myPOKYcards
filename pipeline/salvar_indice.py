@@ -25,8 +25,11 @@ Por que o par, e nao so o indice
 — o invariante de orfaos precisa dos dois para rodar. Sao 4,7 MB a mais para
 a copia ser conferivel, e copia que nao se confere nao e copia.
 
-`prices.db` fica de fora de proposito: sao 76 MB reconstruiveis a partir de
-`data/price_history.csv.gz`, que ESTE sim esta versionado no git.
+`prices.db` fica de fora de proposito, e vale ser exato sobre o porque: ele
+nao e "reconstruido a partir do CSV". Sao 76 MB que `refresh_prices.py`
+refaz do zero com uma coleta nova a cada dia — o robo diario prova isso toda
+manha. O que seria insubstituivel ali e a SERIE historica, e essa esta em
+`data/price_history.csv.gz`, versionada no git desde 15/08/2026.
 
 Por que uma release so, reescrita
 ---------------------------------
@@ -243,8 +246,11 @@ Para restaurar numa maquina limpa:
     python pipeline/salvar_indice.py --restaurar
     python tests/test_invariantes.py
 
-`prices.db` nao esta aqui de proposito: e reconstruivel a partir de
-`data/price_history.csv.gz`, que esta versionado no repositorio.
+Os invariantes de preco vao ficar de fora nessa conferencia (26 checagens em
+vez de 33) porque `prices.db` nao esta nesta copia. Isso e de proposito: o
+robo diario o refaz do zero com uma coleta nova. A serie historica, que
+seria insubstituivel, esta versionada no repositorio em
+`data/price_history.csv.gz`.
 """
 
 
