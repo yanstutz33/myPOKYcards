@@ -1777,3 +1777,38 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   line-height: 1.4;
   text-align: left;
 }
+
+/* ============================ diagnóstico que não come a tela
+   Do teste real: "ele entregou aquelas letras em verde também". O painel de
+   `?diag` nascia colado no rodapé do visor, por cima dos botões de captura e
+   da dica — justamente os controles que a pessoa precisa tocar enquanto
+   diagnostica.
+
+   Ele existe para eu ler números, não para disputar espaço com o app. Agora
+   fica no alto, encolhido, rolável, e some ao ser tocado — quem está usando o
+   app normalmente nem liga o `?diag`, e quem liga quer poder tirá-lo do
+   caminho sem recarregar. */
+.diag {
+  top: calc(var(--topbar-h, 5.8rem) + 0.5rem);
+  bottom: auto;
+  left: 0.5rem;
+  right: 0.5rem;
+  max-height: 34dvh;
+  overflow: auto;
+  font-size: 0.58rem;
+  line-height: 1.45;
+  color: #7FE38F;
+  background: rgba(4, 8, 6, 0.9);
+  border-color: rgba(127, 227, 143, 0.35);
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+.diag.escondido { display: none; }
+
+.diag-copiar {
+  top: calc(var(--topbar-h, 5.8rem) + 0.5rem);
+  bottom: auto;
+  left: auto;
+  right: 0.5rem;
+  z-index: 6;
+}

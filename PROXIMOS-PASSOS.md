@@ -61,6 +61,44 @@ inteira.
 
 Combinado: hash resolve rápido as 31.033 com imagem, OCR cobre o resto.
 
+## Cobertura por ano — medido em 21/08/2026
+
+Pergunta do teste real: "ele está atualizado com as cartas de TODOS OS ANOS E
+TODAS AS COLEÇÕES?"
+
+**Catálogo: sim.** 41.694 cartas, 563 coleções, 1996 a 2026.
+
+**Imagem para reconhecer: depende da região, e essa é a única divisão que
+importa.**
+
+| região | com imagem | % |
+|---|---|---|
+| internacional | 22.361 / 23.639 | **94,6%** |
+| ásia (JA/ZH/KO) | 8.672 / 18.055 | 48,0% |
+| total | 31.033 / 41.694 | 74,4% |
+
+O 74,4% que eu vinha citando é enganoso para quem usa o app no Brasil: ele
+mistura 18 mil cartas japonesas, chinesas e coreanas que ninguém aqui escaneia.
+
+Por ano, só as internacionais: **todo ano de 1999 a 2026 fica entre 85% e
+100%.** Nenhum ano é fraco. Base Set (`base1`) está 102/102.
+
+Os 361 cartões de 1996–1998 que apareciam com 0% são os sets japoneses
+originais (PMCG1–5: 拡張パック, ポケモンジャングル, 化石の秘密, ロケット団,
+リーダーズスタジアム). O Base Set internacional é de 1999 e está completo.
+
+Faltam **1.278 cartas internacionais**, concentradas em promos e sets
+paralelos: `B2a` (131), `swsh4.5sv` (122), `sm7.5` (78), `swsh12.5gg` (70),
+`smp` (67), `mep` (49), coleções francesas de 2018–2019 (81).
+
+**Consequência para o diagnóstico de erro:** quando o app erra uma carta
+internacional comum, quase nunca é falta de dado. É a imagem capturada. No
+teste real de 21/08 ele respondeu `me05-107` (*Energy Switch*, um Trainer)
+para um Charmander — e 53 dos 59 Charmander do catálogo têm imagem. O
+diagnóstico mostrava `dist 54.8` (acerto limpo fica entre 10 e 30) e
+`nitidez 7.9` (carta nítida fica ≥10), com a carta atrás de um case com
+reflexo.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco

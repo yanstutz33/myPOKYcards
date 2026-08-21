@@ -1508,10 +1508,40 @@ async function copiarDiagnostico() {
     els.diag.textContent = texto;
     diagCopiar.textContent = "selecione o texto acima";
   }
-  setTimeout(() => { diagCopiar.textContent = "copiar diagnóstico"; }, 2500);
+  // So restaura se o painel ainda estiver visivel: esconder durante estes
+  // 2,5 s trocaria "mostrar diagnostico" por "copiar", e o botao passaria a
+  // mentir sobre o que faz.
+  setTimeout(() => {
+    if (!escondido()) diagCopiar.textContent = "copiar diagnóstico";
+  }, 2500);
 }
 
-diagCopiar?.addEventListener("click", copiarDiagnostico);
+// Tocar no painel o esconde; o botao o traz de volta.
+//
+// Do teste real: "ele entregou aquelas letras em verde tambem". O painel sao
+// vinte linhas de numero sobre o visor, e quem esta diagnosticando precisa
+// poder olhar a carta sem recarregar a pagina para tirar o painel da frente.
+//
+// O botao acumula dois papeis porque nao ha espaco para dois botoes numa tela
+// de celular ja cheia. Escondido ele mostra; visivel ele copia. O rotulo diz
+// qual dos dois esta valendo agora.
+function escondido() {
+  return els.diag?.classList.contains("escondido");
+}
+
+els.diag?.addEventListener("click", () => {
+  els.diag.classList.add("escondido");
+  if (diagCopiar) diagCopiar.textContent = "mostrar diagnóstico";
+});
+
+diagCopiar?.addEventListener("click", () => {
+  if (escondido()) {
+    els.diag.classList.remove("escondido");
+    diagCopiar.textContent = "copiar diagnóstico";
+    return;
+  }
+  copiarDiagnostico();
+});
 
 /**
  * Ler de uma foto parada.
