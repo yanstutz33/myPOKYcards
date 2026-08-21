@@ -120,7 +120,6 @@ const CONF_ALTA = 0.88;     // acima disso o top-1 é destacado como provável
 // Independentemente disso, o automático NUNCA é o único caminho: o botão
 // de captura sempre trava o que estiver na tela.
 const TRAVA_CONF = 0.82;
-const TRAVA_FRAMES = 2;
 // Margem entre o 1o e o 2o candidato, em bits ponderados.
 //
 // A confianca sozinha NAO distingue "achei a carta" de "a carta nao esta no
@@ -183,8 +182,6 @@ let stream = null;
 let running = false;
 let frozen = false;
 let seq = 0;
-let ultimoTopo = null;
-let repeticoes = 0;
 
 function setStatus(text, state) {
   els.statusText.textContent = text;
@@ -286,14 +283,13 @@ function onWorkerMessage(ev) {
     const dono = pedidosFoto.get(msg.seq);
     if (dono) { pedidosFoto.delete(msg.seq); dono(msg); return; }
     if (msg.seq !== seq) return;           // resultado de frame vencido
+    // Todo resultado vem de um pedido explicito — captura ou foto — e quem
+    // pediu trata a resposta. O laco ao vivo nao pede mais nada.
     render(msg.results);
-    if (!frozen) orientar(msg.results);
     if (DIAG) mostrarDiag(msg);
     if (pendenteTravar) {
       pendenteTravar = false;
       if (msg.results[0]) travar(catalog.ids[msg.results[0].i], true);
-    } else {
-      avaliarTrava(msg.results);
     }
   }
 }
@@ -528,69 +524,80 @@ function desenharAchado(bruto) {
 }
 
 /**
- * Diz ao usuário o que está atrapalhando.
+ * O laco ao vivo passou a MIRAR, nao a decidir.
  *
- * O app tinha toda essa informação e mostrava "Aponte para a carta" para
- * sempre — inclusive quando sabia que a borda não fora encontrada ou que o
- * quadro estava estourado. Cada causa tem uma ação diferente, e sem dizer
- * qual é a pessoa só pode tentar de novo no escuro.
+ * Ele lia e tentava reconhecer a cada 450 ms, e essa decisao automatica era a
+ * origem da maior parte dos defeitos deste projeto e de oito constantes que
+ * eu calibrei repetidamente — piso de nitidez, janela de concordancia,
+ * confianca minima, quadros iguais, margem em bits, separacao relativa,
+ * suavizacao do contorno, cadencia.
  *
- * A dica só muda quando o motivo muda: texto piscando a cada 450 ms é
- * ilegível e passa sensação de instabilidade.
+ * O que os numeros diziam, e eu demorei a aceitar:
+ *
+ *   foto pela camera nativa .... 3 de 3 certas, a 99%
+ *   quadro de video (dificil) .. 2 de 4
+ *   travamento automatico ...... resultado diferente a cada execucao
+ *
+ * A diferenca nao e de algoritmo — os dois caminhos usam a mesma deteccao, o
+ * mesmo desentortamento e o mesmo hash. E de IMAGEM: a camera nativa trava o
+ * foco, mede a exposicao com calma e entrega a resolucao cheia do sensor. Um
+ * quadro de stream a 450 ms tem borrao de movimento e foco em transito.
+ *
+ * Entao o laco continua rodando a deteccao de borda — e o que desenha o
+ * contorno e da a sensacao de leitor vivo — mas nao pede mais leitura ao
+ * indice nem decide nada. Quem decide e o toque, onde ha tempo para analise
+ * pesada: cinco recortes, e nome e numero impressos quando o hash hesita.
+ *
+ * Trocar oito limiares ajustaveis por um gesto explicito e menos codigo e
+ * mais acerto ao mesmo tempo.
  */
-let motivoAtual = "";
-function orientar(results) {
-  let msg = "Aponte para a carta";
-  let classe = "";
-
-  if (ultimaLuz?.estourado) {
-    msg = "Reflexo forte — incline a carta ou desligue a lanterna";
-    classe = "alerta";
-  } else if (ultimaLuz?.escuro) {
-    msg = temLanterna(trilha)
-      ? "Escuro — toque na lanterna"
-      : "Escuro demais para ler";
-    classe = "alerta";
-  } else if (!ultimaDeteccao) {
-    msg = "Não achei a borda — aproxime e use fundo liso";
-    classe = "alerta";
-  } else if (results?.length) {
-    const m = margem(results);
-    const c = results[0].confidence;
-    if (c < TRAVA_CONF) {
-      msg = "Quase lá — segure firme e aproxime";
-    } else if (m < MARGEM_MIN) {
-      msg = "Reconhecimento incerto — toque no botão para capturar";
-      classe = "alerta";
-    } else {
-      msg = "Lendo…";
-    }
-  }
-
-  if (msg === motivoAtual) return;
-  // Toca só ao ENTRAR em estado de alerta, não a cada leitura ruim.
-  if (classe === "alerta" && !els.hint.classList.contains("alerta")) som.somAlerta();
-  motivoAtual = msg;
-  els.hint.textContent = msg;
-  els.hint.className = "hint" + (classe ? " " + classe : "");
-}
-
 function tick() {
   if (!running || frozen) return;
   const rect = recorteAtual();
   if (rect && rect.w > 8 && rect.h > 8) {
     ultimoRecorte = rect;
-    const quadro = capture(els.video, rect);
-    // Aproveita a redução 32x32 que o matcher já exige: medir luz num quadro
-    // cheio custaria mais que a própria leitura.
-    ultimaLuz = condicaoDeLuz(quadro.p32);
-    seq++;
-    worker.postMessage({ type: "match", seq, k: 3, ...quadro });
+    // A luz continua sendo medida: e ela que avisa "reflexo" e "escuro" antes
+    // da pessoa gastar um toque num quadro que nao ia dar certo.
+    ultimaLuz = condicaoDeLuz(capture(els.video, rect).p32);
   } else {
     ultimaLuz = null;
-    orientar(null);
   }
+  orientarMira();
   setTimeout(tick, INTERVAL_MS);
+}
+
+/**
+ * O que dizer enquanto a pessoa mira.
+ *
+ * Sem leitura continua nao ha mais resultado para comentar, entao a dica
+ * volta a ser o que sempre deveria ter sido: onde por a carta e o que esta
+ * atrapalhando AGORA.
+ */
+let motivoAtual = "";
+
+function orientarMira() {
+  const d = ultimaDeteccao;
+  let texto = "Enquadre a carta e toque no botão";
+  let alerta = false;
+
+  if (ultimaLuz?.estourado) {
+    texto = "Reflexo na carta — incline um pouco ou use a foto";
+    alerta = true;
+  } else if (ultimaLuz?.escuro) {
+    texto = "Escuro demais — acenda a luz ou use a foto";
+    alerta = true;
+  } else if (!d) {
+    texto = "Aproxime a carta, com fundo liso atrás";
+  } else {
+    texto = "Pronto — toque para ler";
+  }
+
+  // Só troca quando o MOTIVO muda: texto reescrito a cada 450 ms pisca e
+  // passa sensação de instabilidade, mesmo dizendo a mesma coisa.
+  if (texto === motivoAtual) return;
+  motivoAtual = texto;
+  els.hint.textContent = texto;
+  els.hint.classList.toggle("alerta", alerta);
 }
 
 /**
@@ -883,65 +890,6 @@ function margem(results) {
  * confianca E em margem, e ainda sao precisas duas concordando. O que muda e
  * que elas nao precisam ser vizinhas.
  */
-const JANELA_TRAVA = 5;          // leituras lembradas (~2,2 s a 450 ms)
-const recentes = [];             // { id, conf, margem } de cada leitura da janela
-
-/**
- * Concordancia na janela + o MELHOR quadro precisa passar nos limiares.
- *
- * A versao anterior exigia que CADA leitura contada passasse em confianca e
- * margem. Numa cena com reflexo varrendo a carta isso e severo demais: o
- * leitor acertava a carta em 16 de 16 leituras e mesmo assim quase nunca
- * juntava duas aprovadas, porque a faixa de luz derruba a confianca de um
- * quadro em cada dois ou tres.
- *
- * Julgar cada quadro isolado joga fora informacao que ja esta na mao. Varias
- * leituras independentes apontando a mesma carta sao evidencia; o quadro
- * menos estragado pela luz e o que melhor representa a carta.
- *
- * Entao: a concordancia conta o top-1 de TODAS as leituras, e o teste duro —
- * confianca e margem — e aplicado ao MELHOR quadro daquela carta na janela.
- *
- * Isto NAO afrouxa a protecao contra carta ausente do indice, que e a razao
- * de a margem existir. Quando a carta nao esta no indice, os candidatos sao
- * cartas diferentes coladas por acaso e a margem fica baixa em TODOS os
- * quadros, inclusive no melhor — este projeto ja mediu mediana 4,2 contra
- * 22,6 quando a carta esta presente. O melhor quadro de um palpite errado
- * continua reprovando.
- */
-function avaliarTrava(results) {
-  const topo = results[0];
-  recentes.push(topo
-    ? { id: catalog.ids[topo.i], conf: topo.confidence,
-        mg: margem(results), ok: destacado(results) }
-    : null);
-  if (recentes.length > JANELA_TRAVA) recentes.shift();
-
-  const porCarta = new Map();
-  for (const r of recentes) {
-    if (!r) continue;
-    const atual = porCarta.get(r.id);
-    if (!atual) porCarta.set(r.id, { n: 1, conf: r.conf, mg: r.mg, ok: r.ok });
-    else {
-      atual.n++;
-      if (r.conf > atual.conf) { atual.conf = r.conf; atual.mg = r.mg; atual.ok = r.ok; }
-    }
-  }
-
-  let vencedor = null, melhor = null;
-  for (const [id, v] of porCarta) {
-    if (!melhor || v.n > melhor.n) { melhor = v; vencedor = id; }
-  }
-
-  repeticoes = melhor ? melhor.n : 0;
-  ultimoTopo = vencedor;
-
-  if (vencedor && melhor.n >= TRAVA_FRAMES
-      && melhor.conf >= TRAVA_CONF && melhor.ok) {
-    travar(vencedor);
-  }
-}
-
 function travar(cardId, manual = false) {
   escolhido = 0;
   if (manual) som.somCapturou();
@@ -950,8 +898,6 @@ function travar(cardId, manual = false) {
   // único canal que funciona com o celular no silencioso.
   vibrar(manual ? 14 : [12, 40, 22]);
   frozen = true;
-  repeticoes = 0;
-  recentes.length = 0;
   els.retomar.hidden = false;
   els.capturar.hidden = true;
   els.stage.classList.add("paused", "travado");
@@ -964,7 +910,7 @@ function travar(cardId, manual = false) {
   // julgar nada.
   fotoTravada = fotoDoRecorte();
   // O painel já foi desenhado quando este resultado chegou — `render` roda
-  // antes de `avaliarTrava`. Sem redesenhar, a comparação só apareceria na
+  // antes do travamento. Sem redesenhar, a comparação só apareceria na
   // leitura seguinte, que nunca vem porque travar para o ciclo.
   if (ultimosResultados) render(ultimosResultados);
 
@@ -989,9 +935,6 @@ function travar(cardId, manual = false) {
 function destravar() {
   som.somClique();
   frozen = false;
-  ultimoTopo = null;
-  repeticoes = 0;
-  recentes.length = 0;
   els.retomar.hidden = true;
   els.capturar.hidden = false;
   els.stage.classList.remove("paused", "travado");
@@ -1041,14 +984,8 @@ function mostrarDiag(msg) {
       `separacao ${separacao(r).toFixed(2)}x (min ${SEPARACAO_MIN})  ` +
       `${destacado(r) ? "DESTACADO" : "colado"}`,
     `travaria   conf>=${(TRAVA_CONF * 100).toFixed(0)}% ${r[0]?.confidence >= TRAVA_CONF ? "OK" : "NAO"}` +
-      `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}  concordam ${repeticoes}/${TRAVA_FRAMES}` +
-      `  janela [${recentes.map((x) => (x ? "x" : ".")).join("")}]` +
-      `  melhor ${(() => {
-        const v = recentes.filter((x) => x && x.id === ultimoTopo);
-        if (!v.length) return "-";
-        const b = v.reduce((a, c) => (c.conf > a.conf ? c : a));
-        return `conf ${(b.conf * 100).toFixed(0)}% margem ${b.mg.toFixed(1)}`;
-      })()}`,
+      `  margem ${margem(r) >= MARGEM_MIN ? "OK" : "NAO"}` +
+      `  ${destacado(r) ? "destacado" : "COLADO"}`,
   ];
   els.diag.textContent = linhas.join("\n");
   els.diag.hidden = false;
@@ -1456,7 +1393,7 @@ async function demo(cardId) {
     els.hint.textContent = `demo · ${alvo}`;
     const quadro = capture(img);
     // Repete como a câmera repetiria: é isso que exercita o travamento.
-    for (let n = 0; n < TRAVA_FRAMES; n++) {
+    for (let n = 0; n < 1; n++) {
       seq++;
       worker.postMessage({ type: "match", seq, k: 3, ...quadro });
       await new Promise((r) => setTimeout(r, 120));

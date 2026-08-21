@@ -1738,3 +1738,42 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   border: 1px solid var(--line);
 }
 .gr-dias { color: var(--ink-soft); opacity: 0.7; }
+
+/* ====================== o padrão invertido: atravessar é o PADRÃO
+   Este bug voltou três vezes, sempre igual: um filho novo do cartão sem
+   `grid-column`, caindo na coluna de 46px reservada à miniatura, e o texto
+   quebrando uma palavra por linha com o resto do cartão vazio ao lado.
+
+   Foi assim com `.valor`, com `.guardar`, e agora com `.nodata` — o aviso de
+   "certeza baixa", que é justamente o texto mais importante da tela quando
+   aparece.
+
+   A causa não é nenhum desses elementos: é o padrão exigir que cada filho
+   novo LEMBRE de declarar que atravessa. Regra que depende de memória volta
+   a ser esquecida.
+
+   Invertido: atravessar as duas colunas é o padrão, e só a miniatura e o
+   nome declaram posição. Qualquer bloco acrescentado daqui em diante nasce
+   com a largura do cartão. */
+.sheet .hit > * { grid-column: 1 / -1; }
+.sheet .hit > .miniatura { grid-column: 1; }
+.sheet .hit > .hit-name { grid-column: 2; }
+.sheet .hit > .hit-meta { grid-column: 2; }
+/* Sem miniatura não existe coluna 1: tudo volta a atravessar. */
+.sheet .hit:not(.com-mini) > .hit-name,
+.sheet .hit:not(.com-mini) > .hit-meta,
+.sheet .hit.com-confere > .hit-name,
+.sheet .hit.com-confere > .hit-meta { grid-column: 1 / -1; }
+
+/* O aviso de limite herda o corpo do cartão, não o do painel escuro. */
+.sheet .hit .nodata {
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--carta-tinta-2);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  text-align: left;
+}

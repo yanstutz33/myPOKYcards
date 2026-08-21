@@ -140,18 +140,22 @@
   border: 1px solid color-mix(in srgb, var(--tipo) 40%, var(--line));
 }
 .hit.com-mini {
-  grid-template-columns: auto 1fr auto;
   align-items: start;
   gap: 0.15rem 0.75rem;
 }
+/* Só nome e metadados ficam ao lado da miniatura.
+ *
+ * Esta regra listava também `.precos`, `.guardar`, `.grupo` e `.graded`, e
+ * era herança da grade de TRÊS colunas que existia antes. Com dois classes
+ * no seletor ela tinha especificidade maior que o padrão do cartão, e
+ * empurrava para a coluna estreita blocos que precisam da largura toda —
+ * `.guardar` saía com 253px de 308 disponíveis.
+ *
+ * `.precos`, `.preco-vazio`, `.grupo` e `.graded` nem existem mais no HTML.
+ * Manter nomes mortos num seletor é o que faz uma regra obsoleta sobreviver
+ * a três refatorações sem ninguém notar. */
 .hit.com-mini .hit-name,
-.hit.com-mini .hit-meta,
-.hit.com-mini .precos,
-.hit.com-mini .preco-vazio,
-.hit.com-mini .guardar,
-.hit.com-mini .grupo,
-.hit.com-mini .graded { grid-column: 2 / -1; }
-.hit.com-mini .hit-conf { grid-column: 3; grid-row: 1; }
+.hit.com-mini .hit-meta { grid-column: 2 / -1; }
 
 @media (prefers-reduced-motion: reduce) {
   .hit.foil::before { animation: none; }
