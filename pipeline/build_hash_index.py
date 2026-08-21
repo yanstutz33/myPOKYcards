@@ -59,9 +59,27 @@ LANG_BY_REGION = {"intl": "en", "asia": "ja"}
 # incomparavelmente melhor que carta ausente do indice — sem hash a carta nao
 # tem como ser achada, e o leitor devolve o vizinho mais parecido com ar de
 # certeza. A coluna `lang` registra de onde veio cada uma.
+#
+# `id` e `th` entraram em 21/08/2026, depois de um erro meu que custou ~500
+# cartas. Eu tratava "asia" como sinonimo de japones/chines/coreano, e
+# "asia" no TCGdex inclui as edicoes do Sudeste Asiatico: indonesio e
+# tailandes. Sets inteiros do catalogo — SV3s, SV5s, SV7s, SV8s, SV9s, mais
+# de mil cartas — existem SO em indonesio, e o indexador nunca pediu a arte
+# no unico idioma em que ela esta publicada.
+#
+# O engano ficou escondido porque o sintoma parecia limite da fonte: 404 nos
+# cinco idiomas que eu tentava, registrado direitinho na tabela `failures`,
+# somando um numero grande e plausivel. So apareceu ao comparar quais sets
+# asiaticos estavam a 100% (S10D, S11, S12, M1S, M4 — todos japoneses) com
+# os que estavam a 0% (toda a familia SVxs). Medido depois numa amostra de
+# 300: 5,3% de recuperacao, e TODOS os acertos vieram de `id` ou `th`.
+#
+# Licao que vale alem deste dicionario: falha registrada nao e falha
+# entendida. As 9.545 estavam contadas e catalogadas, e ainda assim 500
+# delas eram defeito meu, nao ausencia de dado.
 FALLBACK_LANGS = {
     "intl": ["en", "pt", "pt-br", "es", "fr", "de", "it"],
-    "asia": ["ja", "zh-tw", "zh-cn", "ko", "en"],
+    "asia": ["ja", "zh-tw", "zh-cn", "ko", "id", "th", "en"],
 }
 
 
