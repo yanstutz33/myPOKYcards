@@ -169,6 +169,52 @@ nova. A serie historica, essa sim insubstituivel, esta versionada em
 `deploy_pages.py` lembra de conferir a copia ao fim de cada publicacao —
 que e o unico momento em que o indice pode ter mudado.
 
+## As 9.545 asiaticas — investigado (21/08/2026)
+
+Pedido: pesquisar o buraco asiatico.
+
+**Achei um defeito meu, nao um limite da fonte.** `FALLBACK_LANGS["asia"]`
+tentava `ja, zh-tw, zh-cn, ko, en`. Mas "asia" no TCGdex inclui o Sudeste
+Asiatico: **indonesio (`id`) e tailandes (`th`)**. Sets inteiros do catalogo
+— SV3s, SV5s, SV7s, SV8s, SV9s — existem SO em indonesio, e o indexador
+nunca pediu a arte no unico idioma em que ela esta publicada.
+
+O engano ficou escondido porque o sintoma parecia teto da fonte: 404 nos
+cinco idiomas tentados, registrado na tabela `failures`, somando um numero
+grande e plausivel. **Eu tinha conferido esse numero por dois caminhos e
+reportado como limite da fonte.** Falha registrada nao e falha entendida.
+
+Apareceu ao comparar sets asiaticos a 100% (S10D, S11, S12, M1S, M4 — todos
+japoneses) com os a 0% (toda a familia SVxs). Os nomes das cartas de SV8s
+estao em `id` e `th`, nao em japones.
+
+**+752 cartas recuperadas** numa reindexacao de 88 min.
+
+| regiao | antes | depois |
+|---|---|---|
+| asia | 47,6% | **51,7%** |
+| internacional | 96,9% | 96,9% |
+| total | 75,5% | **77,3%** |
+
+### O que sobra: 8.793 cartas, e por que
+
+Depois do conserto, **9.516 cartas dao 404 nos SETE idiomas**. Verificado
+carta a carta pela reindexacao completa, nao por amostra. Os maiores:
+
+- `MC` スタートデッキ100 (774), `SV-P` promos (301), `M2a` MEGAドリームex (250)
+- japonesas e chinesas recentes, quase todas
+
+**Nao ha segunda fonte legitima para arte japonesa.** pokemontcg.io e so em
+ingles. O site oficial (pokemon-card.com) tem as imagens, mas nao publica
+`robots.txt` e e da Pokemon Company — raspar e redistribuir dali e outra
+categoria de coisa que o TCGdex (MIT) e a pokemontcg.io (API publica) nao
+sao. **Decisao do Yan, nao minha.**
+
+**Descartado: reaproveitar arte de "gemea".** 4.747 das que faltam tem carta
+do mesmo Pokemon no indice. Mas "mesmo Pokemon" nao e "mesma arte" —
+Charizard tem centenas. Isso produziria resposta errada com ar de certeza,
+que e o defeito que o projeto inteiro combate.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco
