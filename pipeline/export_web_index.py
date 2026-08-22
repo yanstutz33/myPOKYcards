@@ -88,6 +88,30 @@ def _export_prices(out_dir: Path, known_ids: set[str], prices_db: Path = Path("d
     print(f"  prices.json     : {len(raw)/1024/1024:.2f} MB  ({len(payload)} cartas)")
 
 
+def _totais_impressos(cards_db: Path, ids: list[str]) -> dict[str, int]:
+    """set_id -> tamanho impresso do set, so dos sets que aparecem no indice.
+
+    `card_count` do catalogo e exatamente o denominador que a carta imprime.
+    Conferido: base1=102, ecard1=165, dp1=130, xy1=146, sm1=149, swsh1=202,
+    sv01=198 — todos batendo com o que se le no rodape.
+
+    Nao da para derivar isso contando cartas: sets modernos tem secretas alem
+    do total impresso (sv01 tem 258 cartas no catalogo e imprime "/198"), e a
+    contagem daria um numero que nao aparece em carta nenhuma.
+
+    So os sets presentes no indice entram. Publicar os 564 custaria bytes
+    para sets que o leitor nunca vai propor.
+    """
+    usados = {i.rsplit("-", 1)[0] for i in ids}
+    conn = sqlite3.connect(f"file:{cards_db}?mode=ro", uri=True)
+    fora: dict[str, int] = {}
+    for set_id, n in conn.execute("SELECT set_id, card_count FROM sets"):
+        if set_id in usados and isinstance(n, int) and n > 0:
+            fora[set_id] = n
+    conn.close()
+    return fora
+
+
 def _indices_por_grupo(ids: list[str], meta: list[list]) -> dict[str, list[int]]:
     out: dict[str, list[int]] = {}
     for i, m in enumerate(meta):
@@ -209,6 +233,14 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         "meta": meta,
         # grupo -> posicoes, para a UI listar as irmas sem varrer tudo.
         "grupos": _indices_por_grupo(ids, meta),
+        # set -> tamanho IMPRESSO, que e o denominador do "045/198".
+        #
+        # Serve ao OCR do numero: entre duas impressoes irmas que ocupam a
+        # mesma posicao em sets diferentes, o total separa as duas. Contar as
+        # cartas do set nao serviria — sets modernos tem secretas alem do
+        # total impresso (sv01 tem 258 cartas e imprime "/198"), e a conta
+        # daria um numero que nunca aparece em carta nenhuma.
+        "totais": _totais_impressos(cards_db, ids),
     }
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     (out_dir / "cards.json").write_bytes(raw)

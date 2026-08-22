@@ -769,6 +769,19 @@ let ultimoTextoLido = null;
  * Falha sem consequencia: numero ilegivel deixa a ordem como estava, e a
  * ficha continua listando as irmas para escolha manual.
  */
+/**
+ * "base1-1" -> "base1", "SV-P-001" -> "SV-P", "tk-ex-m-2" -> "tk-ex-m".
+ *
+ * O card_id e o set_id mais o numero local, separados pelo ULTIMO hifen —
+ * varios sets tem hifen no proprio id, entao cortar no primeiro devolveria
+ * "SV" para uma carta de "SV-P". Mesma derivacao do exportador.
+ */
+function setDoCardId(cardId) {
+  const s = String(cardId || "");
+  const corte = s.lastIndexOf("-");
+  return corte > 0 ? s.slice(0, corte) : s;
+}
+
 async function desempatarPorNumero(resultados) {
   const topo = resultados[0];
   if (!topo || topo.porTexto) return resultados;
@@ -793,15 +806,40 @@ async function desempatarPorNumero(resultados) {
     etapas.falhar("numero", "não deu para ler");
     return resultados;
   }
-  etapas.concluir("numero", numero);
+  etapas.concluir("numero", `${numero.numero}/${numero.total}`);
 
   // `local_id` do catalogo tem zeros a esquerda em alguns sets ("032"), o
   // numero lido nao. Compara por valor.
-  const alvo = Number(numero);
-  const casou = irmas.find((i) => Number(catalog.meta[i]?.[2]) === alvo);
+  const alvo = Number(numero.numero);
+  let candidatas = irmas.filter((i) => Number(catalog.meta[i]?.[2]) === alvo);
+
+  // O DENOMINADOR desempata quando o numerador nao basta.
+  //
+  // Duas impressoes irmas podem ocupar a mesma posicao em sets diferentes —
+  // a carta 25 de um set de 102 e a carta 25 de um set de 165 tem o mesmo
+  // numerador e arte identica. O total impresso separa as duas, e
+  // `catalog.totais` guarda o tamanho impresso de cada set (o `card_count`
+  // do catalogo, conferido: base1=102, xy1=146, sm1=149, sv01=198).
+  //
+  // O set sai do card_id, nao de `meta[1]`: aquele campo guarda o NOME do
+  // set para exibicao ("Base Set"), e o mapa e indexado por id ("base1").
+  // Mesma derivacao que o exportador usa.
+  //
+  // Filtro, nao exigencia: se o total lido nao bate com NENHUMA candidata, a
+  // leitura provavelmente saiu errada, e descartar as candidatas boas por
+  // causa disso seria trocar um acerto por nada. Nesse caso segue so com o
+  // numerador, que ja era o comportamento anterior.
+  const total = Number(numero.total);
+  if (candidatas.length > 1 && catalog.totais && total > 0) {
+    const porTotal = candidatas.filter(
+      (i) => catalog.totais[setDoCardId(catalog.ids[i])] === total);
+    if (porTotal.length) candidatas = porTotal;
+  }
+
+  const casou = candidatas[0];
   if (casou === undefined) return resultados;
 
-  ultimoNumeroLido = numero;
+  ultimoNumeroLido = `${numero.numero}/${numero.total}`;
   const jaEsta = resultados.findIndex((r) => r.i === casou);
   if (jaEsta === 0) return resultados;
   if (jaEsta > 0) {
@@ -811,8 +849,8 @@ async function desempatarPorNumero(resultados) {
   // A impressao certa nao estava nem entre os candidatos: entra na frente,
   // com a confianca do primeiro, porque a ARTE e a mesma — o hash acertou a
   // imagem e errou so a impressao, que e exatamente o que o numero corrige.
-  return [{ i: casou, score: topo.score, confidence: topo.confidence, porNumero: numero },
-          ...resultados];
+  return [{ i: casou, score: topo.score, confidence: topo.confidence,
+            porNumero: ultimoNumeroLido }, ...resultados];
 }
 
 let ultimoNumeroLido = null;

@@ -215,6 +215,68 @@ do mesmo Pokemon no indice. Mas "mesmo Pokemon" nao e "mesma arte" —
 Charizard tem centenas. Isso produziria resposta errada com ar de certeza,
 que e o defeito que o projeto inteiro combate.
 
+## OCR do numero — a mira estava errada (21/08/2026)
+
+Este era o maior ganho de precisao disponivel sem depender de decisao do
+Yan: **11.423 cartas em 5.158 grupos** tem arte identica e so o numero
+impresso as separa.
+
+Estava medido em "0 de 15" nas eras antigas contra "4 de 5" nas modernas, e
+eu tinha registrado isso como limite do motor. Nao era.
+
+**A Pokemon mudou o rodape em Sun & Moon (2017).** Antes o numero fica na
+ponta DIREITA; de SM em diante, na ESQUERDA. Eu tinha so a geometria da
+esquerda — o recorte nao continha o numero nas cartas antigas. Aqueles 4/5
+eram todos modernos, e foi por isso que o resultado pareceu bom.
+
+Achado olhando, nao deduzindo: montei uma prancha com o terco de baixo de 13
+cartas de base1 a sv08, com a caixa atual desenhada por cima. O numero
+estava fora dela em todas as anteriores a sm1.
+
+### O que mudou
+
+- **Duas geometrias.** Esquerda `{0.04, 0.925, 0.42, 0.055}` e direita
+  `{0.68, 0.898, 0.32, 0.092}`. Conferidas olhando o recorte: 13 cartas na
+  direita, 11 na esquerda, Pokemon e Trainer, numeros de uma a tres casas.
+  **24 de 24 legiveis dentro da caixa.**
+
+  A da direita e mais alta (0,092 contra 0,055) porque a altura varia entre
+  eras: em ecard e ex o numero sobe, em dp, pl e hgss desce. A primeira
+  tentativa, com faixa estreita, cortava esses tres pela metade.
+
+- **Inversao de polaridade.** Renderizei o que o motor REALMENTE recebe,
+  reimplementando `tira()` em Python. Em swsh1-200 o numero sai BRANCO sobre
+  escuro, ao contrario de base1 e xy1. `lerNome` ja tentava as duas
+  polaridades desde sempre; `lerNumero` nao.
+
+- **O denominador agora e usado.** `lerNumero` devolve `{numero, total}`. O
+  total impresso identifica o SET: `card_count` do catalogo e exatamente
+  aquele numero (base1=102, xy1=146, sm1=149, sv01=198, conferidos). Entre
+  duas irmas na mesma posicao de sets diferentes, ele desempata.
+
+  Filtro, nao exigencia: se o total lido nao bate com nenhuma candidata,
+  segue so com o numerador. Descartar candidata boa por causa de um digito
+  mal lido seria trocar acerto por nada.
+
+- **A bancada media a copia dela, nao o app.** `teste-ocr.html` tinha suas
+  proprias constantes, divergidas: a caixa da direita era `rh: 0.052`,
+  justamente a faixa estreita que corta dp, pl e hgss. Agora ela importa
+  `GEOMETRIAS`, `GEOMETRIAS_NUMERO` e `tira` de `ocr.js`.
+
+- Invariante novo (36 no total): o mapa `totais` do cards.json tem que ser
+  alcancavel pelo cliente, e o card_id tem que derivar o set certo nas
+  32.339 cartas. Testado por mutacao tres vezes.
+
+### O QUE NAO FOI VERIFICADO
+
+**Nao rodei o motor.** Nao ha Tesseract nesta maquina e o navegador da
+sessao nao alcanca o localhost. O que esta medido e a GEOMETRIA (24/24
+legiveis) e o pre-processamento (renderizado e olhado). O que falta e a taxa
+de acerto do Tesseract sobre esses recortes.
+
+Para medir: servir o site e abrir `web/teste-ocr.html?n=40`. A bancada agora
+usa o codigo do modulo, entao o numero que ela imprimir vale para o app.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco

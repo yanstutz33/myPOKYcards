@@ -42,6 +42,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script type="module">
+import { GEOMETRIAS, GEOMETRIAS_NUMERO, tira as tiraDoModulo } from "./ocr.js";
 const tbody = document.querySelector("#out tbody");
 const verdict = document.getElementById("verdict");
 
@@ -82,80 +83,20 @@ const carregar = (url) => new Promise((ok, no) => {
  * Nao da para saber a categoria antes de ler, entao le-se as duas e fica a
  * que casa melhor com o vocabulario — mesmo padrao ja usado para polaridade
  * e para as cinco escalas da captura. */
-/* O numero impresso, no rodape.
+/* As geometrias vem do MODULO, nao de copias aqui.
  *
- * Vale mais que o nome em populacao: 4.867 grupos de impressoes irmas cobrem
- * 10.737 cartas onde o app hoje diz "confira o numero voce mesmo". E o
- * formato e fixo — digitos, barra, digitos — o que permite validar a leitura
- * por forma, coisa que nome estilizado nao permite.
+ * Ate 21/08/2026 esta bancada tinha as suas proprias, e elas tinham
+ * divergido: a caixa da direita era `rh: 0.052`, uma faixa estreita que corta
+ * o numero de dp, pl e hgss pela metade — e a do modulo hoje e 0.092. Ou
+ * seja, a bancada media uma coisa e o app fazia outra, e os numeros que ela
+ * imprimia nao eram evidencia sobre o app.
  *
- * A posicao mudou com as eras: moderno (SWSH, SV) fica embaixo a esquerda;
- * antes ficava embaixo a direita. As duas entram. */
-const GEOMETRIAS_NUMERO = [
-  { nome: "rodape-esq", rx: 0.045, ry: 0.988 - 0.052, rw: 0.34, rh: 0.052 },
-  { nome: "rodape-dir", rx: 0.560, ry: 0.988 - 0.052, rw: 0.40, rh: 0.052 },
-];
-
-const GEOMETRIAS = [
-  { nome: "pokemon", rx: 0.175, ry: 0.036, rw: 0.56, rh: 0.058 },
-  { nome: "trainer", rx: 0.080, ry: 0.088, rw: 0.84, rh: 0.075 },
-];
+ * Bancada que reimplementa o que deveria medir mede a si mesma. */
 
 function tiraDoNome(img, inverter = false, geo = GEOMETRIAS[0]) {
-  const w = img.naturalWidth, h = img.naturalHeight;
-  // Recorte APERTADO, e isto veio de olhar as tiras em vez de deduzir.
-  //
-  // A primeira versao pegava de 4% a 74% da largura e 10,5% da altura, e as
-  // imagens sairam perfeitamente legiveis — um humano le as nove de relance.
-  // O Tesseract leu uma. O erro nao era o recorte estar ruim: era ele estar
-  // GRANDE demais para o modo que eu havia escolhido.
-  //
-  // Naquela faixa entram o selo "BASIC"/"STAGE 1" a esquerda e a linha
-  // "Evolves from X" embaixo. Eu tinha configurado modo de UMA LINHA, e
-  // entregado tres blocos de texto — o motor tentava costurar tudo numa linha
-  // so e devolvia "82219) Dialga Ee !".
-  //
-  // Agora comeca depois do selo e para antes do HP, com altura da linha do
-  // nome apenas.
-  const { rx, ry, rw, rh } = geo;
-  const ESCALA = 4;
-  const cv = document.createElement("canvas");
-  cv.width = Math.round(w * rw * ESCALA);
-  cv.height = Math.round(h * rh * ESCALA);
-  const g = cv.getContext("2d", { willReadFrequently: true });
-  g.imageSmoothingQuality = "high";
-  g.drawImage(img, w * rx, h * ry, w * rw, h * rh, 0, 0, cv.width, cv.height);
-
-  // Cinza + contraste esticado entre o percentil 5 e 95, para nao deixar o
-  // brilho do holo comer as duas pontas da escala.
-  const d = g.getImageData(0, 0, cv.width, cv.height);
-  const p = d.data;
-  const hist = new Uint32Array(256);
-  for (let i = 0; i < p.length; i += 4) {
-    const v = (p[i] * 299 + p[i + 1] * 587 + p[i + 2] * 114) / 1000 | 0;
-    p[i] = p[i + 1] = p[i + 2] = v;
-    hist[v]++;
-  }
-  const total = p.length / 4;
-  let acc = 0, lo = 0, hi = 255;
-  for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > total * 0.05) { lo = v; break; } }
-  acc = 0;
-  for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > total * 0.05) { hi = v; break; } }
-  const faixa = Math.max(1, hi - lo);
-  for (let i = 0; i < p.length; i += 4) {
-    const v = Math.max(0, Math.min(255, Math.round((p[i] - lo) * 255 / faixa)));
-    p[i] = p[i + 1] = p[i + 2] = v;
-  }
-  // Polaridade: metade das cartas tem nome escuro sobre faixa clara, a outra
-  // metade tem nome claro sobre arte escura. OCR de documento espera o
-  // primeiro caso, entao a segunda leitura tenta invertido.
-  if (inverter) {
-    for (let i = 0; i < p.length; i += 4) {
-      p[i] = p[i + 1] = p[i + 2] = 255 - p[i];
-    }
-  }
-  g.putImageData(d, 0, 0);
-  return cv;
+  // Delega para o modulo: e o mesmo recorte, o mesmo estica-contraste e a
+  // mesma inversao que o app usa de verdade.
+  return tiraDoModulo(img, geo, inverter, 6);
 }
 
 /** Semelhança por trigramas: tolera letra trocada, que é o erro típico de OCR. */

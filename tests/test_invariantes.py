@@ -310,6 +310,57 @@ def testar_formato_do_indice() -> None:
            f"usa ${{{m.group(1)}}}" if m else "expressao nao reconhecida")
 
 
+def testar_totais_impressos() -> None:
+    """O mapa `totais` do cards.json tem que ser alcançável pelo cliente.
+
+    O OCR do número usa o denominador ("045/**198**") para escolher entre
+    impressões irmãs. Para isso o app precisa achar o tamanho impresso do set
+    a partir do card_id, e faz isso cortando no ÚLTIMO hífen — porque vários
+    sets têm hífen no próprio id (`SV-P`, `tk-ex-m`), e cortar no primeiro
+    devolveria `SV` para uma carta de `SV-P`.
+
+    Se essa derivação divergir do set_id real, o desempate simplesmente para
+    de achar a chave e volta a usar só o numerador. Falha silenciosa: nada
+    quebra, o leitor só volta a confundir impressões irmãs — que é o problema
+    que este caminho existe para resolver.
+    """
+    print()
+    print("TOTAIS IMPRESSOS")
+    caminho = RAIZ / "web" / "data" / "cards.json"
+    if not caminho.exists():
+        print("  (cards.json ainda não exportado)")
+        return
+
+    dados = json.loads(caminho.read_text(encoding="utf-8"))
+    totais = dados.get("totais")
+    checar(isinstance(totais, dict) and len(totais) > 100,
+           f"cards.json publica o tamanho impresso de {len(totais or {})} sets",
+           "sem `totais` o desempate por número perde o denominador")
+
+    cat = abrir("cards.db")
+    if not cat:
+        return
+    real = dict(cat.execute("SELECT card_id, set_id FROM cards"))
+    cat.close()
+
+    def set_do(card_id: str) -> str:
+        corte = card_id.rfind("-")
+        return card_id[:corte] if corte > 0 else card_id
+
+    erradas = [i for i in dados["ids"] if set_do(i) != real.get(i)]
+    checar(not erradas,
+           f"o card_id devolve o set certo nas {len(dados['ids'])} cartas",
+           f"{len(erradas)} divergem, ex.: {erradas[:3]}")
+
+    # Valores conferidos olhando o rodapé da carta, não derivados.
+    conhecidos = {"base1": 102, "ecard1": 165, "dp1": 130, "xy1": 146,
+                  "sm1": 149, "swsh1": 202, "sv01": 198}
+    fora = {s: (totais.get(s), n) for s, n in conhecidos.items()
+            if s in totais and totais.get(s) != n}
+    checar(not fora, "os totais batem com o número impresso na carta",
+           f"divergem: {fora}")
+
+
 def testar_precache() -> None:
     """Tudo que o sw promete guardar precisa existir e ser servido.
 
@@ -400,6 +451,7 @@ if __name__ == "__main__":
     testar_precos()
     testar_traducao_variante()
     testar_formato_do_indice()
+    testar_totais_impressos()
     testar_precache()
     testar_publicacao_dos_dados()
     testar_javascript()

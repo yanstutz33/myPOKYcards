@@ -24,7 +24,6 @@
  * imagem, 9.383 são asiáticas. Fingir que alcança essas seria pior que
  * admitir o limite.
  *
-
  * Precisa de internet na primeira vez
  * -----------------------------------
  * O motor e os dados de idioma somam ~7 MB e vêm de CDN sob demanda. Embutir
@@ -48,15 +47,15 @@ const CDN_TESSERACT = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesserac
  * estava configurado para UMA linha e recebia três blocos. Apertar levou de
  * 1/9 para 6/9, e ainda ficou três vezes mais rápido.
  */
-const GEOMETRIAS = [
+export const GEOMETRIAS = [
   { rx: 0.150, ry: 0.034, rw: 0.62, rh: 0.062 },
   { rx: 0.080, ry: 0.088, rw: 0.84, rh: 0.075 },
 ];
 
 /* O número impresso, no rodapé.
  *
- * Vale mais que o nome em população: resolve os 4.867 grupos de impressões
- * irmãs, que cobrem 10.737 cartas — onde o app hoje diz "confira o número
+ * Vale mais que o nome em população: resolve os 5.158 grupos de impressões
+ * irmãs, que cobrem 11.423 cartas — onde o app hoje diz "confira o número
  * você mesmo" porque nenhum algoritmo de imagem separa arte idêntica.
  *
  * A primeira tentativa deu 0 de 15 e eu quase descartei o caminho. O erro foi
@@ -73,8 +72,35 @@ const GEOMETRIAS = [
  *   símbolo de energia, marca de regulação, o número, um losango de raridade
  *   e o copyright. Forçar tudo numa linha produzia "2020" — o ano do
  *   copyright — em vez do número.
+ *
+ * E DUAS GEOMETRIAS, porque existem dois rodapés
+ * ----------------------------------------------
+ * Aqueles 4/5 eram todos de cartas modernas, e foi por isso que o resultado
+ * pareceu bom. A Pokémon mudou o rodapé em Sun & Moon (2017): antes o número
+ * fica na ponta DIREITA, de SM em diante na ESQUERDA. Eu tinha só a
+ * geometria da esquerda — o recorte não continha o número nas eras antigas.
+ * O motor estava certo, a mira estava errada.
+ *
+ * Ambas foram conferidas OLHANDO o recorte, não deduzidas: 13 cartas de
+ * base1 a xy1 na direita e 11 de sm1 a sv08 na esquerda, Pokémon e Trainer,
+ * números de uma a três casas. 24 de 24 legíveis dentro da caixa.
+ *
+ * A caixa da direita é mais alta (0,092 contra 0,055) porque a altura do
+ * número varia entre eras — em ecard e ex ele sobe, em dp, pl e hgss desce.
+ * Uma faixa estreita bem centrada numa era corta o número da vizinha: foi o
+ * que vi na primeira tentativa, com dp, pl e hgss cortados pela metade.
+ *
+ * Ordem: esquerda primeiro. O que as pessoas escaneiam é em maioria moderno,
+ * e a primeira tentativa que acerta encerra a busca.
  */
-const GEOMETRIA_NUMERO = { rx: 0.04, ry: 0.925, rw: 0.42, rh: 0.055 };
+export const GEOMETRIAS_NUMERO = [
+  { rx: 0.04, ry: 0.925, rw: 0.42, rh: 0.055 },   // Sun & Moon -> hoje
+  { rx: 0.68, ry: 0.898, rw: 0.32, rh: 0.092 },   // Base Set -> XY
+];
+
+// Exige a barra. É ela que separa o número da carta de qualquer outro dígito
+// no rodapé — ano de copyright, dano de ataque, custo de recuo. Nenhum deles
+// tem barra, e por isso o padrão sozinho já filtra quase todo falso positivo.
 const PADRAO_NUMERO = /(\d{1,3})\s*\/\s*(\d{1,3})/;
 
 const MIN_LETRAS = 4;
@@ -143,6 +169,15 @@ export function preparar() {
 
 export const pronto = () => Boolean(motor && vocabulario);
 
+/* GEOMETRIAS, GEOMETRIAS_NUMERO e `tira` sao exportados para a bancada
+ * (web/teste-ocr.html), nao para o app.
+ *
+ * A bancada tinha COPIAS destas constantes, com valores diferentes dos do
+ * modulo — a caixa da direita la era `rh: 0.052`, a faixa estreita que eu
+ * medi cortando o numero de dp, pl e hgss pela metade. Bancada que
+ * reimplementa o que deveria medir nao produz evidencia sobre o app: ela
+ * mede a copia. Importando daqui, as duas nao tem como divergir.
+ */
 /**
  * Recorta a faixa do nome, amplia e normaliza contraste.
  *
@@ -151,7 +186,7 @@ export const pronto = () => Boolean(motor && vocabulario);
  * inversão existe porque metade das cartas tem nome claro sobre arte escura,
  * e OCR de documento espera o contrário.
  */
-function tira(fonte, geo, inverter, escala = 4) {
+export function tira(fonte, geo, inverter, escala = 4) {
   const w = fonte.width || fonte.naturalWidth;
   const h = fonte.height || fonte.naturalHeight;
   const ESCALA = escala;
@@ -186,19 +221,19 @@ function tira(fonte, geo, inverter, escala = 4) {
 }
 
 /**
- * Lê o nome e devolve os card_id compatíveis, do mais provável ao menos.
- *
- * `fonte` deve ser a carta JÁ DESENTORTADA e recortada — a mesma imagem que
- * alimenta o hash. Passar o quadro inteiro daria ao motor a mesa, a mão e o
- * texto de ataque para competir com as duas palavras que interessam.
- */
-/**
  * Lê o número impresso, ou null.
  *
- * Devolve só o numerador — "136" de "136/189". O denominador é o tamanho do
- * set e já está no catálogo; exigir que ele bata também transformaria um erro
- * de leitura num descarte, e o numerador sozinho já distingue as impressões
- * irmãs, que é para o que isto existe.
+ * Devolve `{ numero, total }` — "136" e "189" de "136/189".
+ *
+ * Antes eu devolvia só o numerador, argumentando que exigir o denominador
+ * transformaria um erro de leitura num descarte. O argumento estava certo
+ * sobre EXIGIR e errado sobre devolver: quem chama pode usar o total como
+ * desempate adicional sem nunca torná-lo obrigatório. O denominador é o
+ * tamanho impresso do set, e `card_count` do catálogo é exatamente esse
+ * número — conferido em base1=102, xy1=146, sm1=149, sv01=198. Entre duas
+ * impressões irmãs de sets diferentes, ele diz qual é sem ambiguidade.
+ *
+ * `fonte` deve ser a carta JÁ DESENTORTADA e recortada.
  */
 export async function lerNumero(fonte) {
   if (!pronto()) await preparar();
@@ -208,10 +243,38 @@ export async function lerNumero(fonte) {
   });
   let achado = null;
   try {
-    const cv = tira(fonte, GEOMETRIA_NUMERO, false, 6);
-    const t = (await motor.recognize(cv)).data.text.replace(/\s+/g, " ").trim();
-    const m = t.match(PADRAO_NUMERO);
-    if (m) achado = m[1].replace(/^0+(?=\d)/, "");   // "032" e "32" sao o mesmo
+    // Duas geometrias x duas polaridades.
+    //
+    // A inversão entrou depois de renderizar o que o motor recebe. Em
+    // swsh1-200 o número sai BRANCO sobre fundo escuro, ao contrário de
+    // base1 e xy1, onde é preto sobre claro. `lerNome` já tentava as duas
+    // desde sempre; `lerNumero` não, e essa era metade das cartas modernas
+    // holo saindo sem leitura.
+    //
+    // Custa até quatro passadas, mas para na primeira que casa — e a ordem
+    // (esquerda normal primeiro) é a que resolve a maioria do que se escaneia.
+    for (const geo of GEOMETRIAS_NUMERO) {
+      for (const inverter of [false, true]) {
+        const cv = tira(fonte, geo, inverter, 6);
+        const t = (await motor.recognize(cv)).data.text.replace(/\s+/g, " ").trim();
+        const m = t.match(PADRAO_NUMERO);
+        if (!m) continue;
+
+        // "032" e "32" sao o mesmo numero; o catalogo guarda com zeros.
+        const numero = m[1].replace(/^0+(?=\d)/, "");
+        const total = m[2].replace(/^0+(?=\d)/, "");
+
+        // Numero muito maior que o total e leitura corrompida, nao carta
+        // secreta: secreta imprime "199/198", so um pouco acima. Aceito ate
+        // o dobro para nao derrubar as secretas de verdade, e recuso o resto
+        // — "1/102" lido como "71/102" ainda passa, mas "802/102" nao.
+        if (!Number(total) || Number(numero) > Number(total) * 2) continue;
+
+        achado = { numero, total };
+        break;
+      }
+      if (achado) break;
+    }
   } catch { /* segue sem numero */ }
   // Devolve o motor ao modo do nome: parametros sao globais no worker, e
   // deixar a lista branca ligada faria a proxima leitura de nome so ver
@@ -220,6 +283,13 @@ export async function lerNumero(fonte) {
   return achado;
 }
 
+/**
+ * Lê o nome e devolve os card_id compatíveis, do mais provável ao menos.
+ *
+ * `fonte` deve ser a carta JÁ DESENTORTADA e recortada — a mesma imagem que
+ * alimenta o hash. Passar o quadro inteiro daria ao motor a mesa, a mão e o
+ * texto de ataque para competir com as duas palavras que interessam.
+ */
 export async function lerNome(fonte) {
   if (!pronto()) await preparar();
 
