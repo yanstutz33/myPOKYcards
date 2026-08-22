@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#B0241C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>myPOKYcards · Leitor de cartas</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="scan.css">
+  <link rel="stylesheet" href="pokedex.css">
+</head>
+<body class="scan-body">
+
+  <header class="topbar">
+    <a class="brand" href="sobre.html">myPOKY<b>cards</b></a>
+    <span class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusText">carregando…</span>
+    </span>
+    <button id="audio" class="audio" aria-pressed="true" aria-label="Desligar sons">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+        <path class="onda" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"
+              fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path class="corte" d="M17 9l5 6M22 9l-5 6"
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <nav class="topnav">
+      <a href="buscar.html">Buscar</a>
+      <a href="colecao.html">Coleção</a>
+      <a href="painel.html">Painel</a>
+    </nav>
+  </header>
+
+  <main class="stage" id="stage">
+    <video id="video" playsinline muted autoplay></video>
+
+    <!-- A moldura é sugestão de enquadramento. O recorte real vem da borda
+         detectada, desenhada por cima em .achado. -->
+    <div class="frame" id="frame">
+      <span class="corner tl"></span>
+      <span class="corner tr"></span>
+      <span class="corner bl"></span>
+      <span class="corner br"></span>
+      <div class="sweep"></div>
+    </div>
+    <div class="achado" id="achado" hidden></div>
+
+    <!-- Aqui existiu um destaque de preço flutuando sobre a câmera. Ficava
+         em cima da carta, que é o único lugar da tela que precisa estar
+         livre. O valor voltou para o painel, embaixo, e continua grande. -->
+
+    <!-- Etapas do processamento. Aparecem SO enquanto ele acontece, e SO as
+         que realmente acontecem: leitura de texto entra quando o hash falha,
+         numero entra quando ha impressoes irmas. Lista fixa de etapas
+         inventadas e teatro. -->
+    <div class="etapas" id="etapas" hidden aria-live="polite">
+      <ol id="etapasLista"></ol>
+    </div>
+
+    <p class="hint" id="hint">Aponte para a carta</p>
+
+    <!-- Diagnóstico: liga com ?diag. Existe para calibrar limiar com
+         aparelho real, porque foto de celular não se parece com a imagem
+         perfeita do catálogo. -->
+    <pre class="diag" id="diag" hidden></pre>
+    <button class="diag-copiar" id="diagCopiar" hidden>copiar diagnóstico</button>
+  </main>
+
+  <!-- Tudo que não é câmera vive nesta pilha, SOBRE a câmera. Antes eram
+       linhas de grade dividindo a tela, e a câmera ficava com 37% dela —
+       303px para enquadrar uma carta. Empilhado por cima, o vídeo ocupa a
+       tela inteira e só o que está em uso cobre alguma parte dele. -->
+  <div class="base-stack">
+
+  <!-- Barra de captura: sempre disponível, independente do automático.
+       O usuário nunca pode ficar preso esperando o leitor decidir. -->
+  <div class="barra" id="barra">
+    <button id="capturar" class="captura" aria-label="Capturar carta">
+      <span class="captura-anel"></span>
+    </button>
+    <button id="retomar" class="secundaria" hidden>Ler outra</button>
+    <!-- Desligar acompanha a captura enquanto a camera esta ligada; a barra
+         larga la embaixo so existe para LIGAR, quando nao ha nada na tela
+         para ela atrapalhar. -->
+    <!-- Foto parada, pela camera nativa. Nao substitui a leitura ao vivo: e
+         a saida para luz ruim, carta plastificada e holo espelhando, onde um
+         quadro de video de 450 ms tem borrao de movimento e foco perdido. -->
+    <label class="secundaria foto" id="fotoBtn" hidden title="Ler de uma foto">
+      <svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true">
+        <path d="M4 8h3l1.5-2h7L17 8h3v11H4z" fill="none" stroke="currentColor"
+              stroke-width="1.8" stroke-linejoin="round"/>
+        <circle cx="12" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+      <span class="foto-rotulo">Foto</span>
+      <input type="file" id="fotoInput" accept="image/*" capture="environment">
+    </label>
+
+    <button id="desligar" class="lanterna desligar" hidden aria-label="Desligar leitor">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path d="M12 4v8" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round"/>
+        <path d="M7.5 6.5a7 7 0 1 0 9 0" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <!-- Só aparece se o aparelho declarar `torch`. iPhone não implementa,
+         e botão que não faz nada é pior que botão nenhum. -->
+    <button id="lanterna" class="lanterna" hidden aria-pressed="false"
+            aria-label="Lanterna">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+        <path d="M9 2h6v3l-1.5 2v13a1.5 1.5 0 0 1-3 0V7L9 5V2z"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linejoin="round"/>
+        <path d="M10.5 11h3" stroke="currentColor" stroke-width="1.8"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Nasce vazio: a instrução já está sobre a câmera, em .hint, e repetir
+       aqui custaria 40% do visor para dizer duas vezes a mesma coisa. -->
+  <section class="sheet vazio" id="sheet" aria-live="polite">
+    <div class="results" id="results"></div>
+  </section>
+
+  <div class="acoes-base">
+    <button id="toggle" class="primary" disabled>Ligar leitor</button>
+  </div>
+
+  </div><!-- /base-stack -->
+
+  <!-- Saida para as 11.411 cartas do catalogo que NAO tem imagem em fonte
+       nenhuma (27,4%): elas existem, tem nome e preco, e simplesmente nao
+       podem ser reconhecidas por foto. Sem isto o leitor so tinha um caminho
+       — chutar o vizinho mais parecido — e a pessoa ficava sem saida. -->
+  <div class="busca-rapida" id="buscaRapida" hidden>
+    <div class="br-caixa" role="dialog" aria-modal="true" aria-label="Buscar carta pelo nome">
+      <header class="br-topo">
+        <input type="search" id="brCampo" placeholder="Nome da carta, expansão ou número"
+               autocomplete="off" enterkeyhint="search" aria-label="Buscar carta">
+        <button class="br-fechar" id="brFechar" aria-label="Fechar busca">✕</button>
+      </header>
+      <p class="br-nota">Nem toda carta pode ser reconhecida por foto — 27% do
+        catálogo não tem imagem em fonte nenhuma. Aqui elas aparecem.</p>
+      <div class="br-lista" id="brLista"></div>
+    </div>
+  </div>
+
+  <div class="ficha" id="ficha" hidden></div>
+
+  <script type="module" src="app.js"></script>
+  <script type="module" src="pwa.js"></script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "myPOKYcards · Leitor de cartas Pokémon",
+  "short_name": "myPOKYcards",
+  "description": "Reconhece cartas Pokémon pela câmera e mostra o preço. Funciona offline.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0C0D10",
+  "theme_color": "#B0241C",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icone-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img"
+     aria-label="myPOKYcards">
+  <!-- A lente do aparelho, com uma carta dentro. Duas formas so, porque o
+       icone e visto a 48px na tela de inicio: qualquer terceiro elemento
+       vira sujeira nesse tamanho. O anterior era um retangulo ciano com
+       cantos de moldura — nao dizia nem "carta" nem "leitor", e era do
+       visual generico que este projeto abandonou. -->
+  <defs>
+    <linearGradient id="chassi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D9483C"/>
+      <stop offset=".55" stop-color="#B0241C"/>
+      <stop offset="1" stop-color="#6E140F"/>
+    </linearGradient>
+    <linearGradient id="lente" x1=".25" y1="0" x2=".75" y2="1">
+      <stop offset="0" stop-color="#5FA0E8"/>
+      <stop offset=".5" stop-color="#2C6FC9"/>
+      <stop offset="1" stop-color="#17427C"/>
+    </linearGradient>
+    <linearGradient id="papel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF6E9"/>
+      <stop offset="1" stop-color="#E4DCC6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="192" height="192" rx="38" fill="url(#chassi)"/>
+  <rect x="3" y="3" width="186" height="186" rx="35" fill="none"
+        stroke="#4A0D09" stroke-width="6"/>
+
+  <!-- Lente: aro escuro, vidro azul, e o brilho alto que faz parecer vidro
+       curvo em vez de circulo chapado. -->
+  <circle cx="96" cy="96" r="60" fill="#0B1A2E"/>
+  <circle cx="96" cy="96" r="53" fill="url(#lente)"/>
+
+  <!-- A carta vista atraves do vidro: moldura amarela, miolo creme, tarja
+       de dados no rodape. Inclinada porque carta na mao nunca esta reta. -->
+  <g transform="rotate(-9 96 96)">
+    <rect x="72" y="58" width="48" height="68" rx="6" fill="#E3BE3C"/>
+    <rect x="78" y="64" width="36" height="42" rx="3" fill="url(#papel)"/>
+    <rect x="78" y="111" width="36" height="9" rx="2.5" fill="#F7F0DC"
+          opacity=".92"/>
+  </g>
+
+  <!-- Reflexo do vidro por cima de tudo, como na lente real. -->
+  <path d="M56 62a53 53 0 0 1 62-14 53 53 0 0 0-70 44z" fill="#A8D8FF"
+        opacity=".55"/>
+</svg>

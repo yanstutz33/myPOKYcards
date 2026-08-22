@@ -1,0 +1,166 @@
+{
+ "gerado_em": "2026-08-16T21:05:29+00:00",
+ "catalogo": {
+  "cartas": 41694,
+  "sets": 563,
+  "cartas_por_regiao": {
+   "asia": 18055,
+   "intl": 23639
+  },
+  "sets_por_regiao": {
+   "asia": 342,
+   "intl": 221
+  },
+  "idiomas": [
+   {
+    "lang": "en",
+    "cartas": 23546
+   },
+   {
+    "lang": "pt",
+    "cartas": 14360
+   },
+   {
+    "lang": "ja",
+    "cartas": 13061
+   },
+   {
+    "lang": "zh-tw",
+    "cartas": 7587
+   },
+   {
+    "lang": "ko",
+    "cartas": 1363
+   },
+   {
+    "lang": "pt-br",
+    "cartas": 1124
+   },
+   {
+    "lang": "zh-cn",
+    "cartas": 877
+   }
+  ],
+  "colisoes_tratadas": 21
+ },
+ "reconhecimento": {
+  "com_hash": 30283,
+  "sem_imagem": 11411,
+  "total": 41694,
+  "por_regiao": [
+   {
+    "regiao": "asia",
+    "com_hash": 8448,
+    "sem_imagem": 9607
+   },
+   {
+    "regiao": "intl",
+    "com_hash": 21835,
+    "sem_imagem": 1804
+   }
+  ]
+ },
+ "precos": {
+  "linhas": 353040,
+  "cartas_com_preco": 20333,
+  "intl_alvo": 23639,
+  "intl_consultadas": 23639,
+  "por_kind": {
+   "derived": 35755,
+   "listing": 145837,
+   "sold": 171448
+  },
+  "por_fonte": {
+   "cardmarket": 19697,
+   "tcgplayer": 18671
+  },
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-08-15T21:18:09+00:00",
+  "mais_caras": [
+   {
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 17500.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex7-96",
+    "nome": "Rocket's Articuno ex",
+    "set": "ex7",
+    "valor": 9999.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 6800.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-32",
+    "nome": "Umbreon",
+    "set": "ecard3",
+    "valor": 6000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY101",
+    "nome": "Mewtwo",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY107",
+    "nome": "Mewtwo EX",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY125",
+    "nome": "Mewtwo EX",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY192",
+    "nome": "Mew",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex6-108",
+    "nome": "Gengar ex",
+    "set": "ex6",
+    "valor": 4940.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xy7-96",
+    "nome": "Primal Kyogre EX",
+    "set": "xy7",
+    "valor": 4299.99,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "neo4-113",
+    "nome": "Shining Tyranitar",
+    "set": "neo4",
+    "valor": 4249.99,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "ecard3-10",
+    "nome": "Gengar",
+    "set": "ecard3",
+    "valor": 3923.56,
+    "moeda": "EUR"
+   }
+  ]
+ }
+}

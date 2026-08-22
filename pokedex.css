@@ -1,0 +1,1814 @@
+/* myPOKYcards — a tela de leitura como APARELHO, o resultado como CARTA.
+   ==================================================================
+
+   Direção
+   -------
+   Duas referências, ambas do vocabulário industrial do Pokémon e nenhuma
+   registrada: o aparelho de bolso que identifica criaturas (chassi de
+   plástico vermelho, lente azul com anéis concêntricos, LEDs de estado,
+   botões que afundam) e a própria carta (moldura amarela, miolo creme,
+   valor no canto superior direito como o HP, barra de dados no rodapé).
+
+   O contraste é o ponto: um objeto claro e quente saltando de dentro de um
+   aparelho escuro — que é exatamente o que acontece quando você tira uma
+   carta da caixa sob luz baixa.
+
+   O que foi descartado de propósito
+   ---------------------------------
+   Quase-preto com um acento ciano, borda de 1px em tudo, raio de 8px em
+   tudo, rótulo em monoespaçada maiúscula. Era o visual anterior e é o
+   padrão genérico de interface gerada — não diz nada sobre o assunto.
+
+   Nada aqui usa logo, mascote, fonte ou arte oficial. */
+
+:root {
+  /* --- chassi do aparelho ------------------------------------------- */
+  --chassi:        #B0241C;
+  --chassi-escuro: #6E140F;
+  --chassi-claro:  #D9483C;
+  --chassi-borda:  #4A0D09;
+
+  --casco:         #17191D;   /* plástico escuro das laterais */
+  --casco-alto:    #24272D;
+  --casco-baixo:   #0C0D10;
+
+  /* --- lente -------------------------------------------------------- */
+  --lente:         #2C6FC9;
+  --lente-brilho:  #A8D8FF;
+
+  /* --- carta -------------------------------------------------------- */
+  --carta-borda:   #E3BE3C;
+  --carta-borda-2: #B8912A;
+  --carta-papel:   #F3EEDF;
+  --carta-papel-2: #E4DCC6;
+  --carta-tinta:   #1C1A15;
+  --carta-tinta-2: #5B5442;
+
+  /* --- LEDs de estado ----------------------------------------------- */
+  --led-verde:     #46D96B;
+  --led-ambar:     #F2B331;
+  --led-vermelho:  #E8503C;
+
+  /* Pesada e larga. A monoespaçada fininha do visual anterior é justamente
+     o que dá cara de painel genérico. */
+  --font-titulo: "Arial Black", "Segoe UI Black", "Helvetica Neue", system-ui, sans-serif;
+  --font-ui: system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ================================================================ chassi */
+
+.scan-body {
+  background:
+    radial-gradient(120% 80% at 50% 0%, var(--casco-alto), var(--casco) 55%),
+    var(--casco-baixo);
+}
+
+/* Faixa superior do aparelho: vermelha, com brilho de plástico. */
+.topbar {
+  position: relative;
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 45%, var(--chassi-escuro));
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.5);
+  padding: 0.65rem 0.9rem;
+  gap: 0.7rem;
+}
+
+/* A marca: "POKY" pesado no meio, o resto leve. Dá ritmo ao nome sem
+   imitar logotipo de ninguém. */
+.topbar .brand {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.topbar .brand b {
+  font-family: var(--font-titulo);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.01em;
+}
+
+/* LED grande, como o do aparelho. Estado por cor E por brilho: quem não
+   distingue as cores ainda vê o anel acender. */
+.status { gap: 0.55rem; color: rgba(255, 255, 255, 0.92); font-family: var(--font-ui); }
+.status #statusText { font-size: 0.72rem; letter-spacing: 0; text-transform: none; }
+
+.dot {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #6E1611;
+  box-shadow:
+    inset 0 2px 3px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
+    0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.dot.on {
+  background: var(--led-verde);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+              inset 0 2px 3px rgba(255, 255, 255, 0.5),
+              0 0 12px var(--led-verde), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.dot.err {
+  background: var(--led-vermelho);
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+              0 0 12px var(--led-vermelho), 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+
+.topnav a {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.32rem 0.7rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.topnav a:hover { background: rgba(0, 0, 0, 0.45); color: #fff; }
+
+/* ================================================================= lente */
+
+.stage {
+  background: #05070A;
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 0 0 6px var(--casco-baixo), inset 0 6px 18px rgba(0, 0, 0, 0.8);
+}
+
+/* Anéis concêntricos em volta do visor, como a lente do aparelho. */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  box-shadow:
+    inset 0 0 0 6px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 8px rgba(255, 255, 255, 0.06),
+    inset 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+/* Moldura-guia: cantos grossos, cor de lente. */
+.corner {
+  width: 30px; height: 30px;
+  border-width: 4px;
+  border-color: var(--lente-brilho);
+  filter: drop-shadow(0 0 6px rgba(44, 111, 201, 0.9));
+}
+.frame::after { border: 2px dashed rgba(168, 216, 255, 0.35); }
+.sweep {
+  background: linear-gradient(90deg, transparent, var(--lente-brilho), transparent);
+  box-shadow: 0 0 14px var(--lente);
+}
+
+.achado {
+  border: 3px solid var(--led-verde);
+  border-radius: 10px;
+  box-shadow: 0 0 0 100vmax rgba(3, 5, 8, 0.62), 0 0 22px -2px var(--led-verde);
+}
+
+/* Dica: etiqueta do aparelho, não legenda flutuante. */
+.hint {
+  bottom: 6.2rem;
+  font-family: var(--font-ui);
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(6, 10, 16, 0.86);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  max-width: 88%;
+  white-space: normal;
+  text-align: center;
+}
+.hint.alerta {
+  color: #2A1B00;
+  background: var(--led-ambar);
+  border-color: rgba(0, 0, 0, 0.25);
+}
+
+/* ============================================================== botões */
+
+.barra { background: linear-gradient(transparent, rgba(5, 7, 10, 0.92) 55%); }
+
+/* Botão que afunda: sombra embaixo some no toque. É o que faz parecer
+   peça física em vez de retângulo colorido. */
+.captura {
+  width: 76px; height: 76px;
+  min-height: 76px;
+  background: linear-gradient(180deg, var(--lente-brilho) 0%, var(--lente) 55%, #17427C 100%);
+  border: 4px solid #0B1A2E;
+  box-shadow: 0 5px 0 #0B1A2E, 0 9px 16px rgba(0, 0, 0, 0.6),
+              inset 0 3px 6px rgba(255, 255, 255, 0.45);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.captura:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #0B1A2E, 0 3px 8px rgba(0, 0, 0, 0.6),
+              inset 0 3px 6px rgba(255, 255, 255, 0.35);
+}
+.captura-anel {
+  width: 46px; height: 46px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 -3px 6px rgba(44, 111, 201, 0.45);
+}
+.captura:active .captura-anel { transform: none; }
+
+.secundaria, .lanterna {
+  border: 3px solid var(--chassi-borda);
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--chassi-borda), 0 7px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.secundaria:active, .lanterna:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--chassi-borda), 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.lanterna.ligada {
+  background: linear-gradient(180deg, #FFD86B, var(--led-ambar));
+  border-color: #7A5400;
+  box-shadow: 0 4px 0 #7A5400, 0 0 18px var(--led-ambar);
+  color: #2A1B00;
+}
+
+.acoes-base {
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco-baixo));
+  border-top: 3px solid var(--chassi-borda);
+}
+.acoes-base button.primary {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  border: 3px solid var(--chassi-borda);
+  color: #fff;
+  font-family: var(--font-titulo);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 var(--chassi-borda), 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+.acoes-base button.primary:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--chassi-borda);
+}
+
+/* ========================================================= gaveta/carta */
+
+.sheet {
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco));
+  border-top: 3px solid var(--chassi-borda);
+  padding: 0.85rem 0.8rem 1rem;
+}
+.sheet .empty {
+  color: rgba(255, 255, 255, 0.72);
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+}
+
+/* O resultado é uma CARTA: moldura amarela, miolo de papel, tinta escura.
+   Objeto claro dentro de aparelho escuro — como carta na mão sob luz baixa. */
+.hit {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.2rem 0.7rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, var(--carta-borda), var(--carta-borda-2));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: var(--carta-tinta);
+  position: relative;
+}
+
+/* Miolo de papel, recuado da moldura — a proporção da borda amarela da
+   carta física. */
+.hit::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--carta-papel), var(--carta-papel-2));
+  z-index: 0;
+}
+.hit > * { position: relative; z-index: 1; }
+
+.hit.top {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              0 0 0 3px color-mix(in srgb, var(--tipo) 60%, transparent);
+}
+
+.hit-name {
+  font-family: var(--font-titulo);
+  font-size: 1.15rem;
+  line-height: 1.15;
+  color: var(--carta-tinta);
+  letter-spacing: -0.01em;
+  padding-top: 0.3rem;
+}
+.hit.top .hit-name { color: var(--carta-tinta); }
+
+/* Confiança no canto superior direito, no lugar e no peso do HP. */
+.hit-conf {
+  align-self: start;
+  text-align: right;
+  padding: 0.3rem 0.35rem 0 0;
+  font-family: var(--font-titulo);
+}
+.hit-conf b {
+  font-size: 1.35rem;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tipo) 72%, var(--carta-tinta));
+}
+.hit-conf small {
+  font-family: var(--font-ui);
+  font-size: 0.56rem;
+  font-weight: 700;
+  color: var(--carta-tinta-2);
+  letter-spacing: 0.04em;
+}
+
+.hit-meta {
+  grid-column: 2 / -1;
+  font-family: var(--font-ui);
+  font-size: 0.74rem;
+  color: var(--carta-tinta-2);
+  gap: 0.3rem 0.5rem;
+  padding-bottom: 0.15rem;
+}
+.hit-meta code {
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--carta-tinta-2);
+  border-radius: 4px;
+}
+
+.miniatura {
+  width: 52px;
+  border: 2px solid rgba(0, 0, 0, 0.22);
+  border-radius: 6px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  margin: 0.3rem 0 0 0.3rem;
+}
+
+.selo-raridade {
+  background: color-mix(in srgb, var(--tipo) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tipo) 55%, transparent);
+  color: color-mix(in srgb, var(--tipo) 65%, var(--carta-tinta));
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.58rem;
+}
+.tag {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--carta-tinta-2);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 0.58rem;
+}
+.tag.lang { background: rgba(226, 160, 40, 0.18); color: #7A5400; }
+
+.energia { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.75), 0 1px 2px rgba(0,0,0,.3); }
+
+/* Barra de dados no rodapé da carta, onde fica número/símbolo/raridade. */
+.precos, .preco-vazio, .graded, .grupo {
+  grid-column: 1 / -1;
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.35rem 0.1rem;
+}
+.preco-val { color: var(--carta-tinta); font-family: var(--font-titulo); font-size: 1.05rem; }
+.faixa, .preco-src, .brl { color: var(--carta-tinta-2); }
+.preco-linha { font-family: var(--font-ui); }
+.preco-linha.velho .preco-val { color: #9A5B00; }
+.preco-vazio, .fx-nota, .graded-nota, .grupo-nota { color: var(--carta-tinta-2); }
+.graded summary, .grupo summary { color: var(--carta-tinta-2); font-family: var(--font-ui); }
+.slot { border-color: rgba(0, 0, 0, 0.18); }
+.slot-nome { color: var(--carta-tinta); font-family: var(--font-ui); font-weight: 700; }
+.slot-vazio { color: var(--carta-tinta-2); }
+
+.irma {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  color: var(--carta-tinta);
+}
+.irma-meta, .irma-preco { color: var(--carta-tinta-2); }
+
+/* Guardar: botão de fichário, não de painel. */
+.guardar { grid-column: 1 / -1; padding: 0 0.35rem 0.35rem; }
+.guardar-btn {
+  background: linear-gradient(180deg, #FFFDF6, var(--carta-papel-2));
+  border: 2px solid color-mix(in srgb, var(--tipo) 55%, rgba(0, 0, 0, 0.25));
+  color: var(--carta-tinta);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  border-radius: 10px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.18);
+  transition: transform 90ms ease, box-shadow 90ms ease;
+}
+.guardar-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.18); }
+.guardar-btn small { color: var(--carta-tinta-2); }
+.guardar-btn.feito {
+  background: linear-gradient(180deg, #D8F5DC, #B6E8C0);
+  border-color: #2E7D46;
+  color: #16512B;
+}
+.guardar-tem { color: rgba(255, 255, 255, 0.6); }
+
+.nodata {
+  background: rgba(0, 0, 0, 0.28);
+  border-left: 4px solid var(--led-ambar);
+  color: rgba(255, 255, 255, 0.82);
+  border-radius: 0 10px 10px 0;
+}
+.nodata b { color: #fff; }
+
+/* Brilho holográfico por cima do papel, não por baixo. */
+.hit.foil::before { z-index: 2; mix-blend-mode: overlay; opacity: 0.85; }
+
+.diag {
+  background: rgba(3, 8, 5, 0.92);
+  border: 2px solid #1E4A2C;
+  color: var(--led-verde);
+  border-radius: 8px;
+}
+
+@media (max-width: 380px) {
+  .hit-name { font-size: 1.02rem; }
+  .miniatura { width: 44px; }
+}
+
+/* ================================================ valor em destaque */
+/* O que a pessoa veio saber: que carta é, e quanto vale. Tudo o mais é
+   secundário e fica fechado. */
+.valor {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.55rem;
+  margin-top: 0.45rem;
+  padding: 0.5rem 0.4rem 0.15rem;
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+}
+.valor-num {
+  font-family: var(--font-titulo);
+  font-size: 1.65rem;
+  line-height: 1;
+  color: var(--carta-tinta);
+  letter-spacing: -0.02em;
+}
+.valor .brl { font-size: 0.95rem; border: 0; }
+.valor-src {
+  flex: 1 0 100%;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  color: var(--carta-tinta-2);
+}
+.valor.sem {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: var(--carta-tinta-2);
+  line-height: 1.4;
+}
+
+/* ------------------------------------------------------ alternativas */
+.alts { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.7rem; }
+.alts-titulo {
+  margin: 0 0 0.1rem;
+  font-family: var(--font-ui);
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.66);
+}
+.alt {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.6rem;
+  text-align: left;
+  min-height: 46px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+.alt:hover { border-color: var(--carta-borda); }
+.alt-nome { font-family: var(--font-ui); font-weight: 700; font-size: 0.9rem; }
+.alt-meta { grid-column: 1; font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); }
+.alt-conf {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+  font-family: var(--font-titulo);
+  font-size: 0.95rem;
+  color: var(--carta-borda);
+}
+
+/* ---------------------------------------------------------- detalhes */
+.bloco-det { grid-column: 1 / -1; padding: 0 0.35rem; }
+.bloco-det summary {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--carta-tinta-2);
+  padding: 0.45rem 0;
+}
+.bloco-det summary:focus-visible { outline: 2px solid var(--lente); outline-offset: 2px; }
+.bloco-det .precos { border-top: 0; margin-top: 0; padding-top: 0; }
+
+/* Quando os candidatos empatam, a tira de alternativas ganha destaque —
+   é justamente quando escolher importa. */
+.results.ambiguo .alts-titulo { color: var(--led-ambar); font-weight: 700; }
+.results.ambiguo .alt { border-color: rgba(242, 179, 49, 0.45); }
+
+/* ------------------------------------------------------------ som */
+/* Botão pequeno na faixa do aparelho: presente, sem competir com o LED. */
+.audio {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.26);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.audio:active { transform: translateY(1px); }
+.audio .corte { display: none; }
+.audio.mudo { color: rgba(255, 255, 255, 0.45); }
+.audio.mudo .onda { display: none; }
+.audio.mudo .corte { display: block; }
+
+/* ============================================================== ficha */
+/* Gaveta de detalhe. Sobe de baixo como uma carta saindo do fichário —
+   e cobre a tela porque agora ela é o assunto, não um apêndice. */
+.ficha {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(3, 5, 8, 0.78);
+  display: flex;
+  align-items: flex-end;
+  backdrop-filter: blur(3px);
+}
+.ficha[hidden] { display: none; }
+body.com-ficha { overflow: hidden; }
+
+.ficha-caixa {
+  width: 100%;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco));
+  border-top: 5px solid var(--carta-borda);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.7);
+  animation: sobe 220ms cubic-bezier(.22,.9,.3,1);
+}
+@keyframes sobe { from { transform: translateY(18%); opacity: 0.4; } }
+
+.ficha-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 1rem 1rem 0.8rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+}
+.ficha-topo h2 {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 1.25rem;
+  line-height: 1.15;
+  color: #fff;
+}
+.ficha-sub {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.ficha-fechar {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.ficha-corpo {
+  overflow-y: auto;
+  padding: 0.9rem 1rem calc(1.6rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+/* A arte grande vem do CDN de origem — o site nunca hospeda arte. */
+.ficha-arte {
+  width: min(62%, 240px);
+  align-self: center;
+  aspect-ratio: 0.716;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.65);
+}
+
+.ficha-bloco { display: flex; flex-direction: column; gap: 0.5rem; }
+.ficha-bloco h3 {
+  margin: 0;
+  font-family: var(--font-titulo);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--carta-borda);
+}
+.ficha-nota {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+}
+.ficha-vazio {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* --- tabela de preços --- */
+.tabela-precos {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  color: #fff;
+}
+.tabela-precos th {
+  text-align: left;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0 0.4rem 0.35rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.12);
+}
+.tabela-precos td {
+  padding: 0.45rem 0.4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  vertical-align: top;
+}
+.tabela-precos .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela-precos small { color: rgba(255, 255, 255, 0.45); }
+.tabela-precos .brl { display: block; font-size: 0.72rem; border: 0; }
+/* Dado velho não pode se passar por atual, nem aqui. */
+.tabela-precos tr.velho td { color: var(--led-ambar); }
+
+/* --- dados da carta --- */
+.ficha-dados { margin: 0; display: flex; flex-direction: column; gap: 1px; }
+.fx-linha {
+  display: grid;
+  grid-template-columns: 10.5rem 1fr;
+  gap: 0.8rem;
+  padding: 0.42rem 0.4rem;
+  background: rgba(255, 255, 255, 0.035);
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+}
+.fx-linha dt { color: rgba(255, 255, 255, 0.55); }
+.fx-linha dd { margin: 0; color: #fff; }
+.fx-linha code { background: rgba(0, 0, 0, 0.35); border-radius: 4px; padding: 0.05em 0.35em; }
+
+/* --- impressões irmãs --- */
+.ficha-irmas { display: flex; flex-direction: column; gap: 0.4rem; }
+.ficha-irma {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 0.1rem 0.7rem;
+  text-align: left;
+  min-height: 52px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+.ficha-irma:hover { border-color: var(--carta-borda); }
+.ficha-irma img { grid-row: 1 / span 2; width: 34px; border-radius: 4px; }
+.ir-nome { font-family: var(--font-ui); font-weight: 700; font-size: 0.85rem; }
+.ir-meta { grid-column: 2; font-size: 0.68rem; color: rgba(255, 255, 255, 0.55); }
+.ir-preco {
+  grid-row: 1 / span 2; grid-column: 3;
+  font-family: var(--font-titulo);
+  font-size: 0.85rem;
+  color: var(--carta-borda);
+}
+
+/* Convite ao toque, discreto — sem ele ninguém descobre a ficha. */
+.toque-dica {
+  color: color-mix(in srgb, var(--tipo) 62%, var(--carta-tinta-2));
+  font-weight: 700;
+}
+.hit.tocavel { cursor: pointer; }
+.hit.tocavel:active { transform: scale(0.995); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ficha-caixa { animation: none; }
+}
+
+/* ============================================================== busca */
+.busca-body { grid-template-rows: auto auto 1fr; }
+
+.busca-campo {
+  padding: 0.7rem 0.9rem;
+  background: linear-gradient(180deg, var(--casco-alto), var(--casco));
+  border-bottom: 3px solid var(--chassi-borda);
+}
+.busca-campo input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.9rem;
+  border-radius: 12px;
+  border: 3px solid var(--chassi-borda);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+.busca-campo input::placeholder { color: rgba(255, 255, 255, 0.4); }
+.busca-campo input:focus {
+  outline: none;
+  border-color: var(--lente);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5), 0 0 0 3px rgba(44, 111, 201, 0.3);
+}
+
+.busca-lista {
+  overflow-y: auto;
+  padding: 0.7rem 0.8rem calc(1.6rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.busca-vazio {
+  margin: 1.4rem 0.5rem;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Item de resultado: miniatura à esquerda, preço à direita, dois níveis de
+   texto no meio. Alvo de 60px — lista longa percorrida com o polegar. */
+.b-item {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 0.05rem 0.7rem;
+  text-align: left;
+  min-height: 60px;
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+.b-item:hover { border-color: var(--carta-borda); }
+.b-item:active { transform: scale(0.995); }
+.b-item img, .b-semarte {
+  grid-row: 1 / span 2;
+  width: 40px;
+  aspect-ratio: 0.716;
+  object-fit: cover;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.4);
+}
+.b-nome { font-family: var(--font-ui); font-weight: 700; font-size: 0.92rem; }
+.b-meta { grid-column: 2; font-size: 0.7rem; color: rgba(255, 255, 255, 0.55); }
+.b-preco, .b-sem {
+  grid-row: 1 / span 2; grid-column: 3;
+  font-family: var(--font-titulo);
+  font-size: 0.92rem;
+  color: var(--carta-borda);
+  white-space: nowrap;
+}
+.b-sem { font-family: var(--font-ui); font-size: 0.7rem; color: rgba(255,255,255,.4); }
+
+/* Ações da ficha: guardar e compartilhar ficam no topo, antes da rolagem —
+   quem abriu para conferir já decidiu, e não deveria caçar o botão. */
+.ficha-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.7rem 1rem 0;
+}
+.fa-guardar, .fa-compartilhar {
+  flex: 1 1 auto;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  border-radius: 10px;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: 2px solid var(--carta-borda-2);
+  background: linear-gradient(180deg, var(--carta-borda), var(--carta-borda-2));
+  color: #2A2205;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
+}
+.fa-guardar:active, .fa-compartilhar:active {
+  transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.3);
+}
+.fa-guardar.feito {
+  background: linear-gradient(180deg, #66DE86, #33A653);
+  border-color: #1E6B36; color: #06280F;
+}
+.fa-guardar small { font-weight: 400; opacity: 0.75; }
+.fa-compartilhar {
+  flex: 0 1 auto;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* ================================ telas de painel, coleção e landing */
+/* Elas nasceram antes do redesenho e ficaram no visual antigo. Um app em
+   que metade das telas parece outro app é pior que um app feio: quebra a
+   sensação de estar no mesmo lugar. */
+
+.painel-body {
+  background:
+    radial-gradient(120% 60% at 50% 0%, var(--casco-alto), var(--casco) 55%),
+    var(--casco-baixo);
+  color: #fff;
+}
+
+.painel-top {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 45%, var(--chassi-escuro));
+  border-bottom: 3px solid var(--chassi-borda);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 3px 10px rgba(0, 0, 0, 0.5);
+}
+.painel-top h1 {
+  font-family: var(--font-titulo);
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.painel-top .brand { color: rgba(255, 255, 255, 0.85); }
+
+/* Botão de navegação: mesma peça física do resto do aparelho. */
+.ir-scan {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.ir-scan:hover { background: rgba(0, 0, 0, 0.45); }
+.ir-scan:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda); }
+
+/* Blocos e cartões viram peças de fichário: papel claro dentro do aparelho.
+   Só onde é leitura de dados — em barra de progresso o claro atrapalharia. */
+.bloco > h2 {
+  font-family: var(--font-titulo);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--carta-borda);
+}
+
+.kpis, .linhas, .prog, .passos, .limites {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 12px;
+  background: var(--chassi-borda);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+.kpi, .linha, .passo, .limite { background: var(--casco-alto); }
+.prog { background: var(--casco-alto); }
+
+.kpi b, .linha-val, .prog-nome {
+  font-family: var(--font-titulo);
+  color: #fff;
+}
+.kpi small, .kpi em, .linha-sub, .prog-num, .prog-nota {
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.6);
+}
+.kpi small { font-size: 0.68rem; font-weight: 600; }
+.linha, .passo p, .limite p { color: rgba(255, 255, 255, 0.85); }
+
+.trilho { background: rgba(0, 0, 0, 0.45); border-radius: 4px; }
+.trilho i.feito { background: var(--led-verde); }
+.trilho i.falta { background: var(--led-vermelho); opacity: 0.5; }
+.mini-barra { background: rgba(0, 0, 0, 0.4); }
+.mini-barra i { background: var(--carta-borda); opacity: 1; }
+
+.painel-pe { border-top: 3px solid var(--chassi-borda); color: rgba(255,255,255,.55); }
+.painel-pe a { color: var(--carta-borda); }
+
+.empty { color: rgba(255, 255, 255, 0.7); font-family: var(--font-ui); }
+
+/* Botões da coleção: peça física, como no leitor. */
+.actions button, .painel-body button {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.actions button:active, .painel-body button:active {
+  transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda);
+}
+.actions button.primary {
+  background: linear-gradient(180deg, var(--carta-borda), var(--carta-borda-2));
+  border-color: var(--carta-borda-2);
+  color: #2A2205;
+}
+.linha-acoes button { min-width: 38px; box-shadow: 0 2px 0 var(--chassi-borda); }
+
+/* --- landing --- */
+.lp-hero { border-bottom: 3px solid var(--chassi-borda); }
+.lp-hero h1 { font-family: var(--font-titulo); letter-spacing: -0.02em; }
+.lp-sub { color: rgba(255, 255, 255, 0.72); }
+.lp-sub strong { color: #fff; }
+.lp-btn {
+  border: 3px solid var(--chassi-borda);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--chassi-borda);
+}
+.lp-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--chassi-borda); }
+.lp-btn.primaria {
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  border-color: var(--chassi-borda);
+  color: #fff;
+}
+.passo-n { font-family: var(--font-titulo); color: var(--carta-borda); }
+.passo h3 { font-family: var(--font-titulo); color: #fff; }
+.limite h3 { font-family: var(--font-titulo); color: var(--led-ambar); }
+.lp-tipos li { height: 7px; border-radius: 3px; }
+
+/* ================================================ painel compacto (v2)
+   Do teste em aparelho real: "está ficando na frente da carta". Estava
+   mesmo. O painel ocupava ~46% da tela e o valor flutuava sobre o meio do
+   visor, justamente onde a carta fica.
+
+   Duas causas, e as duas eram de layout, não de conteúdo:
+
+   1. TRÊS COLUNAS não cabem. Miniatura (52px) + selo de certeza (~80px,
+      "CERTEZA" em maiúsculas espaçadas) deixavam ~145px para o nome num
+      painel de 300px. "SVP Black Star Promos · 131" quebrava em quatro
+      linhas e empurrava todo o resto para baixo.
+   2. Tudo estava aberto ao mesmo tempo, embora a ficha completa já exista a
+      um toque de distância.
+
+   Agora são duas colunas, a certeza vira selo no canto, e o painel diz o
+   essencial: que carta é, quanto vale, e quanto disso é chute. */
+
+.sheet .hit {
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.6rem;
+  padding: 0.45rem 0.5rem;
+  align-items: start;
+}
+
+/* Certeza como selo, fora do fluxo: para de disputar largura com o nome. */
+.sheet .hit-conf {
+  position: absolute;
+  top: 0.55rem; right: 0.6rem;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  text-align: right;
+}
+.sheet .hit-conf b { display: inline; font-size: 0.95rem; }
+.sheet .hit-conf small { font-size: 0.55rem; }
+
+/* O nome não pode brigar com o selo: reserva o espaço dele. */
+.sheet .hit-name {
+  padding-right: 5.2rem;
+  font-size: 1.05rem;
+  line-height: 1.15;
+}
+
+.sheet .hit-meta {
+  padding-right: 0.2rem;
+  font-size: 0.74rem;
+  gap: 0.3rem 0.45rem;
+}
+.sheet .miniatura { width: 46px; margin: 0.15rem 0 0 0.15rem; }
+
+/* Valor: continua sendo o maior número do painel, agora sem cobrir carta
+   nenhuma. Ocupa as duas colunas para ganhar a largura toda. */
+.sheet .valor {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.1rem 0.5rem;
+  margin-top: 0.35rem;
+  padding-top: 0.4rem;
+}
+.sheet .valor-num { font-size: 1.5rem; }
+.sheet .valor-src { flex: 1 0 100%; font-size: 0.68rem; }
+
+/* Ações numa linha só. */
+.sheet .guardar { margin-top: 0.5rem; gap: 0.35rem; }
+.sheet .mults { flex: 0 0 auto; }
+.sheet .mult { min-width: 38px; min-height: 38px; font-size: 0.78rem; }
+.sheet .guardar-btn { min-height: 40px; font-size: 0.85rem; }
+
+/* Alternativas viram tira horizontal: três candidatos empilhados custavam
+   mais visor que o resultado em si. */
+.sheet .alts {
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+.sheet .alts::-webkit-scrollbar { display: none; }
+.sheet .alts-titulo { flex: 0 0 auto; align-self: center; margin: 0; font-size: 0.68rem; }
+.sheet .alt {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 40px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.74rem;
+}
+
+/* Teto menor: o resultado inteiro cabe, e o que sobra é câmera. */
+.sheet { max-height: 38dvh; }
+
+/* --------------------------------------------- quando é palpite, não some
+   O selo de certeza no canto era discreto demais para o que informa. Abaixo
+   do limiar de travamento o painel inteiro muda de tom: o valor encolhe, a
+   moldura fica âmbar, e o aviso vem antes do preço — não depois. */
+.sheet .hit.incerto { background: linear-gradient(180deg, #E8B23C, #C8901F); }
+.sheet .hit.incerto .hit-conf b { color: #8A5A00; }
+
+.incerto-aviso {
+  grid-column: 1 / -1;
+  margin: 0.45rem 0 0;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(138, 90, 0, 0.14);
+  border: 1px solid rgba(138, 90, 0, 0.35);
+  color: #6B4500;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.sheet .hit.incerto .valor-num { font-size: 1.05rem; opacity: 0.75; }
+
+.miniatura { background: var(--carta-papel); }
+
+/* ------------------------------------------------- arte da ficha, sem buraco
+   O retângulo escuro que aparecia enquanto a imagem não vinha era
+   indistinguível de defeito. Agora a caixa se anuncia enquanto carrega e diz
+   o que houve se realmente não vier. */
+.ficha-arte-caixa {
+  position: relative;
+  margin: 0 auto;
+  max-width: 260px;
+  aspect-ratio: 63 / 88;
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(110deg,
+    rgba(255, 255, 255, 0.05) 30%, rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.05) 70%) var(--surface-2, #171B22);
+  background-size: 300% 100%;
+  animation: arte-esperando 1.4s ease-in-out infinite;
+}
+.ficha-arte-caixa:has(.ficha-arte[src]:not([src=""])) { animation-play-state: running; }
+@keyframes arte-esperando {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+.ficha-arte-caixa .ficha-arte {
+  display: block;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  position: relative; z-index: 1;
+}
+
+/* Imagem que realmente não veio: texto, não retângulo mudo. */
+.ficha-arte-caixa.vazia { animation: none; }
+.ficha-arte-caixa.vazia::after {
+  content: "arte indisponível";
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  font-size: 0.8rem;
+  color: var(--ink-soft, #97A3B6);
+}
+.ficha-sem-arte {
+  margin: 0 0 0.8rem;
+  padding: 1rem;
+  text-align: center;
+  border-radius: 12px;
+  background: var(--surface-2, #171B22);
+  color: var(--ink-soft, #97A3B6);
+  font-size: 0.85rem;
+}
+
+/* ============================================= HUD enxuta (revisão visual)
+   Medido no estado que importa — câmera ligada, 375x812: o conteúdo do
+   painel somava 461px numa área de 270px, e o botão "+ normal" aparecia
+   cortado pela metade. Painel cortado não lê como "role para ver": lê como
+   quebrado. O corte sai reduzindo conteúdo, não aumentando o painel, porque
+   a tela é da carta. */
+
+/* Quantidade: seletor de menos/mais em vez de quatro chips numa linha
+   inteira. Cabe ao lado dos botões, e passa de 4 quando o lote é grande. */
+.sheet .mults {
+  flex: 0 0 auto;
+  gap: 0;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.06);
+}
+.mult-pm {
+  min-width: 40px; min-height: 40px;
+  border: 0; background: transparent;
+  color: var(--carta-tinta);
+  font-size: 1.15rem; font-weight: 800; line-height: 1;
+}
+.mult-pm:disabled { opacity: 0.3; }
+.mult-n {
+  min-width: 40px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: var(--carta-tinta);
+}
+
+/* Uma linha de metadados, não duas. */
+.sheet .hit-meta { gap: 0.2rem 0.4rem; font-size: 0.72rem; }
+.sheet .toque-dica { flex: 0 0 auto; }
+.sheet .valor { margin-top: 0.25rem; padding-top: 0.3rem; }
+.sheet .valor-num { font-size: 1.35rem; }
+.sheet .guardar { margin-top: 0.4rem; }
+.sheet .alts { margin-top: 0.35rem; }
+.sheet .alt { min-height: 36px; padding: 0.2rem 0.5rem; }
+
+/* Se ainda sobrar conteúdo, o corte precisa PARECER corte: uma sombra na
+   base diz "tem mais aqui" em vez de deixar um botão pela metade. */
+.sheet { position: relative; }
+.sheet::after {
+  content: "";
+  position: sticky;
+  bottom: 0; left: 0;
+  display: block;
+  height: 18px;
+  margin-top: -18px;
+  background: linear-gradient(transparent, rgba(8, 10, 14, 0.92));
+  pointer-events: none;
+}
+
+/* Desligar não pode parecer a lanterna: mesma forma, cor diferente. Precisa
+   estar AQUI porque pokedex.css é a última folha e venceria o scan.css. */
+.lanterna.desligar {
+  background: linear-gradient(180deg, #3A4150, #232833);
+  border-color: #12151C;
+  box-shadow: 0 4px 0 #12151C, 0 7px 14px rgba(0, 0, 0, 0.5);
+  color: #E9EFF7;
+}
+
+/* Lendo, a contagem de cartas sai da faixa: ela informa no primeiro
+   carregamento e depois vira ruído — e é o que forçava a navegação a
+   quebrar para uma segunda linha, custando 46px de visor o tempo todo. */
+body.lendo .topbar #statusText { display: none; }
+body.lendo .topbar { padding-top: calc(0.45rem + env(safe-area-inset-top)); padding-bottom: 0.45rem; }
+body.lendo .topbar .brand { font-size: 0.9rem; }
+body.lendo .topnav a { padding: 0.28rem 0.6rem; font-size: 0.7rem; }
+
+/* A linha de guardar não estava atravessando as duas colunas: ficava com
+   250px dos 308 disponíveis, e por isso o seletor de quantidade e os botões
+   de variante empilhavam em três linhas (141px). Atravessando, cabem numa
+   linha só. */
+.sheet .guardar { grid-column: 1 / -1; flex-wrap: nowrap; }
+.sheet .guardar-btn { flex: 1 1 0; min-width: 0; padding: 0 0.5rem; }
+.sheet .guardar-btn small { display: none; }   /* a contagem já vem no rodapé */
+.sheet .guardar-tem { flex: 1 0 100%; margin-top: 0.2rem; }
+
+/* A faixa somava 397px de conteúdo numa tela de 375 e quebrava em duas
+   linhas. Lendo, os espaços encolhem e ela cabe numa. */
+body.lendo .topbar { gap: 0.4rem; padding-left: 0.6rem; padding-right: 0.6rem; }
+body.lendo .topnav { gap: 0.28rem; }
+body.lendo .topbar .brand b { letter-spacing: 0; }
+
+/* O painel cabe agora; o teto sobe um pouco porque a faixa superior devolveu
+   43px ao encolher para uma linha. */
+body.lendo .sheet { max-height: 40dvh; }
+
+/* ------------------------------------- o painel acompanha a etapa da leitura
+   Mirando, o resultado ainda troca a cada 450 ms e a tela inteira serve para
+   enquadrar: o painel fica numa tira de identificação — nome, certeza e
+   preço, e nada mais. Guardar e escolher entre candidatas são decisões, e
+   decisão só existe depois que ele trava.
+
+   É a diferença entre 47% e 66% de câmera no momento em que a câmera é a
+   única coisa que importa. */
+body.lendo:not(.travado) .sheet .guardar,
+body.lendo:not(.travado) .sheet .alts,
+body.lendo:not(.travado) .sheet .bloco-det,
+body.lendo:not(.travado) .sheet .valor-src,
+body.lendo:not(.travado) .sheet .toque-dica { display: none; }
+
+body.lendo:not(.travado) .sheet { max-height: 26dvh; }
+body.lendo:not(.travado) .sheet .valor { margin-top: 0.15rem; padding-top: 0.25rem; }
+
+/* Travado, o painel abre para caber a decisão inteira. */
+body.lendo.travado .sheet { max-height: 42dvh; }
+
+/* E a tira ganha a dica de que há mais a um toque. */
+body.lendo:not(.travado) .sheet .hit-meta::after {
+  content: "toque na carta para tudo";
+  flex: 1 0 100%;
+  font-size: 0.68rem;
+  color: var(--carta-tinta-2);
+}
+
+/* A moldura-guia perdeu o tracejado. Ela existia quando o recorte ERA a
+   moldura e o encaixe precisava ser exato; com detecção de borda virou só
+   uma sugestão de onde apontar, e um retângulo pontilhado do tamanho da tela
+   lê como caixa vazia — dá a impressão de que falta algo ali. Ficam os quatro
+   cantos, que dizem a mesma coisa sem desenhar uma parede. */
+.frame::after { border: 0; }
+.corner { opacity: 0.75; }
+.stage.detectado .frame { opacity: 0; }
+
+/* ------------------------------------------------ o vazamento horizontal
+   Travado, "+ reverse", "100% CERTEZA" e "toque para ver tudo" apareciam
+   cortados na direita. Não era falta de espaço: é a regra do CSS Grid de que
+   uma faixa `1fr` não encolhe abaixo do conteúdo MÍNIMO dos seus filhos. A
+   linha de guardar, com `nowrap`, tinha mínimo maior que o painel e esticava
+   a faixa inteira para fora da caixa.
+
+   `minmax(0, 1fr)` é a forma canônica de dizer "pode encolher"; sem ela,
+   qualquer conteúdo largo que entre no painel volta a vazar. */
+.sheet .hit {
+  grid-template-columns: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.sheet .hit > * { min-width: 0; }
+
+/* Com a faixa livre para encolher, os botões cabem numa linha ao reduzir um
+   pouco o corpo — 124px do seletor + dois botões em ~264px de 308. */
+.sheet .guardar-btn { font-size: 0.8rem; padding: 0 0.45rem; }
+
+/* A tira de alternativas rola; não pode empurrar a largura do painel. */
+.sheet .alts { min-width: 0; max-width: 100%; }
+
+/* Os dois botões de variante estavam encostados um no outro. */
+.sheet .guardar { gap: 0.45rem; }
+.sheet .alts-titulo { color: var(--ink-soft); }
+
+/* A caixa da arte vive dentro de um flex container. Sem largura explícita ela
+   fica com largura de conteúdo, e o conteúdo é uma imagem pedindo `100%` da
+   própria caixa — uma referência circular que resolve em zero. Resultado:
+   figura 0x0, arte invisível, e o teste de "a imagem carregou?" dando
+   verdadeiro o tempo todo, porque a imagem carrega mesmo; ela só não tem
+   onde aparecer. */
+.ficha-arte-caixa {
+  width: min(260px, 100%);
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+/* Em tela estreita (320px ainda existe), marca + navegação + som não cabem
+   numa linha e a faixa volta a 82px. Durante a leitura a marca é a primeira
+   coisa dispensável: quem está com a carta na mão já sabe onde está. A
+   navegação, que é o que se usa, fica. */
+@media (max-width: 360px) {
+  body.lendo .topbar .brand { display: none; }
+  body.lendo .topnav a { padding: 0.26rem 0.5rem; font-size: 0.68rem; }
+  body.lendo.travado .sheet { max-height: 46dvh; }
+}
+
+/* Em 320px os botões de variante, com `nowrap` e `flex: 1 1 0`, encolhiam
+   abaixo do próprio texto e viravam "+ + nomrreverse" — dois rótulos
+   sobrepostos. Largura mínima real e permissão para quebrar: numa tela larga
+   continuam lado a lado, numa estreita descem para a linha de baixo. Botão
+   ilegível é pior que botão numa segunda linha. */
+.sheet .guardar { flex-wrap: wrap; }
+.sheet .guardar-btn { flex: 1 1 auto; min-width: 84px; }
+
+/* O nome reservava 5,2rem para o selo de certeza; em tela estreita isso
+   sobra e joga o nome para duas linhas sem necessidade. */
+@media (max-width: 360px) {
+  .sheet .hit-name { padding-right: 4.4rem; font-size: 0.98rem; }
+  .sheet .hit-conf small { display: none; }   /* "certeza" some, o número fica */
+}
+
+/* `flex: 1 1 auto` cresce a partir de bases diferentes: "+ normal" ficava
+   com 123px e "+ reverse" com 254px na mesma linha. Base zero divide o
+   espaço igualmente; a largura mínima acima impede o colapso que a base zero
+   sozinha causaria. */
+.sheet .guardar-btn { flex: 1 1 0; }
+
+/* Os botões não tinham larguras diferentes por acaso: estavam em LINHAS
+   diferentes. Com `flex-wrap`, cabia [seletor][+ normal] na primeira e
+   [+ reverse] sozinho na segunda, ocupando a largura toda — daí 123px contra
+   254px. Flex decide isso por sobra de espaço, que muda a cada carta (uma
+   variante, duas, três) e a cada largura de tela.
+
+   Grade torna previsível: as colunas de botão são sempre iguais entre si.
+   Acima de 360px cabe tudo numa linha; abaixo, o seletor sobe para a sua e
+   os botões dividem a de baixo — em qualquer caso, simétricos. */
+.sheet .guardar {
+  display: grid;
+  grid-template-columns: auto repeat(auto-fit, minmax(84px, 1fr));
+  align-items: center;
+}
+.sheet .mults { justify-self: start; }
+.sheet .guardar-btn { width: 100%; }
+
+@media (max-width: 360px) {
+  .sheet .guardar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sheet .mults { grid-column: 1 / -1; }
+}
+
+/* `repeat(auto-fit, …)` não pode conviver com uma faixa `auto` na mesma
+   declaração — a regra inteira é descartada, e era por isso que os botões
+   continuavam em linhas separadas mesmo com a grade. Com contêiner próprio,
+   cada nível faz uma coisa só: a linha posiciona seletor e bloco de botões;
+   o bloco divide o espaço igualmente entre quantos botões existirem, sejam
+   dois (normal/reverse) ou três. */
+.sheet .guardar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.sheet .mults { flex: 0 0 auto; }
+.guardar-btns {
+  flex: 1 1 200px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 0.45rem;
+}
+.sheet .guardar-btn { width: auto; min-width: 0; }
+
+/* ============================================ confere: sua foto × a resposta
+   Duas cartas lado a lado dentro do miolo de papel, com o símbolo de dúvida
+   entre elas. A moldura amarela em volta de cada uma vem da carta física — é
+   a mesma linguagem do resto da tela, não um painel de app genérico.
+
+   Só aparece travado: mirando, o recorte muda a cada leitura e uma comparação
+   piscando não deixa ninguém julgar nada. */
+.confere {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.45rem 0 0.1rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+.confere-lado { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+.confere-lado img,
+.confere-sem {
+  width: 100%;
+  max-width: 92px;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid var(--carta-borda);
+  background: var(--carta-papel-2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.confere-sem {
+  display: grid; place-items: center;
+  font-size: 0.62rem; color: var(--carta-tinta-2);
+}
+.confere-lado figcaption {
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  color: var(--carta-tinta-2);
+  text-transform: lowercase;
+}
+.confere-vs {
+  font-family: var(--font-titulo);
+  font-size: 1.3rem;
+  color: var(--carta-tinta-2);
+  opacity: 0.7;
+}
+
+/* Errando, a comparação é o que mais importa na tela: ganha destaque em vez
+   de ficar como mais um bloco. */
+.sheet .hit.incerto .confere {
+  background: rgba(138, 90, 0, 0.14);
+  border-color: rgba(138, 90, 0, 0.4);
+}
+
+/* A miniatura do cabeçalho e o lado direito da comparação são a mesma arte do
+   catálogo. Com a comparação na tela, a miniatura é repetição que custa 64px
+   de um painel disputado. */
+.sheet .hit.com-confere .miniatura { display: none; }
+.sheet .hit.com-confere .hit-name,
+.sheet .hit.com-confere .hit-meta { grid-column: 1 / -1; }
+
+.confere-lado img, .confere-sem { max-width: 84px; }
+
+/* Travado, a leitura acabou: a câmera pode ceder espaço para a conferência,
+   que é a decisão do momento. */
+body.lendo.travado .sheet { max-height: 52dvh; }
+
+/* O seletor media 124px e sobrava 8px para caber na mesma linha dos botões —
+   então quebrava, e a linha de guardar custava 97px em vez de 44px. Alvos de
+   toque continuam acima de 36px, que é o mínimo confortável para polegar. */
+.mult-pm { min-width: 36px; }
+.mult-n { min-width: 32px; font-size: 0.85rem; }
+
+/* Medido: a linha de guardar tem 303px úteis; o seletor ocupa 108 e sobram
+   187 para o bloco de botões, cuja base era 200 — 13px a mais do que cabia,
+   e por isso ele descia de linha e a linha inteira ia de 44px para 97px.
+   Base 150 cabe e depois cresce até os 187 disponíveis. Em tela estreita
+   continua descendo, que é o comportamento certo lá. */
+.guardar-btns { flex: 1 1 150px; }
+
+/* Tela baixa: 52dvh de 700px são 364px para 532px de conteúdo, e o que cai
+   abaixo da dobra é justamente o botão de guardar — a ação principal. Aqui a
+   comparação encolhe (continua legível: 64px ainda mostra arte e moldura) e o
+   painel ganha altura, porque travado a câmera está congelada e não informa
+   mais nada. */
+@media (max-height: 740px) {
+  .confere-lado img, .confere-sem { max-width: 64px; }
+  .confere { padding: 0.35rem; gap: 0.35rem; }
+  body.lendo.travado .sheet { max-height: 60dvh; }
+}
+
+/* =============================================== busca por cima do leitor
+   Para as 11.411 cartas (27,4%) que existem no catálogo e não têm imagem em
+   fonte nenhuma. Abre sobreposta em vez de navegar: sair da tela derruba a
+   câmera, e voltar exige pedir permissão e recarregar o índice de novo. */
+.busca-rapida {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  align-items: start;
+  background: rgba(4, 6, 10, 0.72);
+  backdrop-filter: blur(4px);
+  padding: 0.6rem;
+  padding-top: calc(0.6rem + env(safe-area-inset-top));
+}
+.busca-rapida[hidden] { display: none; }
+
+.br-caixa {
+  display: flex;
+  flex-direction: column;
+  max-height: 88dvh;
+  border-radius: 16px;
+  border: 3px solid var(--chassi-borda);
+  background: var(--casco);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+}
+
+.br-topo {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi) 60%);
+  border-bottom: 3px solid var(--chassi-borda);
+}
+#brCampo {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 1rem;
+}
+#brCampo::placeholder { color: rgba(255, 255, 255, 0.6); }
+.br-fechar {
+  flex: 0 0 auto;
+  width: 44px; min-height: 44px;
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.br-nota {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+.br-lista { overflow-y: auto; padding: 0.4rem; }
+.br-vazio { padding: 1.2rem 0.7rem; text-align: center; color: var(--ink-soft); font-size: 0.9rem; }
+
+/* O atalho dentro do aviso de incerteza. */
+.buscar-manual {
+  display: block;
+  margin-top: 0.45rem;
+  min-height: 40px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 2px solid rgba(107, 69, 0, 0.5);
+  background: rgba(255, 255, 255, 0.55);
+  color: #5A3A00;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+/* ============================== por que o cartão aparecia vazio e cortado
+   Reproduzido no aparelho: cartão creme quase todo vazio, "69% CERTEZA" no
+   canto, e nome e expansão espremidos numa tira de ~20px na direita.
+
+   NÃO era cache nem falta de espaço. É uma regra do CSS Grid que morde
+   exatamente esta combinação:
+
+     grid-template-columns: auto minmax(0, 1fr)
+     ...e vários filhos com grid-column: 1 / -1
+
+   Itens que ATRAVESSAM as duas colunas ainda contribuem para o tamanho das
+   faixas. Como a segunda faixa tem mínimo ZERO (`minmax(0, 1fr)`, que eu pus
+   justamente para permitir encolher), ela não absorve nada: a largura mínima
+   inteira do item que atravessa vai para a faixa `auto`. Basta um preço, uma
+   linha de guardar ou um aviso um pouco mais largo para a primeira coluna
+   inchar e a segunda colapsar — e o conteúdo some para a direita.
+
+   A correção é tirar a decisão do algoritmo: a primeira coluna existe só
+   para a miniatura e tem o tamanho dela. Sem miniatura, uma coluna só. */
+.sheet .hit { grid-template-columns: 46px minmax(0, 1fr); }
+.sheet .hit.com-confere { grid-template-columns: minmax(0, 1fr); }
+.sheet .hit.com-confere .hit-name,
+.sheet .hit.com-confere .hit-meta,
+.sheet .hit.com-confere .valor,
+.sheet .hit.com-confere .guardar,
+.sheet .hit.com-confere .confere,
+.sheet .hit.com-confere .incerto-aviso,
+.sheet .hit.com-confere .bloco-det { grid-column: 1 / -1; }
+
+/* Sem arte, a primeira coluna não precisa reservar espaço nenhum. */
+.sheet .hit:not(.com-mini) { grid-template-columns: minmax(0, 1fr); }
+.sheet .hit:not(.com-mini) .hit-name,
+.sheet .hit:not(.com-mini) .hit-meta { grid-column: 1 / -1; }
+
+/* ------------------------------------------------- comprar ou vender
+   Aparece só na ficha, depois do preço e dos dados — quem chegou aqui já
+   sabe o que tem na mão. Botão de loja com a cara do chassi, não banner. */
+.mkt-lojas { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 0.5rem; }
+.mkt-loja {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 46px; padding: 0 0.7rem;
+  border-radius: 10px;
+  border: 2px solid var(--chassi-borda);
+  background: linear-gradient(180deg, var(--chassi-claro), var(--chassi));
+  color: #fff; font-weight: 700; font-size: 0.85rem;
+  text-decoration: none; text-align: center;
+  box-shadow: 0 3px 0 var(--chassi-borda);
+}
+.mkt-loja:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--chassi-borda); }
+/* A Liga entra sem comissão, e a diferença é visível de propósito. */
+.mkt-liga {
+  background: linear-gradient(180deg, #3A4150, #232833);
+  border-color: #12151C; box-shadow: 0 3px 0 #12151C;
+}
+.mkt-aviso {
+  margin: 0.6rem 0 0; font-size: 0.72rem; line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+/* Carta achada pelo nome impresso, não pela imagem. Precisa dizer isso: a
+   porcentagem ali é nota de leitura de texto, não distância de hash, e
+   apresentar as duas como a mesma coisa seria misturar unidades. */
+.por-texto {
+  grid-column: 1 / -1;
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(44, 111, 201, 0.12);
+  border: 1px solid rgba(44, 111, 201, 0.4);
+  color: var(--carta-tinta);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+/* ============================================ etapas do processamento
+   Sobre a câmera, no lugar da dica, enquanto o aparelho trabalha. Cada linha
+   aparece quando a etapa começa DE VERDADE e é riscada quando termina — não
+   há lista fixa nem barra de porcentagem, porque nenhuma dessas etapas tem
+   duração previsível e barra que anda sozinha é mentira com animação. */
+.etapas {
+  position: absolute;
+  left: 50%;
+  bottom: 7.4rem;
+  transform: translateX(-50%);
+  z-index: 4;
+  max-width: 90%;
+  padding: 0.6rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(6, 10, 16, 0.88);
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+}
+.etapas[hidden] { display: none; }
+.etapas ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.3rem; }
+
+.etapa {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
+/* O marcador é o estado: girando, feito, ou falhou. */
+.etapa::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--lente-brilho, #A8D8FF);
+  border-top-color: transparent;
+  animation: etapa-gira 0.8s linear infinite;
+}
+.etapa.feita { color: rgba(255, 255, 255, 0.62); }
+.etapa.feita::before {
+  content: "✓";
+  border: 0;
+  color: var(--led-verde, #46D96B);
+  font-size: 0.85rem;
+  line-height: 1;
+  animation: none;
+  text-align: center;
+}
+.etapa.falhou { color: var(--led-ambar, #F2B331); }
+.etapa.falhou::before {
+  content: "—";
+  border: 0;
+  animation: none;
+  text-align: center;
+  color: var(--led-ambar, #F2B331);
+}
+@keyframes etapa-gira { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .etapa::before { animation: none; }
+}
+
+/* O overlay ficava embaixo, com z-index abaixo do painel de resultado — e
+   durante a captura o painel ainda mostra a leitura anterior, então as etapas
+   apareciam ATRÁS dela. Medido: caixa visível em y=487, coberta pelo painel
+   que começa em y=380.
+
+   Vai para o alto da câmera, que é a parte da tela livre nesse momento, e
+   acima de tudo: enquanto processa, isto é o que importa ver. */
+.etapas {
+  top: calc(var(--topbar-h, 5.8rem) + 0.6rem);
+  bottom: auto;
+  z-index: 8;
+}
+
+/* Quebrando em três linhas por etapa, a lista vira parágrafo e perde a
+   leitura de relance que é o motivo dela existir. */
+.etapas { min-width: min(19rem, 88vw); }
+.etapa { font-size: 0.78rem; }
+
+/* ================================================ preço ao longo do tempo
+   Um gráfico por série (variante × mercado), na moeda daquele mercado. A cor
+   da linha é a do tipo da carta, que já governa o resto da ficha. */
+.gr { margin: 0 0 0.8rem; }
+.gr:last-of-type { margin-bottom: 0.2rem; }
+
+.gr-topo, .gr-pe {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.gr-quem { text-transform: lowercase; }
+.gr-var { font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Verde e âmbar, não verde e vermelho: queda de preço não é erro, e vermelho
+   nesta interface já significa problema. */
+.gr-var.sobe { color: var(--led-verde, #46D96B); }
+.gr-var.cai { color: var(--led-ambar, #F2B331); }
+
+.gr-svg {
+  display: block;
+  width: 100%;
+  height: 64px;
+  margin: 0.2rem 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+.gr-dias { color: var(--ink-soft); opacity: 0.7; }
+
+/* ====================== o padrão invertido: atravessar é o PADRÃO
+   Este bug voltou três vezes, sempre igual: um filho novo do cartão sem
+   `grid-column`, caindo na coluna de 46px reservada à miniatura, e o texto
+   quebrando uma palavra por linha com o resto do cartão vazio ao lado.
+
+   Foi assim com `.valor`, com `.guardar`, e agora com `.nodata` — o aviso de
+   "certeza baixa", que é justamente o texto mais importante da tela quando
+   aparece.
+
+   A causa não é nenhum desses elementos: é o padrão exigir que cada filho
+   novo LEMBRE de declarar que atravessa. Regra que depende de memória volta
+   a ser esquecida.
+
+   Invertido: atravessar as duas colunas é o padrão, e só a miniatura e o
+   nome declaram posição. Qualquer bloco acrescentado daqui em diante nasce
+   com a largura do cartão. */
+.sheet .hit > * { grid-column: 1 / -1; }
+.sheet .hit > .miniatura { grid-column: 1; }
+.sheet .hit > .hit-name { grid-column: 2; }
+.sheet .hit > .hit-meta { grid-column: 2; }
+/* Sem miniatura não existe coluna 1: tudo volta a atravessar. */
+.sheet .hit:not(.com-mini) > .hit-name,
+.sheet .hit:not(.com-mini) > .hit-meta,
+.sheet .hit.com-confere > .hit-name,
+.sheet .hit.com-confere > .hit-meta { grid-column: 1 / -1; }
+
+/* O aviso de limite herda o corpo do cartão, não o do painel escuro. */
+.sheet .hit .nodata {
+  margin: 0.4rem 0 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: var(--carta-tinta-2);
+  font-size: 0.76rem;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* ============================ diagnóstico que não come a tela
+   Do teste real: "ele entregou aquelas letras em verde também". O painel de
+   `?diag` nascia colado no rodapé do visor, por cima dos botões de captura e
+   da dica — justamente os controles que a pessoa precisa tocar enquanto
+   diagnostica.
+
+   Ele existe para eu ler números, não para disputar espaço com o app. Agora
+   fica no alto, encolhido, rolável, e some ao ser tocado — quem está usando o
+   app normalmente nem liga o `?diag`, e quem liga quer poder tirá-lo do
+   caminho sem recarregar. */
+.diag {
+  top: calc(var(--topbar-h, 5.8rem) + 0.5rem);
+  bottom: auto;
+  left: 0.5rem;
+  right: 0.5rem;
+  max-height: 34dvh;
+  overflow: auto;
+  font-size: 0.58rem;
+  line-height: 1.45;
+  color: #7FE38F;
+  background: rgba(4, 8, 6, 0.9);
+  border-color: rgba(127, 227, 143, 0.35);
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+.diag.escondido { display: none; }
+
+.diag-copiar {
+  top: calc(var(--topbar-h, 5.8rem) + 0.5rem);
+  bottom: auto;
+  left: auto;
+  right: 0.5rem;
+  z-index: 6;
+}

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>myPOKYcards · Leitor ao vivo, ponta a ponta</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 .3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.2rem; max-width:80ch; }
+    table { border-collapse:collapse; width:100%; max-width:1000px; font-size:.9rem; }
+    th,td { text-align:left; padding:.45rem .7rem; border-bottom:1px solid #263041; }
+    th { font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    .warn { color:#F0C674; font-weight:600; }
+    #verdict { margin-top:1.2rem; padding:1rem 1.2rem; border-radius:8px; max-width:1000px;
+               border:1px solid #263041; background:#10151E; }
+    iframe { position:fixed; left:-9999px; top:0; width:390px; height:844px; border:0; }
+  </style>
+</head>
+<body>
+  <h1>Leitor ao vivo, ponta a ponta</h1>
+  <p class="sub">
+    Todos os outros testes usam o modo demo, que entrega uma imagem pronta ao
+    matcher. Isso pula metade do caminho que a pessoa realmente usa: pegar o
+    quadro da câmera, achar a borda dentro dele, desentortar e decidir travar.
+    Foi nessa metade que estava o defeito que fazia o leitor parecer quebrado
+    — a região de busca vinha da moldura na tela, e com a câmera em tela cheia
+    ela cortava as laterais da carta.
+    Aqui o <code>index.html</code> roda de verdade num iframe, com
+    <code>getUserMedia</code> substituído por uma cena animada. É o único
+    teste que exercita o laço inteiro.
+  </p>
+  <table id="out">
+    <thead><tr><th>Cena</th><th>Achou a borda</th><th>Travou</th><th>Tempo</th>
+      <th>Resposta</th><th>Veredito</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">rodando…</div>
+  <iframe id="app" src="index.html?diag"></iframe>
+
+<script type="module">
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+const frame = document.getElementById("app");
+
+const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const carregarArte = (url) => new Promise((ok, no) => {
+  const im = new Image();
+  im.crossOrigin = "anonymous";
+  im.onload = () => ok(im);
+  im.onerror = () => no(new Error("arte nao carregou"));
+  im.src = url;
+});
+
+/* Cenas sintéticas. Cada uma isola UMA dificuldade real, para que uma falha
+   aponte a causa em vez de dizer só "não funcionou". */
+function montarCena(art, modo) {
+  const cv = document.createElement("canvas");
+  cv.width = 1280;
+  cv.height = 720;
+  const g = cv.getContext("2d");
+  let t = 0;
+  const laco = () => {
+    if (cv.parar) return;
+    t += 0.06;
+    g.fillStyle = modo.escuro ? "#2a2118" : "#5a4636";
+    g.fillRect(0, 0, cv.width, cv.height);
+    g.strokeStyle = "rgba(0,0,0,.18)";
+    g.lineWidth = 6;
+    for (let y = 40; y < cv.height; y += 90) {
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(cv.width, y);
+      g.stroke();
+    }
+    if (!art) {
+      // Mesa com objetos: quinas e retângulos que já enganaram o detector.
+      g.fillStyle = "#14181f";
+      g.fillRect(120, 90, 420, 260);
+      g.fillRect(700, 420, 380, 240);
+      g.fillStyle = "#e8e8ee";
+      g.fillRect(180, 470, 520, 150);
+    } else {
+      const h = 520;
+      const w = h * (art.width / art.height);
+      const tremor = modo.tremor || 0;
+      g.save();
+      g.translate(cv.width / 2 + Math.sin(t * 2.3) * tremor,
+                  cv.height / 2 + Math.cos(t * 1.9) * tremor);
+      g.rotate((modo.giro || 0) + Math.sin(t * 1.1) * (modo.giroTremor || 0));
+      g.globalAlpha = modo.escuro ? 0.62 : 1;
+      g.drawImage(art, -w / 2, -h / 2, w, h);
+      g.globalAlpha = 1;
+      if (modo.reflexo) {
+        const px = ((t * 90) % (w * 2)) - w / 2;
+        const gr = g.createLinearGradient(px - 70, 0, px + 70, 0);
+        gr.addColorStop(0, "rgba(255,255,255,0)");
+        gr.addColorStop(0.5, "rgba(255,255,255,.85)");
+        gr.addColorStop(1, "rgba(255,255,255,0)");
+        g.fillStyle = gr;
+        g.fillRect(-w / 2, -h / 2, w, h);
+      }
+      g.restore();
+    }
+    requestAnimationFrame(laco);
+  };
+  laco();
+  return cv;
+}
+
+(async () => {
+  // Esperar o evento `load` e SO ENTAO ler contentDocument. Guardar a
+  // referencia antes troca o documento em branco inicial pelo real e deixa
+  // todo `getElementById` devolvendo null — o iframe substitui o documento,
+  // nao o preenche.
+  await new Promise((r) => {
+    if (frame.contentWindow?.document?.getElementById("toggle")) return r();
+    frame.addEventListener("load", r, { once: true });
+  });
+  const win = frame.contentWindow;
+  const doc = win.document;
+
+  await new Promise((r) => {
+    const i = setInterval(() => {
+      if (!doc.getElementById("toggle").disabled) { clearInterval(i); r(); }
+    }, 200);
+  });
+
+  const cards = await fetch("data/cards.json").then((r) => r.json());
+  const grupo = (id) => {
+    const i = cards.ids.indexOf(id);
+    return i < 0 ? -2 : cards.meta[i][8];
+  };
+  const arte = async (id) => {
+    const i = cards.ids.indexOf(id);
+    if (i < 0) return null;
+    return carregarArte(`${cards.cdn}/${cards.meta[i][7]}/high.png`);
+  };
+
+  const CENAS = [
+    { nome: "fácil, carta reta", id: "ex2-85", modo: {} },
+    { nome: "inclinada 8 graus", id: "swsh3-136", modo: { giro: 0.14 } },
+    { nome: "tremor de mão", id: "sv03-125", modo: { tremor: 18, giroTremor: 0.03 } },
+    { nome: "luz baixa", id: "sv10-032", modo: { escuro: true } },
+    { nome: "holo refletindo", id: "xy4-98", modo: { reflexo: true } },
+    { nome: "tudo junto (pior caso)", id: "ex2-85",
+      modo: { escuro: true, reflexo: true, tremor: 22, giro: 0.10, giroTremor: 0.05 } },
+    { nome: "SEM carta (mesa vazia)", id: null, modo: {} },
+  ];
+
+  let ok = 0;
+  let falsos = 0;
+  for (const c of CENAS) {
+    const art = c.id ? await arte(c.id) : null;
+    const cv = montarCena(art, c.modo);
+    win.navigator.mediaDevices.getUserMedia = async () => cv.captureStream(20);
+
+    if (doc.body.classList.contains("lendo")) doc.getElementById("toggle").click();
+    await espera(400);
+    doc.getElementById("retomar")?.click();
+    doc.getElementById("toggle").click();
+
+    const t0 = performance.now();
+    let travou = false;
+    let detectou = false;
+    for (let k = 0; k < 20; k++) {
+      await espera(400);
+      if (!doc.getElementById("achado").hidden) detectou = true;
+      if (doc.body.classList.contains("travado")) { travou = true; break; }
+    }
+    const ms = performance.now() - t0;
+    const achou = doc.querySelector("[data-ficha]")?.dataset.ficha || null;
+    cv.parar = true;
+
+    const irma = c.id && achou && achou !== c.id
+      && grupo(c.id) !== -1 && grupo(c.id) === grupo(achou);
+    let veredito;
+    let classe;
+    if (!c.id) {
+      veredito = travou ? "FALSO POSITIVO" : "recusou, correto";
+      classe = travou ? "bad" : "ok";
+      if (travou) falsos++; else ok++;
+    } else if (travou && (achou === c.id || irma)) {
+      veredito = irma ? "ok (impressão irmã)" : "ok";
+      classe = "ok";
+      ok++;
+    } else if (travou) {
+      veredito = "TRAVOU NA CARTA ERRADA";
+      classe = "bad";
+    } else if (achou === c.id || irma) {
+      veredito = "acertou mas não travou";
+      classe = "warn";
+    } else {
+      veredito = "não travou, resposta errada";
+      classe = "bad";
+    }
+
+    tbody.insertAdjacentHTML("beforeend", `<tr>
+      <td>${c.nome}</td>
+      <td class="${detectou ? "ok" : "bad"}">${detectou ? "sim" : "NAO"}</td>
+      <td class="${travou ? "ok" : ""}">${travou ? "sim" : "nao"}</td>
+      <td>${travou ? (ms / 1000).toFixed(1) + " s" : "—"}</td>
+      <td><code>${achou || "—"}</code></td>
+      <td class="${classe}">${veredito}</td></tr>`);
+  }
+
+  if (doc.body.classList.contains("lendo")) doc.getElementById("toggle").click();
+
+  verdict.innerHTML = `<b>${ok} de ${CENAS.length}</b> cenas com o resultado esperado`
+    + (falsos ? ` · <span class="bad">${falsos} falso positivo</span>` : "")
+    + `<p style="margin:.6rem 0 0;color:#97A3B6">
+       "acertou mas não travou" não é falha de reconhecimento: é o automático
+       sendo conservador. O botão de captura resolve na hora, e travar numa
+       carta errada seria pior.</p>`;
+})().catch((e) => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>

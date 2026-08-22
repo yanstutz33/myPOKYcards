@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#B0241C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>myPOKYcards · Leitor de cartas Pokémon</title>
+  <meta name="description" content="Leitor de cartas Pokémon pela câmera:
+    41.694 cartas, reconhecimento em 14 ms no próprio aparelho, preço com
+    proveniência. Funciona offline.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="painel.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="sobre.css">
+  <link rel="stylesheet" href="pokedex.css">
+</head>
+<body class="painel-body lp">
+
+  <header class="lp-hero">
+    <span class="brand">myPOKY<b>cards</b></span>
+    <h1>Aponte a câmera.<br>Descubra o que a carta vale.</h1>
+    <p class="lp-sub">
+      Reconhecimento de <strong>41.694 cartas Pokémon</strong> em
+      <strong>14 milissegundos</strong>, rodando no próprio celular — sem
+      enviar sua foto para servidor nenhum. Depois do primeiro
+      carregamento, funciona offline.
+    </p>
+    <div class="lp-acoes">
+      <a class="lp-btn primaria" href="index.html">Abrir o leitor</a>
+      <a class="lp-btn" href="buscar.html">Buscar pelo nome</a>
+      <a class="lp-btn" href="painel.html">Ver os dados</a>
+      <a class="lp-btn" href="https://github.com/yanstutz33/myPOKYcards">Código no GitHub</a>
+    </div>
+    <ul class="lp-tipos" aria-hidden="true">
+      <li style="--cor:var(--t-grass)"></li>
+      <li style="--cor:var(--t-fire)"></li>
+      <li style="--cor:var(--t-water)"></li>
+      <li style="--cor:var(--t-lightning)"></li>
+      <li style="--cor:var(--t-psychic)"></li>
+      <li style="--cor:var(--t-fighting)"></li>
+      <li style="--cor:var(--t-darkness)"></li>
+      <li style="--cor:var(--t-metal)"></li>
+      <li style="--cor:var(--t-dragon)"></li>
+      <li style="--cor:var(--t-fairy)"></li>
+    </ul>
+  </header>
+
+  <main class="painel">
+
+    <section class="bloco">
+      <h2>O que já existe</h2>
+      <div class="kpis" id="numeros"></div>
+    </section>
+
+    <section class="bloco">
+      <h2>Como funciona</h2>
+      <div class="passos">
+        <article class="passo">
+          <span class="passo-n">01</span>
+          <h3>Aponta</h3>
+          <p><strong>Não precisa encaixar exato.</strong> O leitor acha a borda
+             da carta sozinho e desenha na tela o que está lendo de fato, para
+             você ver o recorte antes de gastar um toque. Tem lanterna, e
+             tocar no visor foca naquele ponto.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">02</span>
+          <h3>Toca</h3>
+          <p>Quando o contorno pegar a carta, <strong>toque no botão</strong>.
+             Aí ele analisa a sério: cinco enquadramentos, e o nome e o número
+             impressos quando a imagem deixa dúvida. Em luz ruim ou carta
+             holográfica, o botão <strong>Foto</strong> usa a câmera do
+             sistema — foco travado e resolução cheia, que é onde ele mais
+             acerta.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">03</span>
+          <h3>Mostra e explica</h3>
+          <p>A carta provável com um preço grande, alternativas numa tira
+             tocável, e a certeza sempre visível. Quando algo atrapalha —
+             reflexo, escuro, borda não encontrada — ele diz o quê.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">04</span>
+          <h3>Toque para tudo</h3>
+          <p>Toque na carta e abre a ficha: preço por mercado, ilustrador, HP,
+             Pokédex, idiomas, e as impressões que o leitor não distingue.
+             Dali dá para guardar na coleção ou compartilhar.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>O que ele não faz — e por quê</h2>
+      <p class="prog-nota lp-intro">
+        Um leitor de preço que esconde os próprios limites é pior que um que
+        não existe: você toma decisão de venda com ele. Estes limites foram
+        medidos, não estimados.
+      </p>
+      <div class="limites">
+        <article class="limite">
+          <h3>Não cota carta japonesa</h3>
+          <p>Cardmarket e TCGplayer são mercados ocidentais. Medido: 99,4%
+             das cartas internacionais têm preço na fonte, contra 2,2% das
+             asiáticas.</p>
+        </article>
+        <article class="limite">
+          <h3>Não sabe o preço no Brasil</h3>
+          <p>Nenhuma fonte aberta cota carta em real. O <code>≈ R$</code> é
+             conversão pela PTAX do Banco Central — serve para ordem de
+             grandeza, não é o preço de venda aqui.</p>
+        </article>
+        <article class="limite">
+          <h3>Não separa impressões idênticas</h3>
+          <p>A mesma arte existe em várias impressões com preços diferentes.
+             4.867 grupos são sinalizados para você conferir pelo número
+             impresso — nenhum algoritmo de imagem resolve isso.</p>
+        </article>
+        <article class="limite">
+          <h3>Não precifica carta graduada</h3>
+          <p>PSA só tem fonte paga; GBA e as demais graduadoras brasileiras
+             não têm índice público. O campo fica vazio em vez de estimado
+             por multiplicador.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>Também dá para</h2>
+      <div class="passos">
+        <article class="passo">
+          <span class="passo-n">↔</span>
+          <h3>Buscar sem a carta</h3>
+          <p>"Vi um Charizard anunciado, quanto costuma valer?" — busca por
+             nome, expansão ou número, no próprio aparelho.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">▣</span>
+          <h3>Montar a coleção</h3>
+          <p>O que você guardou fica no aparelho, com o valor total por moeda.
+             Exporta e importa em JSON quando quiser.</p>
+        </article>
+        <article class="passo">
+          <span class="passo-n">⤓</span>
+          <h3>Instalar e usar sem sinal</h3>
+          <p>Adicione à tela de início: abre em tela cheia e funciona offline
+             dentro da loja, com o índice inteiro no aparelho.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bloco">
+      <h2>Privacidade</h2>
+      <div class="linhas">
+        <div class="linha"><span>A foto da carta</span>
+          <span class="linha-val">nunca sai do aparelho</span></div>
+        <div class="linha"><span>Sua coleção</span>
+          <span class="linha-val">fica no navegador</span></div>
+        <div class="linha"><span>Conta ou cadastro</span>
+          <span class="linha-val">não existe</span></div>
+        <div class="linha"><span>Rastreador de terceiro</span>
+          <span class="linha-val">nenhum</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="painel-pe">
+    <p>Catálogo derivado de
+      <a href="https://github.com/tcgdex/cards-database">tcgdex/cards-database</a> (MIT).
+      Preços via TCGdex (Cardmarket e TCGplayer). Câmbio: PTAX / Banco Central.</p>
+    <p>Projeto de terceiro, <strong>sem qualquer vínculo</strong> com a
+      The Pokémon Company, Nintendo, Game Freak ou Creatures Inc. Nomes,
+      símbolos e artes das cartas pertencem a seus titulares.</p>
+  </footer>
+
+  <script type="module" src="sobre.js"></script>
+  <script type="module" src="pwa.js"></script>
+</body>
+</html>
