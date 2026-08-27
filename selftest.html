@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>myPOKYcards · Autoteste do matcher</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 0.3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.5rem; max-width:70ch; }
+    table { border-collapse:collapse; width:100%; max-width:900px; font-size:0.9rem; }
+    th,td { text-align:left; padding:0.5rem 0.7rem; border-bottom:1px solid #263041; }
+    th { font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:0.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    #verdict { margin-top:1.5rem; padding:1rem 1.2rem; border-radius:8px; max-width:900px;
+               border:1px solid #263041; background:#10151E; }
+  </style>
+</head>
+<body>
+  <h1>Autoteste do matcher</h1>
+  <p class="sub">
+    Prova que o hash calculado em JavaScript bate com o hash calculado em Python.
+    Se a conversão para cinza, a DCT ou a ordem dos bits divergirem, o índice
+    inteiro vira ruído — e o sintoma seria "reconhecimento ruim", não um erro.
+    Cada imagem abaixo deveria voltar como o próprio <code>card_id</code>, em
+    primeiro lugar e com confiança altíssima.
+  </p>
+  <table id="out">
+    <thead><tr><th>Esperado</th><th>Top-1 devolvido</th><th>Confiança</th><th>Posição</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">rodando…</div>
+
+<script type="module">
+import { capture } from "./capture.js";
+
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+
+const load = (src) => new Promise((res, rej) => {
+  const i = new Image();
+  i.crossOrigin = "anonymous";   // sem isso o canvas fica contaminado
+  i.onload = () => res(i); i.onerror = () => rej(new Error("falhou: " + src));
+  i.src = src;
+});
+
+(async () => {
+  const worker = new Worker("matcher.worker.js");
+  const [bin, cards] = await Promise.all([
+    fetch("data/index.bin").then(r => r.arrayBuffer()),
+    fetch("data/cards.json").then(r => r.json()),
+  ]);
+
+  // Amostra determinística do próprio índice; a arte vem do CDN de origem,
+  // nunca deste site. Assim o autoteste funciona publicado sem redistribuir
+  // nenhuma imagem de carta.
+  const manifest = [];
+  for (let k = 0; k < 6; k++) {
+    const i = (k * 5081) % cards.count;
+    if (cards.meta[i][7]) manifest.push({ card_id: cards.ids[i], caminho: cards.meta[i][7] });
+  }
+
+  await new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "ready") res(); };
+    worker.postMessage({ type: "load", buffer: bin }, [bin]);
+  });
+
+  const match = (payload) => new Promise((res) => {
+    worker.onmessage = (e) => { if (e.data.type === "result") res(e.data); };
+    worker.postMessage({ type: "match", seq: 0, k: 5, ...payload });
+  });
+
+  let acertos = 0, piorConf = 1;
+  const diags = [];
+  for (const item of manifest) {
+    const img = await load(`${cards.cdn}/${item.caminho}/low.png`);
+    const snap = capture(img);
+    const out = await match(snap);
+
+    const row = cards.ids.indexOf(item.card_id);
+    const diag = await new Promise((res) => {
+      worker.onmessage = (e) => { if (e.data.type === "diag") res(e.data); };
+      worker.postMessage({ type: "diag", row, ...snap });
+    });
+    diags.push(diag.perField);
+    const ids = out.results.map(r => cards.ids[r.i]);
+    const pos = ids.indexOf(item.card_id);
+    const acertou = pos === 0;
+    if (acertou) { acertos++; piorConf = Math.min(piorConf, out.results[0].confidence); }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td><code>${item.card_id}</code></td>
+      <td><code>${ids[0]}</code></td>
+      <td>${(out.results[0].confidence * 100).toFixed(1)}%</td>
+      <td>${pos < 0 ? "fora do top-5" : "top-" + (pos + 1)}</td>
+      <td class="${acertou ? "ok" : "bad"}">${acertou ? "OK" : "FALHOU"}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  const total = manifest.length;
+  const nomes = ["phash", "dhash", "ahash", "dhash_r", "dhash_g", "dhash_b"];
+  const medias = nomes.map((n, f) => ({
+    nome: n, bits: diags.reduce((s, d) => s + d[f], 0) / diags.length,
+  }));
+  const pior = Math.max(...medias.map((m) => m.bits));
+
+  // O critério é BITS DIVERGENTES, não a confiança agregada. Bits medem o
+  // porte diretamente; a confiança mistura os seis hashes com pesos e
+  // esconde qual etapa quebrou. Tolerância de 2 bits em 64 cobre o ruído de
+  // ponto flutuante entre numpy e JS — o defeito real que isso pegou eram
+  // 10,2 bits no dHash, uma ordem de grandeza acima.
+  const LIMITE_BITS = 2;
+  const passou = acertos === total && pior <= LIMITE_BITS;
+
+  verdict.innerHTML = `<p style="margin:0 0 0.8rem;color:#97A3B6">
+      Bits divergentes por hash (de 64, média):
+      <code>${medias.map((m) => `${m.nome}: ${m.bits.toFixed(1)}`).join(" · ")}</code>
+    </p>` + (passou
+    ? `<span class="ok">PORTE CORRETO.</span> ${acertos}/${total} em top-1,
+       pior divergência ${pior.toFixed(1)} bit de 64 (limite ${LIMITE_BITS}),
+       confiança mínima ${(piorConf * 100).toFixed(1)}%. O que sobra é ruído
+       de ponto flutuante entre numpy e JavaScript.`
+    : `<span class="bad">DIVERGÊNCIA.</span> ${acertos}/${total} em top-1,
+       pior divergência ${pior.toFixed(1)} bit de 64 — acima do limite de
+       ${LIMITE_BITS}. O hash em JS não é equivalente ao do Python; veja qual
+       hash está alto acima para saber que etapa quebrou.`);
+})().catch(e => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#B0241C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>myPOKYcards · Coleção</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="painel.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="pokedex.css">
+</head>
+<body class="painel-body">
+
+  <header class="painel-top">
+    <div>
+      <span class="brand">myPOKY<b>cards</b></span>
+      <h1>Minha coleção</h1>
+    </div>
+    <a class="ir-scan" href="buscar.html">Buscar</a>
+      <a class="ir-scan" href="painel.html">Painel</a>
+      <a class="ir-scan" href="index.html">Abrir leitor →</a>
+  </header>
+
+  <main id="colecao" class="painel">
+    <p class="empty">Carregando…</p>
+  </main>
+
+  <footer class="painel-pe">
+    <p>A coleção fica <strong>neste aparelho</strong>, no navegador. Ela revela
+      patrimônio, então nada é enviado para servidor nenhum — e limpar os dados
+      do site apaga tudo. Exporte se quiser guardar.</p>
+  </footer>
+
+  <script type="module" src="colecao-tela.js"></script>
+  <script type="module" src="pwa.js"></script>
+</body>
+</html>

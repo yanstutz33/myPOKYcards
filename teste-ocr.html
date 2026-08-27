@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>myPOKYcards · OCR do nome da carta</title>
+  <style>
+    body { background:#06080C; color:#E9EFF7; font:15px/1.6 "Segoe UI",system-ui,sans-serif;
+           margin:0; padding:1.5rem; }
+    h1 { font-size:1.2rem; margin:0 0 .3rem; }
+    p.sub { color:#97A3B6; margin:0 0 1.2rem; max-width:80ch; }
+    table { border-collapse:collapse; width:100%; max-width:1050px; font-size:.88rem; }
+    th,td { text-align:left; padding:.4rem .6rem; border-bottom:1px solid #263041; vertical-align:top; }
+    th { font-size:.66rem; letter-spacing:.08em; text-transform:uppercase; color:#97A3B6; }
+    code { font-family:ui-monospace,Consolas,monospace; font-size:.85em; }
+    .ok { color:#6FD69A; font-weight:600; }
+    .bad { color:#F0788A; font-weight:600; }
+    .warn { color:#F0C674; font-weight:600; }
+    #verdict { margin-top:1.2rem; padding:1rem 1.2rem; border-radius:8px; max-width:1050px;
+               border:1px solid #263041; background:#10151E; }
+    img.tira { display:block; max-width:230px; border:1px solid #263041; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <h1>OCR do nome: dá para identificar carta sem imagem de referência?</h1>
+  <p class="sub">
+    O leitor compara hash contra um banco de imagens, e por isso é
+    estruturalmente incapaz de reconhecer as 11.411 cartas (27,4%) que não têm
+    imagem em fonte nenhuma. Ler o nome impresso é o único caminho que não
+    depende de imagem de referência — o catálogo já tem nome, número e set
+    das 41.694.
+    A pergunta aqui é anterior a qualquer implementação: <strong>o OCR
+    consegue ler nome de carta Pokémon?</strong> São fontes estilizadas, às
+    vezes com contorno, sobre fundo holográfico. Se não ler, o caminho inteiro
+    não existe e é melhor descobrir agora.
+  </p>
+  <table id="out">
+    <thead><tr><th>Carta</th><th>Tira lida</th><th>OCR devolveu</th>
+      <th>Melhor palpite</th><th>Veredito</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div id="verdict">carregando o motor de OCR…</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script type="module">
+import { GEOMETRIAS, GEOMETRIAS_NUMERO, tira as tiraDoModulo } from "./ocr.js";
+const tbody = document.querySelector("#out tbody");
+const verdict = document.getElementById("verdict");
+
+const AMOSTRA = Number(new URLSearchParams(location.search).get("n") || 10);
+
+const normalizar = (s) => String(s).toLowerCase()
+  .normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+const carregar = (url) => new Promise((ok, no) => {
+  const im = new Image();
+  im.crossOrigin = "anonymous";
+  im.onload = () => ok(im);
+  im.onerror = () => no(new Error("arte nao carregou"));
+  im.src = url;
+});
+
+/**
+ * A tira do nome.
+ *
+ * O nome fica no alto e à esquerda em praticamente todo layout de carta
+ * Pokémon; a direita do topo é HP e tipo, que só atrapalham. Recortar a
+ * carta inteira daria ao OCR quatro parágrafos de texto de ataque para
+ * competir com as duas palavras que interessam.
+ *
+ * A tira é ampliada 3x e passada para cinza com contraste esticado: OCR
+ * treinado em documento espera texto escuro sobre fundo claro, e o holo faz
+ * exatamente o oposto disso em metade das cartas.
+ */
+/* Duas geometrias, porque existem dois layouts.
+ *
+ * Medido: das 7 falhas reais de uma amostra de 19, CINCO eram cartas Trainer
+ * — Eevee Bag, Energy Switch, TV Reporter, Altar Solar, Martelo Avancado. Em
+ * Pokemon o nome fica no alto a esquerda, depois do selo de estagio. Em
+ * Trainer ele vem abaixo de uma faixa "TRAINER" e costuma ser centralizado,
+ * ocupando a largura toda.
+ *
+ * Nao da para saber a categoria antes de ler, entao le-se as duas e fica a
+ * que casa melhor com o vocabulario — mesmo padrao ja usado para polaridade
+ * e para as cinco escalas da captura. */
+/* As geometrias vem do MODULO, nao de copias aqui.
+ *
+ * Ate 21/08/2026 esta bancada tinha as suas proprias, e elas tinham
+ * divergido: a caixa da direita era `rh: 0.052`, uma faixa estreita que corta
+ * o numero de dp, pl e hgss pela metade — e a do modulo hoje e 0.092. Ou
+ * seja, a bancada media uma coisa e o app fazia outra, e os numeros que ela
+ * imprimia nao eram evidencia sobre o app.
+ *
+ * Bancada que reimplementa o que deveria medir mede a si mesma. */
+
+function tiraDoNome(img, inverter = false, geo = GEOMETRIAS[0]) {
+  // Delega para o modulo: e o mesmo recorte, o mesmo estica-contraste e a
+  // mesma inversao que o app usa de verdade.
+  return tiraDoModulo(img, geo, inverter, 6);
+}
+
+/** Semelhança por trigramas: tolera letra trocada, que é o erro típico de OCR. */
+function trigramas(s) {
+  const t = ` ${s} `;
+  const set = new Set();
+  for (let i = 0; i < t.length - 2; i++) set.add(t.slice(i, i + 3));
+  return set;
+}
+
+/**
+ * Quanto do NOME DO CATALOGO aparece no que o OCR leu.
+ *
+ * A primeira versao dividia pelo maior dos dois conjuntos, o que mede
+ * igualdade entre as duas strings. Errado para este problema: o OCR quase
+ * sempre devolve o nome com sujeira em volta — "AerodactyIV A", "= Hoopa ON",
+ * "CoalossalVr1xAa". Medindo igualdade, essa sujeira derruba a nota e a carta
+ * certa perde para outra.
+ *
+ * A pergunta certa e de CONTENCAO: o nome que procuro esta dentro do que foi
+ * lido? Dividir pelo tamanho do nome do catalogo responde exatamente isso, e
+ * a sujeira deixa de ser penalidade.
+ *
+ * O risco do outro lado e nome curto casar com tudo — "Natu" cabe dentro de
+ * muita coisa. Por isso nomes de menos de 5 letras exigem nota quase cheia.
+ */
+function parecido(lido, nome) {
+  if (!lido.size || !nome.size) return 0;
+  let comum = 0;
+  for (const g of nome) if (lido.has(g)) comum++;
+  const nota = comum / nome.size;
+  return nome.size <= 6 && nota < 0.95 ? nota * 0.5 : nota;
+}
+
+(async () => {
+  const cards = await fetch("data/cards.json").then((r) => r.json());
+
+  // Vocabulário fechado: o OCR não precisa acertar a palavra, precisa chegar
+  // perto o bastante de UMA das 41.694 que já conhecemos.
+  // Nomes com menos de 4 letras ficam FORA do vocabulario.
+  //
+  // Sem isso eles vencem sempre: contencao de um nome de uma letra e
+  // trivialmente satisfeita por qualquer leitura. Medido — "Aerodactyl V" foi
+  // lido corretamente como "AerodactyIV" e perdeu para o nome "a", com 100%.
+  // O catalogo tem cartas chamadas "a" e "u" (energias e promos antigas), e
+  // elas envenenavam toda comparacao.
+  // Vocabulario de TODOS os idiomas, nao so do rotulo exportado.
+  //
+  // O OCR le o que esta impresso na carta que a pessoa tem na mao, e ela pode
+  // estar em qualquer idioma. Medido: "Martelo Avancado" foi lido como
+  // "nammer" (da arte inglesa "Enhanced Hammer") e nao casou com nada,
+  // porque o vocabulario so tinha o rotulo portugues.
+  const vocab = await fetch("data/nomes.json").then((r) => r.json());
+  const nomes = new Map();
+  for (const n of Object.keys(vocab)) nomes.set(n, trigramas(n));
+  verdict.textContent = `vocabulário: ${nomes.size} nomes distintos · iniciando OCR…`;
+
+  const motor = await Tesseract.createWorker("por", 1, { logger: () => {} });
+  await motor.setParameters({
+    tessedit_pageseg_mode: "7",   // uma linha de texto, que é o que a tira é
+  });
+
+  // Amostra espalhada pelo índice, só com arte disponível.
+  const itens = [];
+  const passo = Math.max(1, Math.floor(cards.count / AMOSTRA));
+  for (let i = 0; i < cards.count && itens.length < AMOSTRA; i += passo) {
+    if (cards.meta[i][7] && cards.meta[i][4] === "intl" && normalizar(cards.meta[i][0]).length >= 3) {
+      itens.push({ id: cards.ids[i], nome: cards.meta[i][0], caminho: cards.meta[i][7] });
+    }
+  }
+
+  let acertos = 0, quase = 0, numOk = 0, t0 = performance.now();
+  for (const it of itens) {
+    let texto = "", erro = null;
+    let tira = null;
+    try {
+      const img = await carregar(`${cards.cdn}/${it.caminho}/high.png`)
+        .catch(() => carregar(`${cards.cdn}/${it.caminho}/low.png`));
+      // Quatro leituras: duas geometrias x duas polaridades. Custa ~800 ms,
+      // no caminho que ja e o de analise pesada.
+      let melhorConf = -1;
+      for (const geo of GEOMETRIAS) {
+        for (const inv of [false, true]) {
+          const cv = tiraDoNome(img, inv, geo);
+          const r = await motor.recognize(cv);
+          const t = (r.data.text || "").trim();
+          if (t.length >= 3 && r.data.confidence > melhorConf) {
+            melhorConf = r.data.confidence;
+            texto = t;
+            tira = cv;
+          }
+        }
+      }
+      if (!tira) tira = tiraDoNome(img, false);
+    } catch (e) { erro = e.message; }
+
+    // Leitura do numero, em paralelo a do nome.
+    let numero = "";
+    try {
+      const img = await carregar(`${cards.cdn}/${it.caminho}/high.png`)
+        .catch(() => carregar(`${cards.cdn}/${it.caminho}/low.png`));
+      let conf = -1;
+      for (const geo of GEOMETRIAS_NUMERO) {
+        for (const inv of [false, true]) {
+          const r = await motor.recognize(tiraDoNome(img, inv, geo));
+          const t = (r.data.text || "").trim();
+          // So aceita o que TEM forma de numero de carta: digitos, com ou sem
+          // barra. Validar por forma e o que o nome nao permite.
+          const m = t.match(/(\d{1,3})\s*[\/|]\s*(\d{1,3}|[A-Z]{1,4})/i)
+                 || t.match(/(\d{2,3})/);
+          if (m && r.data.confidence > conf) { conf = r.data.confidence; numero = m[1]; }
+        }
+      }
+    } catch { /* segue sem numero */ }
+    it.numeroLido = numero;
+
+    const lido = normalizar(texto);
+    const tl = trigramas(lido);
+    let melhor = "", nota = 0;
+    if (lido.length >= 3) {
+      for (const [n, tn] of nomes) {
+        const s = parecido(tl, tn);   // (lido, nome do catalogo)
+        if (s > nota) { nota = s; melhor = n; }
+      }
+    }
+
+    const alvo = normalizar(it.nome);
+    const certo = alvo.length >= 3 && melhor === alvo;
+    // Parcial: o palpite e prefixo do alvo ou vice-versa. "Hoopa EX" lido
+    // como "hoopa" achou o Pokemon certo e errou so o sufixo de variante —
+    // muito diferente de nao ter lido nada.
+    const parcial = !certo && melhor.length >= 4 &&
+      (alvo.startsWith(melhor) || melhor.startsWith(alvo));
+    if (certo) acertos++;
+    else if (parcial || nota >= 0.6) quase++;
+
+    tbody.insertAdjacentHTML("beforeend", `<tr>
+      <td><code>${it.id}</code><br>${it.nome}</td>
+      <td>${tira ? `<img class="tira" src="${tira.toDataURL("image/jpeg", 0.8)}">` : "—"}</td>
+      <td><code>${erro ? "erro: " + erro : (texto || "(vazio)")}</code></td>
+      <td>${melhor || "—"}<br><small>${(nota * 100).toFixed(0)}%</small></td>
+      <td class="${certo ? "ok" : nota >= 0.45 ? "warn" : "bad"}">
+        ${certo ? "acertou" : nota >= 0.45 ? "perto" : "errou"}
+        <br><small>n&ordm; lido: <code>${it.numeroLido || "—"}</code></small></td></tr>`);
+    if (it.numeroLido && Number(it.numeroLido) === Number(String(it.id).split("-").pop())) numOk++;
+  }
+
+  await motor.terminate();
+  const ms = (performance.now() - t0) / itens.length;
+  const taxa = acertos / itens.length;
+  verdict.innerHTML = `<b class="${taxa >= 0.7 ? "ok" : taxa >= 0.4 ? "warn" : "bad"}">
+      ${acertos} de ${itens.length}</b> nomes identificados exatamente
+    · ${quase} chegaram perto · <b>numero certo em ${numOk} de ${itens.length}</b>
+    · <code>${ms.toFixed(0)} ms</code> por carta
+    <p style="margin:.6rem 0 0;color:#97A3B6">
+      Acima de 70% o caminho se paga: ele cobriria as 11.411 cartas que o hash
+      nunca alcança. Abaixo de 40% não vale o custo — são 6,4 MB de dados de
+      idioma para carregar, e o OCR entraria como ruído em cima de um leitor
+      que já acerta 99% quando a carta está no índice.</p>`;
+})().catch((e) => { verdict.innerHTML = `<span class="bad">ERRO:</span> ${e.message}`; });
+</script>
+</body>
+</html>

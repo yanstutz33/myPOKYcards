@@ -1,0 +1,468 @@
+/* Tela de leitura — layout de celular na mão.
+   ------------------------------------------------------------------
+   Três regras que vieram de teste com carta real:
+
+   1. O botão de captura fica no polegar, não no topo. Segurar o celular com
+      uma mão e a carta com a outra deixa só o polegar livre.
+   2. O painel de resultado nunca cobre a câmera inteira — dá para conferir
+      o enquadramento enquanto lê o resultado.
+   3. Guardar é ação primária e de um toque. Antes era um <select> e um
+      botão dentro de painel rolante, e foi difícil de usar. */
+
+.scan-body {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------- topo */
+.topbar { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.topbar .brand { text-decoration: none; }
+.topbar .status { margin-left: auto; }
+
+.topnav { display: flex; gap: 0.4rem; }
+.topnav a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-family: var(--font-data);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.topnav a:hover { color: var(--scan); border-color: var(--scan); }
+.topnav a:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+/* ------------------------------------------------------------ visor */
+.stage { position: relative; min-height: 0; }
+
+/* Borda detectada, desenhada sobre o vídeo. É o retorno mais importante da
+   tela: mostra o que o leitor está REALMENTE recortando, que pode não ser
+   o que a moldura sugere. */
+.achado {
+  position: absolute;
+  border: 2px solid var(--ok);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(4, 6, 10, 0.55), 0 0 18px -2px var(--ok);
+  pointer-events: none;
+  z-index: 2;
+  transition: all 120ms ease-out;
+}
+.stage.travado .achado { border-color: var(--tipo); box-shadow: 0 0 0 100vmax rgba(4,6,10,.72), 0 0 22px -2px var(--tipo); }
+
+/* Com a carta detectada, a moldura-guia sai do caminho. */
+.stage.detectado .frame { opacity: 0.18; }
+.stage.detectado .sweep { display: none; }
+.frame { transition: opacity 160ms ease; }
+
+.diag {
+  position: absolute;
+  left: 0.6rem; bottom: 0.6rem;
+  z-index: 4;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  background: rgba(6, 8, 12, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: var(--font-data);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: pre;
+}
+
+/* ------------------------------------------------- barra de captura */
+.barra {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem 1.1rem;
+  background: linear-gradient(transparent, rgba(6, 8, 12, 0.85) 45%);
+  pointer-events: none;
+}
+.barra > * { pointer-events: auto; }
+.barra[hidden] { display: none; }
+
+/* Alvo de 68px: o dedo cobre o botão enquanto a outra mão segura a carta. */
+.captura {
+  flex: 0 0 auto;
+  width: 68px; height: 68px;
+  min-height: 68px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  display: grid;
+  place-items: center;
+}
+.captura-anel {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--scan);
+  transition: transform 120ms ease;
+}
+.captura:active .captura-anel { transform: scale(0.86); }
+.captura:disabled { opacity: 0.4; }
+
+.secundaria {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  background: rgba(6, 8, 12, 0.8);
+  font-size: 0.9rem;
+}
+
+/* --------------------------------------------------------- resultado */
+.sheet {
+  max-height: 42dvh;
+  border-top: 1px solid var(--line);
+}
+.sheet .empty { padding: 1.1rem 0.5rem; }
+
+/* Cabeçalho antigo (título + tempo) saiu: ocupava linha inteira para
+   informação que só interessa depurando. O tempo foi para o diagnóstico. */
+
+.acoes-base {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--ground);
+}
+.acoes-base button { flex: 1; min-height: 48px; }
+
+/* ------------------------------------------------- guardar, refeito */
+/* Antes: <select> de variante + botão, dentro do painel rolante. Difícil de
+   acertar com o polegar e fácil de não perceber. Agora: um botão por
+   variante, grandes, lado a lado. Um toque guarda. */
+.guardar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.guardar-btn {
+  flex: 1 1 auto;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--tipo) 45%, var(--line));
+  background: color-mix(in srgb, var(--tipo) 12%, var(--surface-2));
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.guardar-btn:hover { border-color: var(--tipo); }
+.guardar-btn small {
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.guardar-btn.feito {
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface-2));
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.guardar-tem {
+  flex: 1 0 100%;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+@media (max-width: 380px) {
+  .guardar-btn { flex: 1 1 100%; }
+}
+
+/* -------------------------------------------------- lanterna e foco */
+.lanterna {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 12, 0.8);
+  color: var(--ink-soft);
+}
+.lanterna.ligada {
+  background: var(--warn);
+  border-color: var(--warn);
+  color: #241800;
+}
+.lanterna[hidden] { display: none; }
+
+/* Pulso curto confirmando o toque para focar. */
+.stage.focando .frame::after {
+  border-color: var(--scan);
+  box-shadow: 0 0 26px -4px var(--scan);
+}
+
+/* A dica vira aviso quando aponta um problema concreto. */
+.hint.alerta {
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+}
+
+/* ==================================================== câmera em tela cheia
+   Medido antes de mexer, em 375x812: topbar 94px (12%), câmera 303px (37%),
+   painel 341px (42%), ações 73px (9%). Trinta e sete por cento da tela para
+   enquadrar uma carta — é a explicação mais provável do "não está vendo a
+   carta" que apareceu no teste com aparelho real.
+
+   A grade de três linhas virou uma camada só: o vídeo ocupa a tela inteira e
+   tudo o mais flutua por cima, com véu escuro onde precisa de contraste. */
+
+.scan-body {
+  display: block;
+  position: relative;
+}
+
+.stage { position: absolute; inset: 0; }
+
+/* O véu por baixo da faixa vermelha some: sobre vídeo claro, texto branco em
+   gradiente já resolve, e a faixa opaca comia 12% da tela para sempre. */
+.topbar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 6;
+  padding-top: calc(0.65rem + env(safe-area-inset-top));
+}
+
+.base-stack {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  max-height: 78dvh;
+  pointer-events: none;
+}
+.base-stack > * { pointer-events: auto; }
+
+/* Dentro da pilha a barra volta a fluir, então fica ACIMA do painel em vez
+   de brigar com ele pelo canto inferior. */
+.barra { position: static; }
+
+.sheet {
+  max-height: 52dvh;
+  overflow-y: auto;
+  background: rgba(8, 10, 14, 0.93);
+  backdrop-filter: blur(10px);
+  border-top: 3px solid var(--chassi-borda, #4A0D09);
+}
+/* Sem resultado o painel não existe: a câmera fica com a tela toda. */
+.sheet.vazio { display: none; }
+
+.acoes-base { background: rgba(8, 10, 14, 0.96); }
+
+/* ============================================================ valor em foco
+   A resposta que a pessoa veio buscar, sobre a câmera e em corpo grande, em
+   vez de dentro de um painel rolante. O painel continua existindo para o que
+   exige leitura: procedência da cotação, mercado, idade do dado. */
+
+.hero {
+  position: absolute;
+  top: calc(3.2rem + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 1.1rem 0.5rem;
+  border-radius: 14px;
+  background: rgba(6, 10, 16, 0.72);
+  border: 2px solid rgba(227, 190, 60, 0.55);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  max-width: 92%;
+}
+.hero[hidden] { display: none; }
+
+.hero-num {
+  font-family: var(--font-titulo, "Arial Black", system-ui, sans-serif);
+  font-size: clamp(1.7rem, 8vw, 2.4rem);
+  line-height: 1;
+  color: var(--carta-borda, #E3BE3C);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+}
+.hero-sub {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+/* Sem cotação o destaque não vira zero nem some: diz o motivo, menor. */
+.hero.sem .hero-num {
+  font-size: 1rem;
+  color: #fff;
+  font-family: var(--font-ui, system-ui, sans-serif);
+}
+
+/* ------------------------------------------- quantidade por toque
+   Quem abre um lote tem várias cópias da mesma carta na mão. Antes eram
+   várias leituras da MESMA carta para registrar um dado só. */
+.mults {
+  flex: 1 0 100%;
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.mult {
+  min-width: 44px;      /* alvo de toque, não o tamanho do texto */
+  min-height: 40px;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.mult.ativo {
+  background: var(--carta-borda, #E3BE3C);
+  border-color: var(--carta-borda, #E3BE3C);
+  color: #2A1B00;
+}
+.guardar-btn .mais { font-weight: 800; }
+
+/* --------------------------------------------- a faixa deixa de custar tela
+   Sobre a câmera, faixa opaca é buraco: 94px onde poderia haver carta. Ela
+   vira véu translúcido — o texto continua legível pelo gradiente e pela
+   sombra, e dá para ver o que está atrás dela enquanto se enquadra. */
+.topbar {
+  background: linear-gradient(180deg,
+    rgba(217, 72, 60, 0.94), rgba(176, 36, 28, 0.86) 55%, rgba(110, 20, 15, 0.62));
+  border-bottom: 2px solid rgba(74, 13, 9, 0.7);
+  padding-bottom: 0.5rem;
+}
+
+/* O valor fica ABAIXO da faixa, sempre. A altura dela muda com a largura do
+   aparelho — em 375px a navegação quebra para uma segunda linha — então a
+   medida vem do JS em vez de um número chutado que só serve num tamanho. */
+.hero { top: calc(var(--topbar-h, 5.8rem) + 0.5rem); }
+
+/* Com o valor em destaque sobre a câmera, o número dentro do painel vira
+   repetição. Não sai — a procedência precisa de âncora — mas para de
+   competir pelo olho. */
+.sheet .valor-num { font-size: 1.15rem; }
+
+.hero-sub { display: flex; gap: 0.45rem; align-items: baseline; justify-content: center; flex-wrap: wrap; }
+.hero-fonte { opacity: 0.75; }
+
+/* .brl é estilizado para o painel creme; sobre o véu escuro do destaque
+   ficava cinza sobre preto, ilegível. */
+.hero .brl {
+  color: #fff;
+  opacity: 0.92;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ------------------------------------------- o resultado como objeto solto
+   Rodapé colado nas bordas lê como "parte do aparelho" e divide a tela em
+   duas metades. Solto, com margem e sombra, lê como uma carta pousada SOBRE
+   a câmera: dá para ver o vídeo em volta dele, e fica claro que é o
+   resultado de uma leitura, não uma seção fixa da tela. */
+.sheet {
+  margin: 0 0.6rem 0.5rem;
+  border-radius: 16px;
+  border: 3px solid var(--chassi-borda, #4A0D09);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65);
+  max-height: 46dvh;
+}
+
+/* A barra de captura passa a respirar sobre o painel. */
+.barra { padding-bottom: 0.7rem; }
+
+.acoes-base {
+  margin: 0 0.6rem calc(0.5rem + env(safe-area-inset-bottom));
+  border-radius: 14px;
+  border: 3px solid var(--chassi-borda, #4A0D09);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.6);
+}
+
+/* O contorno gira junto com a carta; a animação precisa acompanhar o
+   transform, não só posição e tamanho. */
+.achado { transform-origin: center; will-change: transform; }
+
+/* ------------------------------------- com a câmera ligada, menos moldura
+   Do teste real: "ainda está preenchendo uma boa parte da tela". A barra
+   larga de "Desligar" ocupava ~10% da altura o tempo todo, para uma ação
+   quase nunca usada. Ela existe para LIGAR — momento em que não há nada na
+   tela para atrapalhar. Ligada, vira um botão do tamanho da lanterna. */
+body.lendo .acoes-base { display: none; }
+body.lendo #desligar { display: grid; }
+#desligar[hidden] { display: none; }
+.desligar { background: rgba(6, 8, 12, 0.8); }
+
+/* O painel encolhe junto: sem a barra embaixo, o teto pode ser menor sem
+   esconder nada — o conteúdo rola e a ficha tem tudo. */
+body.lendo .sheet { max-height: 34dvh; margin-bottom: calc(0.5rem + env(safe-area-inset-bottom)); }
+
+/* O <label> embrulha um <input type=file> escondido: no iPhone isso abre a
+   câmera nativa com foco travado, exposição medida e resolução cheia — que é
+   exatamente o que falta num quadro de vídeo em luz ruim. */
+.foto { position: relative; overflow: hidden; cursor: pointer; }
+.foto input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0;
+  width: 100%; height: 100%;
+  cursor: pointer;
+}
+.foto[hidden] { display: none; }
+
+.visualmente-oculto {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+
+/* A foto deixa de ser botão de canto.
+   Medido: pelo caminho da foto o leitor acertou 3 de 3 a 99%, contra 2 de 4
+   pelo quadro de vídeo na mesma cena difícil. A câmera nativa trava o foco,
+   mede a exposição e entrega a resolução cheia do sensor — coisas que um
+   quadro de stream a 450 ms não tem. Esconder o caminho que funciona melhor
+   atrás de um ícone de 48px era desperdício. */
+.foto {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0 0.85rem;
+}
+.foto-rotulo { font-weight: 700; font-size: 0.85rem; }
+
+/* Botão de copiar o diagnóstico. Só existe com ?diag, e fica colado nele. */
+.diag-copiar {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 5;
+  min-height: 34px;
+  padding: 0 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(6, 8, 12, 0.92);
+  color: var(--ink);
+  font-size: 0.7rem;
+}
+.diag-copiar[hidden] { display: none; }
+/* Com o botão embaixo, o painel de números sobe para não cobrir. */
+.diag { bottom: 3.2rem; }

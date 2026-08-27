@@ -1,0 +1,250 @@
+/* Painel do estado do sistema. Herda os tokens de style.css.
+   É um painel operacional: a leitura tem que ser por varredura, e o que
+   está incompleto precisa ser tão visível quanto o que está pronto. */
+
+.painel-body {
+  display: block;
+  height: auto;
+  overflow: auto;
+  padding: 0 0 4rem;
+}
+
+.painel-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.4rem clamp(1rem, 4vw, 2.5rem) 1.2rem;
+  border-bottom: 1px solid var(--line);
+}
+.painel-top h1 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.ir-scan {
+  color: var(--scan);
+  text-decoration: none;
+  font-size: 0.9rem;
+  border: 1px solid var(--scan);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  white-space: nowrap;
+}
+.ir-scan:hover { background: rgba(63, 224, 208, 0.1); }
+.ir-scan:focus-visible { outline: 2px solid var(--scan); outline-offset: 2px; }
+
+.painel {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.6rem clamp(1rem, 4vw, 2.5rem) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.2rem;
+}
+
+.bloco { display: flex; flex-direction: column; gap: 0.9rem; }
+.bloco > h2 {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+/* --- cartões de número --- */
+.kpis {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.kpi {
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.kpi b {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+.kpi small {
+  font-family: var(--font-data);
+  font-size: 0.63rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.kpi em { font-style: normal; font-size: 0.78rem; color: var(--ink-soft); }
+
+/* --- barra de progresso: o denominador é a informação --- */
+.prog {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.prog-topo {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.prog-nome { font-weight: 600; font-size: 0.95rem; }
+.prog-num {
+  font-family: var(--font-data);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.trilho {
+  height: 10px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+}
+.trilho i { display: block; height: 100%; }
+.trilho i.feito { background: var(--scan); }
+.trilho i.falta { background: var(--warn); opacity: 0.55; }
+.prog-nota { font-size: 0.78rem; color: var(--ink-soft); line-height: 1.5; }
+
+/* --- listas --- */
+.linhas {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.linha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.88rem;
+}
+.linha:last-child { border-bottom: 0; }
+.linha-sub { grid-column: 1; font-size: 0.74rem; color: var(--ink-soft); }
+.linha-val {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+
+.mini-barra {
+  grid-column: 1 / -1;
+  height: 5px;
+  background: var(--surface-2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.mini-barra i { display: block; height: 100%; background: var(--scan); opacity: 0.75; }
+
+.painel-pe {
+  max-width: 1080px;
+  margin: 2.5rem auto 0;
+  padding: 1.4rem clamp(1rem, 4vw, 2.5rem) 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.painel-pe p { margin: 0 0 0.4rem; }
+.painel-pe a { color: var(--scan); }
+
+/* Dois links no topo: precisam caber lado a lado em tela de 375px. */
+.painel-top { align-items: center; }
+.painel-top .ir-scan + .ir-scan { margin-left: 0.5rem; }
+
+/* ================================================= a carteira ao longo do tempo
+   A coleção e o histórico de preço eram dois módulos que se ignoravam: a tela
+   mostrava o valor de HOJE enquanto o robô acumulava cotação diária desde
+   15/08/2026. Quem coleciona não pergunta "quanto vale" — pergunta "está
+   subindo?".
+
+   Herda `.gr` do pokedex.css, que esta página já carrega. Escrever um estilo
+   próprio para o gráfico faria a carteira e a ficha divergirem visualmente
+   sem nenhum motivo — são a mesma coisa medindo escopos diferentes. */
+.carteira {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* Mesmo título das outras seções desta tela. Um h2 com corpo e caixa
+   próprios anunciaria "isto veio de outro lugar", que é justamente o oposto
+   do ponto: a carteira é parte da coleção, não um enxerto. */
+.carteira > h2 {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.carteira-nota {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+/* ==================================================== onde a coleção mora
+   Diz a verdade sobre um risco que não dá para eliminar sem servidor: o
+   navegador pode apagar o `localStorage`, e o Safari do iPhone apaga o de
+   sites não instalados depois de sete dias sem uso.
+
+   `.atencao` só entra quando o risco é real — não persistido E não
+   instalado. Caixa amarela permanente vira parte do cenário e a pessoa para
+   de ler justamente antes do dia em que ela importaria. */
+.guardado {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ground) 92%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.guardado p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.guardado.atencao {
+  border-color: color-mix(in srgb, #E0A82E 55%, var(--line));
+  background: color-mix(in srgb, #E0A82E 8%, var(--ground));
+}
+
+.guardado-dica { opacity: 0.85; }

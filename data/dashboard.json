@@ -1,0 +1,166 @@
+{
+ "gerado_em": "2026-08-26T09:44:00+00:00",
+ "catalogo": {
+  "cartas": 41856,
+  "sets": 564,
+  "cartas_por_regiao": {
+   "asia": 18217,
+   "intl": 23639
+  },
+  "sets_por_regiao": {
+   "asia": 343,
+   "intl": 221
+  },
+  "idiomas": [
+   {
+    "lang": "en",
+    "cartas": 23546
+   },
+   {
+    "lang": "pt",
+    "cartas": 14360
+   },
+   {
+    "lang": "ja",
+    "cartas": 13223
+   },
+   {
+    "lang": "zh-tw",
+    "cartas": 7587
+   },
+   {
+    "lang": "ko",
+    "cartas": 1363
+   },
+   {
+    "lang": "pt-br",
+    "cartas": 1124
+   },
+   {
+    "lang": "zh-cn",
+    "cartas": 877
+   }
+  ],
+  "colisoes_tratadas": 21
+ },
+ "reconhecimento": {
+  "com_hash": 30283,
+  "sem_imagem": 11411,
+  "total": 41694,
+  "por_regiao": [
+   {
+    "regiao": "asia",
+    "com_hash": 8448,
+    "sem_imagem": 9607
+   },
+   {
+    "regiao": "intl",
+    "com_hash": 21835,
+    "sem_imagem": 1804
+   }
+  ]
+ },
+ "precos": {
+  "linhas": 353332,
+  "cartas_com_preco": 20449,
+  "intl_alvo": 23639,
+  "intl_consultadas": 23639,
+  "por_kind": {
+   "derived": 36011,
+   "listing": 145072,
+   "sold": 172249
+  },
+  "por_fonte": {
+   "cardmarket": 19815,
+   "tcgplayer": 18789
+  },
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-08-26T09:43:51+00:00",
+  "mais_caras": [
+   {
+    "card_id": "xy7-96",
+    "nome": "Primal Kyogre EX",
+    "set": "xy7",
+    "valor": 9800.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 6800.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 6115.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY101",
+    "nome": "Mewtwo",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY107",
+    "nome": "Mewtwo EX",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY125",
+    "nome": "Mewtwo EX",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "xyp-XY192",
+    "nome": "Mew",
+    "set": "xyp",
+    "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "neo4-113",
+    "nome": "Shining Tyranitar",
+    "set": "neo4",
+    "valor": 4249.99,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "sm9-161",
+    "nome": "Magikarp & Wailord GX",
+    "set": "sm9",
+    "valor": 4200.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 4166.89,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "ecard3-10",
+    "nome": "Gengar",
+    "set": "ecard3",
+    "valor": 4000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "lc-3",
+    "nome": "Charizard",
+    "set": "lc",
+    "valor": 3850.0,
+    "moeda": "EUR"
+   }
+  ]
+ }
+}
