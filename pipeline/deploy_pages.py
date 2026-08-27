@@ -86,7 +86,66 @@ def conferir(web: Path) -> None:
         sys.exit(1)
 
 
-def main(repo: Path, dry: bool) -> None:
+# Arquivos que pertencem ao ROBO, nao a esta publicacao.
+#
+# O robo diario roda em maquina descartavel, coleta preco e cotacao, e copia
+# ARQUIVO A ARQUIVO para o gh-pages, preservando o resto. Esta publicacao faz
+# o oposto: monta a arvore inteira e da `push --force`. Sem cuidado, ela
+# apaga tudo o que o robo publicou desde a ultima vez que alguem rodou os
+# exportadores nesta maquina.
+#
+# Nao e hipotese. Em 26/08/2026 o branch tinha 5 commits — a raiz era uma
+# publicacao minha de 21/08 e os quatro de cima eram do robo. O `web/data`
+# local estava com 5 dias de historico e cotacao de 15/08; o publicado tinha
+# 11 dias e cotacao do proprio dia. Publicar naquele momento teria devolvido
+# o grafico de 11 dias para 5 e a cotacao para onze dias atras.
+#
+# O sintoma seria mudo: nada quebra, nenhum erro aparece, o site continua
+# abrindo. So o grafico encolhe e o preco fica velho — e a serie historica e
+# a unica coisa deste projeto que nao se recompra.
+#
+# Por isso a regra e de POSSE, nao de data: estes arquivos vem do que ja esta
+# publicado, sempre. Comparar qual e "mais novo" exigiria um carimbo em cada
+# um, e prices.json e nomes.json nao tem nenhum.
+DO_ROBO = (
+    "prices.json", "prices.json.gz",
+    "fx.json", "dashboard.json", "numeros.json",
+    "historico.json", "historico.json.gz",
+    "nomes.json", "nomes.json.gz",
+)
+
+
+def preservar_do_robo(repo: Path, stage: Path, forcar: bool) -> None:
+    """Traz para a arvore de publicacao o que o robo ja publicou."""
+    if forcar:
+        print("  --forcar-dados: publicando o web/data LOCAL por cima do do robo")
+        return
+
+    try:
+        git("fetch", "-q", "origin", "gh-pages", cwd=repo)
+    except Exception as exc:  # noqa: BLE001
+        print(f"  aviso: nao consegui buscar o gh-pages ({str(exc)[:60]})")
+        print("  os dados do robo podem ser sobrescritos — confira depois")
+        return
+
+    destino = stage / "data"
+    destino.mkdir(parents=True, exist_ok=True)
+    trazidos = []
+    for nome in DO_ROBO:
+        try:
+            bruto = subprocess.run(
+                ["git", "show", f"origin/gh-pages:data/{nome}"],
+                cwd=repo, capture_output=True, check=True).stdout
+        except subprocess.CalledProcessError:
+            continue          # ainda nao publicado: o local segue valendo
+        (destino / nome).write_bytes(bruto)
+        trazidos.append(nome)
+
+    if trazidos:
+        print(f"  preservados do robo: {len(trazidos)} arquivos de preco e cotacao")
+
+
+def main(repo: Path, dry: bool, forcar_dados: bool = False) -> None:
     web = repo / "web"
     conferir(web)
 
@@ -104,6 +163,7 @@ def main(repo: Path, dry: bool) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         stage = Path(tmp) / "site"
         shutil.copytree(web, stage)
+        preservar_do_robo(repo, stage, forcar_dados)
 
         # Carimba a versao do service worker com o commit.
         #
@@ -153,5 +213,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", default=Path(__file__).resolve().parent.parent, type=Path)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--forcar-dados", action="store_true",
+                    help="publica o web/data local por cima do que o robo publicou")
     a = ap.parse_args()
-    main(a.repo, a.dry_run)
+    main(a.repo, a.dry_run, a.forcar_dados)
