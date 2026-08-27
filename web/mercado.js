@@ -79,9 +79,21 @@ function ligaPokemon(nome) {
   return `https://www.ligapokemon.com.br/?view=cards/card&card=${encodeURIComponent(nome)}`;
 }
 
+/* `afiliado` pergunta ao ID, nao e uma constante.
+ *
+ * `rel="sponsored"` e uma AFIRMACAO sobre o link: diz ao navegador e aos
+ * buscadores que ali existe relacao comercial. Enquanto os IDs estao vazios
+ * os dois links sao busca publica, sem relacao nenhuma, e declarar
+ * patrocinio seria descrever errado o proprio produto.
+ *
+ * Amarrando a marcacao ao ID, ela passa a acompanhar a realidade sozinha: no
+ * dia em que o Yan preencher `AFILIADO`, o `sponsored` aparece junto, sem
+ * ninguem precisar lembrar de mexer aqui. */
 const LOJAS = [
-  { nome: "Mercado Livre", monta: (q) => mercadoLivre(q), afiliado: true },
-  { nome: "Shopee", monta: (q) => shopee(q), afiliado: true },
+  { nome: "Mercado Livre", monta: (q) => mercadoLivre(q),
+    afiliado: () => Boolean(AFILIADO.mercadolivre) },
+  { nome: "Shopee", monta: (q) => shopee(q),
+    afiliado: () => Boolean(AFILIADO.shopee) },
 ];
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
@@ -93,8 +105,8 @@ export function blocoHtml(nome, set, numero) {
   const temAfiliado = Boolean(AFILIADO.mercadolivre || AFILIADO.shopee);
 
   const botoes = LOJAS.map((l) => `<a class="mkt-loja" target="_blank"
-      rel="noopener nofollow sponsored" href="${esc(l.monta(q))}">
-      ${esc(l.nome)}</a>`).join("");
+      rel="noopener nofollow${l.afiliado() ? " sponsored" : ""}"
+      href="${esc(l.monta(q))}">${esc(l.nome)}</a>`).join("");
 
   return `<section class="ficha-bloco">
     <h3>Comprar ou vender</h3>
@@ -106,9 +118,13 @@ export function blocoHtml(nome, set, numero) {
       <a class="mkt-loja mkt-liga" target="_blank" rel="noopener"
          href="${esc(ligaPokemon(nome))}">Liga Pokémon</a>
     </div>
-    ${temAfiliado ? `<p class="mkt-aviso">Os dois primeiros são links de
-      afiliado: se você comprar por eles, este app ganha uma comissão da loja,
-      sem custo a mais para você. A Liga Pokémon entra sem comissão, porque é
-      onde o mercado brasileiro de fato negocia.</p>` : ""}
+    ${temAfiliado ? `<p class="mkt-aviso">${
+      LOJAS.filter((l) => l.afiliado()).map((l) => l.nome).join(" e ")
+      } ${LOJAS.filter((l) => l.afiliado()).length > 1 ? "são links" : "é link"}
+      de afiliado: se você comprar por ${
+        LOJAS.filter((l) => l.afiliado()).length > 1 ? "eles" : "ele"
+      }, este app ganha uma comissão da loja, sem custo a mais para você.
+      A Liga Pokémon entra sem comissão, porque é onde o mercado brasileiro
+      de fato negocia.</p>` : ""}
   </section>`;
 }
