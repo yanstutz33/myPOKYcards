@@ -8,6 +8,7 @@
 
 import * as colecao from "./colecao.js";
 import * as grafico from "./grafico.js";
+import * as pwa from "./pwa.js";
 import { variantePreco } from "./colecao.js";
 
 const alvo = document.getElementById("colecao");
@@ -134,9 +135,13 @@ function guardadoHtml() {
   return `<div class="guardado ${risco ? "atencao" : ""}">
     <p>${linhaLocal}</p>
     <p>${linhaBackup}</p>
-    ${e.instalado ? "" : `<p class="guardado-dica">Instalar o app na tela de
-      início evita o apagamento automático — no iPhone, botão de compartilhar
-      e <em>Adicionar à Tela de Início</em>.</p>`}
+    ${e.instalado ? "" : pwa.podeInstalar()
+      ? `<p class="guardado-dica">Instalar o app evita o apagamento
+         automático.</p>
+         <button id="instalar" class="primary">Instalar o app</button>`
+      : `<p class="guardado-dica">Instalar o app na tela de início evita o
+         apagamento automático — no iPhone, botão de compartilhar e
+         <em>Adicionar à Tela de Início</em>.</p>`}
   </div>`;
 }
 
@@ -274,7 +279,15 @@ function exportar() {
   ondeEstamos();
 }
 
-alvo.addEventListener("click", (ev) => {
+alvo.addEventListener("click", async (ev) => {
+  if (ev.target.id === "instalar") {
+    // `instalar()` devolve null quando o convite ja foi consumido — o botao
+    // some junto, entao isto so acontece se dois cliques correrem juntos.
+    const r = await pwa.instalar();
+    if (r !== null) ondeEstamos();
+    return;
+  }
+
   const b = ev.target.closest("button[data-acao]");
   if (!b) return;
   const n = colecao.adicionar(b.dataset.card, b.dataset.var || null,
@@ -314,4 +327,8 @@ alvo.addEventListener("click", (ev) => {
   // visita nova — por isso o resultado dele NAO vira promessa na tela, so
   // muda a frase que ela mostra.
   colecao.pedirPersistencia().then(ondeEstamos);
+  // O navegador decide quando oferecer a instalacao, e costuma ser depois da
+  // pagina pronta. Sem redesenhar, o botao so apareceria na proxima visita.
+  window.addEventListener("beforeinstallprompt", () => setTimeout(ondeEstamos, 0));
+  window.addEventListener("appinstalled", ondeEstamos);
 })();

@@ -23,3 +23,47 @@ if ("serviceWorker" in navigator && !local && !desligado) {
     .catch(() => {});
   if (window.caches) caches.keys().then((ns) => ns.forEach((n) => caches.delete(n)));
 }
+
+
+/* ------------------------------------------------------------------ instalar
+ *
+ * Instalar deixou de ser conveniencia quando a colecao passou a viver no
+ * `localStorage`: o Safari do iPhone apaga o armazenamento de sites NAO
+ * INSTALADOS depois de sete dias sem uso. A tela da colecao ja dizia isso —
+ * e nao oferecia botao nenhum, so a instrucao.
+ *
+ * `beforeinstallprompt` existe no Chrome e no Edge. O navegador dispara
+ * quando julga o site instalavel, e o evento so pode ser usado UMA vez,
+ * dentro de um gesto do usuario. Por isso ele e guardado, nao consumido na
+ * hora.
+ *
+ * No iPhone o evento nao existe e nao ha API de instalacao. La a unica saida
+ * e a instrucao escrita, que a caixa da colecao ja mostra. Fingir um botao
+ * que nao instala nada seria pior que a instrucao.
+ */
+let convite = null;
+
+window.addEventListener("beforeinstallprompt", (ev) => {
+  ev.preventDefault();          // sem isso o Chrome mostra a barra dele
+  convite = ev;
+  document.documentElement.classList.add("pode-instalar");
+});
+
+window.addEventListener("appinstalled", () => {
+  convite = null;
+  document.documentElement.classList.remove("pode-instalar");
+});
+
+/** true se instalou, false se recusou, null se nao ha convite guardado. */
+export async function instalar() {
+  if (!convite) return null;
+  convite.prompt();
+  const { outcome } = await convite.userChoice;
+  // O evento e de uso unico: guardar depois de usado deixaria um botao que
+  // nao faz nada na segunda vez.
+  convite = null;
+  document.documentElement.classList.remove("pode-instalar");
+  return outcome === "accepted";
+}
+
+export const podeInstalar = () => convite !== null;

@@ -385,6 +385,36 @@ navegador recusando gravar (modo privado, cota cheia), a tela redesenhava
 como se tivesse dado certo e o numero voltava ao anterior sem explicacao. O
 leitor ja avisava; esta tela, nao.
 
+## Botao de instalar — FEITO (26/08/2026)
+
+A caixa da colecao mandava instalar o app e nao oferecia botao nenhum. Agora
+`pwa.js` guarda o `beforeinstallprompt` e a tela oferece o botao quando o
+navegador considera o site instalavel.
+
+No iPhone esse evento nao existe e nao ha API de instalacao — la fica a
+instrucao escrita, que e o unico caminho real. Um botao que nao instala nada
+seria pior que a instrucao.
+
+Verificado no navegador com evento sintetico: sem convite mostra a
+instrucao; com convite o botao aparece e o texto encurta; clicado, o
+`prompt()` e chamado de verdade e o convite e consumido (o evento e de uso
+unico — guardar depois de usado deixaria um botao morto).
+
+Confirmado no teste, e eu estava supondo: `pwa.js` importado pela tela e a
+MESMA instancia do carregado pelo `<script type="module">`. E isso que faz o
+convite ser compartilhado entre os dois.
+
+## Arte: nada novo em 26/08/2026
+
+Sondei antes de gastar 90 minutos numa reindexacao:
+
+- TCGdex sem commit desde 21/08 (conferido pela API, nao pelo clone)
+- M6 + M-P: **0 de 245** com arte na CDN
+- amostra geral das 9.517 sem hash: **0 de 200**
+
+Nada a recuperar hoje. Repetir daqui a algumas semanas:
+`python pipeline/build_hash_index.py --retry-failed`
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco
