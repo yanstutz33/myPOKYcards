@@ -1099,6 +1099,7 @@ const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited"
  * cada leitura: escolher "4×" e ver voltar para "1×" no quadro seguinte
  * seria pior que não ter.
  */
+let pediuPersistencia = false;
 let multiplicador = 1;
 const MULT_MAX = 20;
 
@@ -1777,6 +1778,11 @@ els.results.addEventListener("click", (ev) => {
     btn.textContent = "sem espaço no navegador";
     return;
   }
+  // Guardou algo: agora ha o que perder. Este e o momento certo de pedir
+  // armazenamento persistente — na abertura seria pedir por nada, e o
+  // navegador pondera engajamento na hora de conceder.
+  pediuPersistencia ||= (colecao.pedirPersistencia(), true);
+
   // Congela ao guardar: sem isso o próximo quadro reescreve o painel e o
   // retorno visual some antes de ser lido.
   som.somGuardou();

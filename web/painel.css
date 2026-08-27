@@ -215,3 +215,36 @@
   color: var(--ink-soft);
   line-height: 1.5;
 }
+
+/* ==================================================== onde a coleção mora
+   Diz a verdade sobre um risco que não dá para eliminar sem servidor: o
+   navegador pode apagar o `localStorage`, e o Safari do iPhone apaga o de
+   sites não instalados depois de sete dias sem uso.
+
+   `.atencao` só entra quando o risco é real — não persistido E não
+   instalado. Caixa amarela permanente vira parte do cenário e a pessoa para
+   de ler justamente antes do dia em que ela importaria. */
+.guardado {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ground) 92%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.guardado p {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.guardado.atencao {
+  border-color: color-mix(in srgb, #E0A82E 55%, var(--line));
+  background: color-mix(in srgb, #E0A82E 8%, var(--ground));
+}
+
+.guardado-dica { opacity: 0.85; }

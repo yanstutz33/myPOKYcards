@@ -329,6 +329,62 @@ Um achado do teste em 375px: o grafico escrevia "US$ 239.37" com ponto e o
 total logo acima "US$ 243,20" com virgula, na mesma tela. Unificado em
 pt-BR — menos as coordenadas do SVG, onde o ponto e sintaxe.
 
+## Nao perder a colecao — FEITA (26/08/2026)
+
+O dado mais valioso do app nao e o indice de 32 mil cartas: esse eu
+reconstruo. E a colecao, montada carta por carta, que nao existe em lugar
+nenhum alem do `localStorage` — que o navegador pode apagar.
+
+Nao e risco remoto. **O Safari do iPhone apaga o armazenamento de sites NAO
+INSTALADOS depois de sete dias sem uso.** Quem escaneia um lote, guarda
+trinta cartas e so volta no mes seguinte perde tudo, sem aviso e sem erro.
+
+### Tres camadas, em ordem de quanto se pode confiar nelas
+
+**1. Pedir persistencia.** `navigator.storage.persist()`, chamado quando a
+pessoa guarda a primeira carta — na abertura seria pedir por nada, e o
+navegador pondera engajamento ao conceder.
+
+MEDIDO: num navegador real, o pedido voltou **negado**. O navegador decide
+por heuristica. Por isso o resultado dele nao vira promessa na tela: so muda
+a frase que ela mostra.
+
+**2. Instalar o app.** E o que mais muda no iPhone — site na tela de inicio
+nao sofre o despejo. A tela sugere isso quando detecta que nao esta
+instalado.
+
+**3. Exportar.** A unica que nao depende do navegador.
+
+### A caixa diz a verdade, inclusive quando a verdade e "nao sei"
+
+`persistente` tem TRES estados e a diferenca aparece no texto: `true` (o
+navegador prometeu), `false` (pode apagar) e `null` (este navegador nao
+informa). Afirmar "sua colecao esta segura" com base num `persist()`
+concedido por heuristica seria promessa que nao posso cumprir — e a pessoa
+so descobriria no dia em que a colecao sumisse.
+
+O amarelo so entra quando o risco e real: nao persistido E nao instalado.
+Caixa de alerta permanente vira parte do cenario, e a pessoa para de ler
+justamente antes do dia em que ela importaria.
+
+### A digital, e por que nao contagem
+
+O lembrete de exportar precisa saber se algo mudou desde a ultima
+exportacao. Contar cartas deixaria passar troca de mesma soma — vender duas
+e comprar duas apareceria como "nada mudou". FNV-1a sobre as entradas
+ordenadas nao erra.
+
+Verificado no navegador, cinco transicoes: nunca exportada -> exportada ->
+carta nova (mudou) -> desfeita (voltou a nao-mudou) -> **troca de mesma
+quantidade total (mudou)**. O quinto caso e o que uma contagem perderia.
+
+### Um defeito achado no caminho
+
+Os botoes +/- da tela da colecao ignoravam o retorno de `adicionar()`. Com o
+navegador recusando gravar (modo privado, cota cheia), a tela redesenhava
+como se tivesse dado certo e o numero voltava ao anterior sem explicacao. O
+leitor ja avisava; esta tela, nao.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco

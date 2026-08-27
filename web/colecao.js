@@ -266,3 +266,106 @@ export function variacao(porDia) {
   }
   return Object.keys(fora).length ? fora : null;
 }
+
+/* ==========================================================================
+   Não perder a coleção
+
+   O dado mais valioso deste app não é o índice de 32 mil cartas — esse eu
+   reconstruo. É a coleção, que a pessoa montou carta por carta e não existe
+   em nenhum outro lugar. E ela mora no `localStorage`, que o navegador pode
+   apagar.
+
+   Não é hipótese remota. O Safari do iPhone apaga o armazenamento de sites
+   NÃO INSTALADOS depois de sete dias sem uso. Quem escaneia um lote, guarda
+   trinta cartas e só volta no mês seguinte perde tudo, sem aviso e sem erro.
+
+   Três camadas, em ordem de quanto se pode confiar nelas
+   ------------------------------------------------------
+   1. PEDIR PERSISTÊNCIA. `navigator.storage.persist()` existe exatamente
+      para isto. Mas o navegador decide por heurística — engajamento, site
+      instalado, favorito — e MEDI: em 26/08/2026, num navegador real, o
+      pedido voltou negado. Vale pedir porque é grátis e num aparelho com uso
+      real costuma ser concedido; não vale prometer nada em cima disso.
+
+   2. INSTALAR O APP. É o que mais muda no iPhone: site instalado na tela de
+      início não sofre o despejo de sete dias.
+
+   3. EXPORTAR. A única que não depende de decisão do navegador. Por isso o
+      app precisa saber se há mudança desde a última exportação — lembrete
+      genérico vira ruído e a pessoa para de ler.
+   ========================================================================== */
+
+const CHAVE_BACKUP = "mypokycards:backup:v1";
+
+/**
+ * Impressão digital da coleção.
+ *
+ * Comparar só a contagem de cartas deixaria passar troca de mesma soma —
+ * vender duas e comprar duas apareceria como "nada mudou". FNV-1a sobre as
+ * entradas ordenadas custa quase nada e não erra.
+ */
+function digital(dados) {
+  const partes = Object.keys(dados).sort()
+    .map((k) => `${k}:${dados[k].qtd}`).join(";");
+  let h = 0x811c9dc5;
+  for (let i = 0; i < partes.length; i++) {
+    h ^= partes.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return `${partes.length}:${h.toString(16)}`;
+}
+
+/** Pede ao navegador para não despejar o armazenamento. Nunca lança. */
+export async function pedirPersistencia() {
+  try {
+    if (!navigator.storage?.persist) return null;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return null;   // modo privado, contexto inseguro: segue sem
+  }
+}
+
+/**
+ * O que dá para dizer com honestidade sobre onde a coleção está.
+ *
+ * `persistente` tem TRÊS estados e a diferença importa na tela:
+ *   true  -> o navegador prometeu não apagar
+ *   false -> pode apagar a qualquer momento
+ *   null  -> este navegador não sabe responder; não afirmar nem uma coisa
+ *            nem outra é mais honesto que chutar
+ */
+export async function ondeEstamos() {
+  const dados = ler();
+  const backup = (() => {
+    try { return JSON.parse(localStorage.getItem(CHAVE_BACKUP) || "null"); }
+    catch { return null; }
+  })();
+
+  let persistente = null;
+  try {
+    if (navigator.storage?.persisted) persistente = await navigator.storage.persisted();
+  } catch { /* segue como desconhecido */ }
+
+  const agora = digital(dados);
+  return {
+    persistente,
+    instalado: matchMedia("(display-mode: standalone)").matches
+      || navigator.standalone === true,
+    entradas: Object.keys(dados).length,
+    exportadoEm: backup?.em || null,
+    // `null` quando nunca exportou: "nunca" e "mudou desde então" pedem
+    // frases diferentes na tela.
+    mudouDesdeExportacao: backup ? backup.digital !== agora : null,
+  };
+}
+
+/** Registra que a coleção foi exportada agora, com a digital do momento. */
+export function marcarExportado() {
+  try {
+    localStorage.setItem(CHAVE_BACKUP, JSON.stringify({
+      em: new Date().toISOString(),
+      digital: digital(ler()),
+    }));
+  } catch { /* sem espaço: a exportação em si já aconteceu */ }
+}

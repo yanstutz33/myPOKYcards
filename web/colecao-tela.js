@@ -86,6 +86,60 @@ function carteiraHtml(itens) {
   </section>`;
 }
 
+/**
+ * Onde a coleção está guardada — dito sem enfeite.
+ *
+ * O índice de 32 mil cartas eu reconstruo. A coleção, não: ela foi montada
+ * carta por carta e não existe em nenhum outro lugar. E mora no
+ * `localStorage`, que o navegador pode apagar — o Safari do iPhone apaga o
+ * de sites NÃO INSTALADOS depois de sete dias sem uso.
+ *
+ * Esta caixa diz a verdade sobre isso, incluindo quando a verdade é "não
+ * sei". Dizer "sua coleção está segura" com base num `persist()` que o
+ * navegador concede por heurística seria uma promessa que não posso cumprir
+ * — e a pessoa só descobriria no dia em que a coleção sumisse.
+ */
+let estadoGuardado = null;
+
+async function ondeEstamos() {
+  estadoGuardado = await colecao.ondeEstamos();
+  const caixa = document.getElementById("guardado");
+  if (caixa) caixa.innerHTML = guardadoHtml();
+}
+
+function guardadoHtml() {
+  const e = estadoGuardado;
+  if (!e || !e.entradas) return "";
+
+  const risco = e.persistente !== true && !e.instalado;
+
+  const linhaLocal = e.persistente === true
+    ? "O navegador prometeu não apagar este armazenamento."
+    : e.persistente === false
+      ? `Guardada <strong>só neste navegador</strong>, e ele pode apagar —
+         o Safari do iPhone apaga o de sites não instalados depois de sete
+         dias sem uso.`
+      : `Guardada <strong>só neste navegador</strong>. Este navegador não
+         informa se o armazenamento é permanente.`;
+
+  const linhaBackup = e.exportadoEm === null
+    ? `<strong>Nunca exportada.</strong> Se este navegador limpar os dados,
+       não há de onde voltar.`
+    : e.mudouDesdeExportacao
+      ? `Exportada em ${esc(e.exportadoEm.slice(0, 10))}, e
+         <strong>mudou desde então</strong>.`
+      : `Exportada em ${esc(e.exportadoEm.slice(0, 10))}, sem mudanças
+         depois disso.`;
+
+  return `<div class="guardado ${risco ? "atencao" : ""}">
+    <p>${linhaLocal}</p>
+    <p>${linhaBackup}</p>
+    ${e.instalado ? "" : `<p class="guardado-dica">Instalar o app na tela de
+      início evita o apagamento automático — no iPhone, botão de compartilhar
+      e <em>Adicionar à Tela de Início</em>.</p>`}
+  </div>`;
+}
+
 function desenhar() {
   const itens = colecao.itens();
 
@@ -156,6 +210,7 @@ function desenhar() {
         isso que não sabemos. O <strong>≈ R$</strong> é conversão pela PTAX
         do Banco Central${fx?.taxas?.USD?.em ? ` de ${esc(fx.taxas.USD.em.slice(0, 10))}` : ""}.
       </p>` : ""}
+      <div id="guardado">${guardadoHtml()}</div>
       ${semPreco ? `<p class="prog-nota">${N(semPreco)} carta(s) sem cotação
         não entram em nenhum total. Não valem zero — o valor é desconhecido.</p>` : ""}
       ${semVariante ? `<p class="prog-nota">${N(semVariante)} carta(s) têm preço
@@ -212,14 +267,28 @@ function exportar() {
   a.download = `colecao-mypokycards-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  // Registra a digital do momento. Sem isso o aviso de "não exportada" teria
+  // que ser genérico e permanente, e aviso permanente vira parte do cenário:
+  // a pessoa para de ler e ele deixa de servir para o dia em que importa.
+  colecao.marcarExportado();
+  ondeEstamos();
 }
 
 alvo.addEventListener("click", (ev) => {
   const b = ev.target.closest("button[data-acao]");
   if (!b) return;
-  colecao.adicionar(b.dataset.card, b.dataset.var || null,
+  const n = colecao.adicionar(b.dataset.card, b.dataset.var || null,
     b.dataset.acao === "mais" ? 1 : -1);
+  // `adicionar` devolve null quando o navegador recusa gravar (modo privado,
+  // cota cheia). O leitor ja avisava; esta tela redesenhava como se tivesse
+  // dado certo, e o numero voltava ao anterior sem explicacao nenhuma.
+  if (n === null) {
+    b.textContent = "!";
+    b.title = "o navegador não deixou gravar";
+    return;
+  }
   desenhar();
+  ondeEstamos();
 });
 
 (async () => {
@@ -239,4 +308,10 @@ alvo.addEventListener("click", (ev) => {
     return;
   }
   desenhar();
+  ondeEstamos();
+  // Pedido feito uma vez por sessao, depois de a tela existir. O navegador
+  // decide por heuristica (engajamento, app instalado) e costuma negar em
+  // visita nova — por isso o resultado dele NAO vira promessa na tela, so
+  // muda a frase que ela mostra.
+  colecao.pedirPersistencia().then(ondeEstamos);
 })();
