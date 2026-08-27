@@ -277,6 +277,58 @@ de acerto do Tesseract sobre esses recortes.
 Para medir: servir o site e abrir `web/teste-ocr.html?n=40`. A bancada agora
 usa o codigo do modulo, entao o numero que ela imprimir vale para o app.
 
+## A colecao virou carteira — FEITA (26/08/2026)
+
+A colecao e o historico de preco eram dois modulos que se ignoravam. A tela
+mostrava o valor de HOJE enquanto o robo acumulava cotacao diaria desde
+15/08. Quem coleciona nao pergunta "quanto vale" — pergunta "esta subindo?".
+
+`colecao.valorPorDia()` + `colecao.variacao()` respondem isso, e
+`grafico.figura()` desenha. Hoje sao 11 dias e a serie cresce sozinha.
+
+### As tres decisoes que definem se o grafico e honesto
+
+**Nao soma moedas.** Mesma regra do total. Um numero unico em real pareceria
+valor de venda no Brasil, que e o que nao sabemos.
+
+**Buraco nao e queda.** Dia sem cotacao repete o ultimo valor conhecido,
+nunca conta zero. Medido: 96,4% das series sao completas na janela, media de
+0,26 dia faltando — quase nunca entra em acao, mas quando entra e a
+diferenca entre um grafico e uma mentira.
+
+**Nao preenche para tras.** Antes da primeira cotacao a carta nao entra.
+Repetir o primeiro valor desenharia uma reta que se le como "nao mexeu"
+quando o certo e "nao sei".
+
+**A porcentagem so aparece com a MESMA cesta nas duas pontas.** Carta que
+entrou na cotacao no meio da janela faria a carteira "subir" sem nenhuma
+carta ter ficado mais cara. Testado: cesta que muda devolve `null`, e a tela
+diz por que nao ha porcentagem.
+
+### A consistencia que ninguem perdoa
+
+O ultimo ponto do grafico tem que ser o total exibido logo acima. Dois
+numeros diferentes para a mesma coisa na mesma tela se leem como app
+quebrado — com razao.
+
+`mercadoDoItem()` centraliza a escolha de mercado para as duas contas
+passarem por ela. Verificado no navegador com 12 cartas reais: diferenca
+**zero**, 11 dias, cesta de 24 cartas, +1,60%.
+
+Isso depende de `prices.json` e `historico.json` sairem da mesma execucao do
+robo. Era suposicao ate eu medir: **10.118 de 10.118 mercados** batendo em
+producao. Virou invariante (38 no total), testado por mutacao.
+
+### O que foi verificado, e como
+
+No navegador de verdade, com o app rodando: render, estilo do titulo,
+ausencia de rolagem horizontal, largura em 375px, e a conferencia
+grafico-x-total. A ficha tambem, porque `grafico.js` e compartilhado.
+
+Um achado do teste em 375px: o grafico escrevia "US$ 239.37" com ponto e o
+total logo acima "US$ 243,20" com virgula, na mesma tela. Unificado em
+pt-BR — menos as coordenadas do SVG, onde o ponto e sintaxe.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco

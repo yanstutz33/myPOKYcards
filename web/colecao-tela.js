@@ -7,6 +7,7 @@
  */
 
 import * as colecao from "./colecao.js";
+import * as grafico from "./grafico.js";
 import { variantePreco } from "./colecao.js";
 
 const alvo = document.getElementById("colecao");
@@ -18,6 +19,7 @@ const N = (v) => Number(v || 0).toLocaleString("pt-BR");
 let catalogo = null;
 let precos = {};
 let fx = null;
+let historico = null;
 
 function fmt(valor, moeda) {
   const s = SIMBOLO[moeda] || moeda + " ";
@@ -31,6 +33,57 @@ function emReal(valor, moeda) {
   const v = valor * t.taxa;
   return `<span class="brl">≈ R$ ${v.toLocaleString("pt-BR",
     { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`;
+}
+
+/**
+ * A carteira ao longo do tempo.
+ *
+ * Ate 26/08/2026 esta tela mostrava so o valor de HOJE. O robo cotava todo
+ * dia desde 15/08 e essa serie ja estava publicada — a colecao e o historico
+ * eram dois modulos que se ignoravam.
+ *
+ * E a pergunta que quem coleciona faz nao e "quanto vale"; e "esta subindo?".
+ *
+ * Um grafico por moeda, nunca somados. Mesma regra do total acima, e pelo
+ * mesmo motivo: um numero unico em real pareceria valor de venda no Brasil.
+ *
+ * A porcentagem so aparece quando a MESMA cesta sustenta as duas pontas
+ * (ver `colecao.variacao`). Carta que entrou na cotacao no meio da janela
+ * faria a carteira "subir" sem nenhuma carta ter ficado mais cara.
+ */
+function carteiraHtml(itens) {
+  const porDia = colecao.valorPorDia(itens, precos, historico);
+  if (!porDia) return "";
+
+  const varia = colecao.variacao(porDia);
+  const graficos = Object.entries(porDia.moedas).map(([moeda, valores]) =>
+    grafico.figura({
+      dias: porDia.dias,
+      valores,
+      moeda,
+      titulo: `Sua coleção em ${moeda}`,
+      // `undefined` deixaria a figura calcular da propria linha, ignorando a
+      // regra da cesta. Passar explicitamente null esconde a porcentagem.
+      variacao: varia?.[moeda]?.pct ?? null,
+      nota: `${porDia.dias.length} dias`,
+    })).filter(Boolean).join("");
+
+  if (!graficos) return "";
+
+  const n = porDia.dias.length;
+  return `<section class="carteira">
+    <h2>Sua coleção ao longo do tempo</h2>
+    ${graficos}
+    <p class="carteira-nota">${
+      varia
+        ? `Comparando o mesmo conjunto de <strong>${N(porDia.cartas[0])} cartas</strong>
+           entre ${esc(porDia.dias[0])} e ${esc(porDia.dias[n - 1])}.`
+        : `Sem porcentagem: o número de cartas cotadas mudou dentro da janela,
+           então as duas pontas não são comparáveis.`}
+      ${n < 14 ? " São poucos dias de coleta — dá para ver o que mudou, não tendência."
+               : ""}
+      Dia sem cotação repete o último valor conhecido; nunca conta como zero.</p>
+  </section>`;
 }
 
 function desenhar() {
@@ -54,6 +107,8 @@ function desenhar() {
     `<div class="kpi"><small>Sem cotação</small><b>${N(semPreco)}</b>
       <em>${semPreco ? "não entram em nenhum total" : "todas cotadas"}</em></div>`,
   ].join("");
+
+  const carteira = carteiraHtml(itens);
 
   // Ordena por valor decrescente; o que não tem preço vai para o fim, não
   // para o começo com valor zero.
@@ -108,6 +163,7 @@ function desenhar() {
         variante seria dizer que um reverse holo vale o mesmo que o normal —
         então também ficam de fora.</p>` : ""}
     </section>
+    ${carteira}
 
     <section class="bloco">
       <h2>Cartas</h2>
@@ -173,6 +229,10 @@ alvo.addEventListener("click", (ev) => {
       fetch("data/prices.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
       fetch("data/fx.json").then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]);
+    // O historico e o maior arquivo dos tres e a tela funciona sem ele.
+    // Carregado DEPOIS e sem travar: quem abre a colecao quer ver as cartas,
+    // e o grafico entra quando chegar.
+    grafico.carregar().then((h) => { historico = h; desenhar(); });
   } catch (e) {
     alvo.innerHTML = `<div class="nodata"><b>Não foi possível carregar o catálogo.</b>
       <br>${esc(e.message)}</div>`;

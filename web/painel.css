@@ -177,3 +177,41 @@
 /* Dois links no topo: precisam caber lado a lado em tela de 375px. */
 .painel-top { align-items: center; }
 .painel-top .ir-scan + .ir-scan { margin-left: 0.5rem; }
+
+/* ================================================= a carteira ao longo do tempo
+   A coleção e o histórico de preço eram dois módulos que se ignoravam: a tela
+   mostrava o valor de HOJE enquanto o robô acumulava cotação diária desde
+   15/08/2026. Quem coleciona não pergunta "quanto vale" — pergunta "está
+   subindo?".
+
+   Herda `.gr` do pokedex.css, que esta página já carrega. Escrever um estilo
+   próprio para o gráfico faria a carteira e a ficha divergirem visualmente
+   sem nenhum motivo — são a mesma coisa medindo escopos diferentes. */
+.carteira {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+}
+
+/* Mesmo título das outras seções desta tela. Um h2 com corpo e caixa
+   próprios anunciaria "isto veio de outro lugar", que é justamente o oposto
+   do ponto: a carteira é parte da coleção, não um enxerto. */
+.carteira > h2 {
+  margin: 0;
+  font-family: var(--font-data);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.carteira-nota {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}

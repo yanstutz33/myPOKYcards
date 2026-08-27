@@ -34,6 +34,18 @@
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
+/* Numero em portugues.
+ *
+ * `toFixed` escreve "239.37". O resto do app usa `toLocaleString("pt-BR")` e
+ * escreve "239,37". Enquanto o grafico morava so na ficha isso passava; na
+ * tela da colecao ele ficou logo abaixo do total da carteira, e a mesma tela
+ * passou a mostrar as duas notacoes uma sobre a outra.
+ *
+ * NAO vale para as coordenadas do SVG: `d="M12,5"` com virgula decimal vira
+ * caminho invalido. La o ponto e sintaxe, nao formatacao. */
+const num = (v, casas = 2) => Number(v).toLocaleString("pt-BR",
+  { minimumFractionDigits: casas, maximumFractionDigits: casas });
+
 let dados = null;
 let carregando = null;
 
@@ -80,7 +92,23 @@ function caminho(pontos, escalaX, escalaY) {
  * real comprimiria os trinta dias recentes num canto e daria ao passado
  * grosseiro o espaço que ele não merece.
  */
-function umGrafico(chave, valores, dias, moeda) {
+/**
+ * Uma serie desenhada, pronta para a pagina.
+ *
+ * Generica de proposito: serve tanto para o preco de UMA carta na ficha
+ * quanto para a carteira inteira na tela da colecao. Escrever um segundo
+ * grafico para a colecao repetiria as tres regras que fazem este ser honesto
+ * — nao ligar menos de tres pontos, nao emendar buraco, nao misturar moeda —
+ * e a copia inevitavelmente divergiria, como ja aconteceu com as geometrias
+ * do OCR na bancada.
+ *
+ * `variacao` aceita tres estados, e a diferenca importa:
+ *   undefined -> calcula da propria serie (primeiro ponto ate o ultimo)
+ *   null      -> NAO mostra porcentagem; quem chamou sabe que nao da para
+ *                comparar, e numero errado e pior que numero ausente
+ *   numero    -> mostra este, calculado por quem chamou sob as regras dele
+ */
+export function figura({ dias, valores, moeda, titulo, variacao, nota }) {
   const L = 240, A = 64, pad = 4;
   const presentes = valores.filter((v) => v !== null && v !== undefined);
   if (presentes.length < 2) return "";
@@ -98,36 +126,50 @@ function umGrafico(chave, valores, dias, moeda) {
         stroke="var(--tipo, #2C6FC9)" stroke-width="2"
         stroke-linejoin="round" stroke-linecap="round"/>`).join("");
 
-  // Ponto solto — trecho de um dia só entre buracos — vira círculo. Sem isso
-  // ele simplesmente não apareceria, e o dia medido some da tela.
+  // Ponto solto — trecho de um dia so entre buracos — vira circulo. Sem isso
+  // ele simplesmente nao apareceria, e o dia medido some da tela.
   const soltos = partes
     .filter((p) => p.length === 1)
     .map(([[i, v]]) => `<circle cx="${escalaX(i).toFixed(1)}" cy="${escalaY(v).toFixed(1)}"
         r="2.5" fill="var(--tipo, #2C6FC9)"/>`).join("");
 
-  const ultimo = valores.findLast?.((v) => v !== null && v !== undefined)
-    ?? presentes[presentes.length - 1];
-  const primeiro = presentes[0];
-  const varia = primeiro ? ((ultimo - primeiro) / primeiro) * 100 : 0;
+  let varia = variacao;
+  if (varia === undefined) {
+    const ultimo = valores.findLast?.((v) => v !== null && v !== undefined)
+      ?? presentes[presentes.length - 1];
+    const primeiro = presentes[0];
+    varia = primeiro ? ((ultimo - primeiro) / primeiro) * 100 : 0;
+  }
   const s = SIMBOLO[moeda] || moeda;
-  const [variante, fonte] = chave.split("|");
 
   return `<figure class="gr">
     <figcaption class="gr-topo">
-      <span class="gr-quem">${esc(variante)} · ${esc(fonte)}</span>
-      <span class="gr-var ${varia >= 0 ? "sobe" : "cai"}">${
-        varia >= 0 ? "+" : ""}${varia.toFixed(1)}%</span>
+      <span class="gr-quem">${esc(titulo)}</span>
+      ${varia === null ? "" : `<span class="gr-var ${varia >= 0 ? "sobe" : "cai"}">${
+        varia >= 0 ? "+" : ""}${num(varia, 1)}%</span>`}
     </figcaption>
     <svg viewBox="0 0 ${L} ${A}" class="gr-svg" role="img"
-         aria-label="Preço de ${esc(variante)} em ${esc(fonte)} ao longo de ${dias.length} dias">
+         aria-label="${esc(titulo)} ao longo de ${dias.length} dias">
       ${linhas}${soltos}
     </svg>
     <figcaption class="gr-pe">
-      <span>${s} ${min.toFixed(2)}</span>
-      <span class="gr-dias">${dias.length} dias</span>
-      <span>${s} ${max.toFixed(2)}</span>
+      <span>${s} ${num(min)}</span>
+      <span class="gr-dias">${esc(nota || `${dias.length} dias`)}</span>
+      <span>${s} ${num(max)}</span>
     </figcaption>
   </figure>`;
+}
+
+/**
+ * Um grafico por serie da ficha.
+ *
+ * `dia` no eixo horizontal e posicao, nao data: os pontos sao igualmente
+ * espacados mesmo quando o passado esta reduzido a semanal. Espacar por tempo
+ * real comprimiria os trinta dias recentes num canto.
+ */
+function umGrafico(chave, valores, dias, moeda) {
+  const [variante, fonte] = chave.split("|");
+  return figura({ dias, valores, moeda, titulo: `${variante} · ${fonte}` });
 }
 
 /**

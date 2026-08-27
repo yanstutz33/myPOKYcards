@@ -361,6 +361,66 @@ def testar_totais_impressos() -> None:
            f"divergem: {fora}")
 
 
+def testar_preco_e_serie_batem() -> None:
+    """O último ponto da série tem que ser o preço exibido.
+
+    A tela da coleção mostra o total de HOJE logo acima do gráfico da carteira
+    ao longo do tempo. Se o último ponto do gráfico não for exatamente esse
+    total, a pessoa vê dois números diferentes para a mesma coisa na mesma
+    tela — e lê isso como app quebrado, com razão.
+
+    Os dois arquivos vêm do mesmo passo do robô (`refresh_prices.py` gera
+    prices.json e `export_historico.py` a série, na mesma execução), então
+    hoje eles concordam: medido em 26/08/2026, 10.118 de 10.118 mercados numa
+    amostra de 3.000 cartas, sem uma única divergência.
+
+    Mas isso era suposição até eu medir, e virou dependência quando a carteira
+    passou a existir. Se algum dia um dos dois passos falhar sozinho, o
+    sintoma seria mudo: o gráfico simplesmente terminaria num valor diferente
+    do total logo acima.
+    """
+    print()
+    print("PREÇO x SÉRIE")
+    dados = RAIZ / "web" / "data"
+    fp, fh = dados / "prices.json", dados / "historico.json"
+    if not (fp.exists() and fh.exists()):
+        print("  (prices.json ou historico.json ainda não exportados)")
+        return
+
+    precos = json.loads(fp.read_text(encoding="utf-8"))
+    hist = json.loads(fh.read_text(encoding="utf-8"))
+    series = hist.get("series") or {}
+
+    batem = diferem = 0
+    exemplos = []
+    for card_id in list(precos)[:4000]:
+        doCard = series.get(card_id)
+        if not doCard:
+            continue
+        for m in precos[card_id]:
+            serie = doCard.get(f"{m['v']}|{m['f']}")
+            if not serie:
+                continue
+            ultimo = next((x for x in reversed(serie) if x is not None), None)
+            if ultimo is None:
+                continue
+            if abs(ultimo - m["ref"]) < 1e-6:
+                batem += 1
+            else:
+                diferem += 1
+                if len(exemplos) < 3:
+                    exemplos.append(f"{card_id} {m['v']}|{m['f']}: "
+                                    f"preço={m['ref']} série={ultimo}")
+
+    total = batem + diferem
+    checar(total > 1000, f"{total} mercados conferidos entre preço e série",
+           "amostra pequena demais para valer como checagem")
+    checar(diferem == 0,
+           "o último ponto da série é o preço exibido",
+           f"{diferem} divergem — os dois arquivos saíram de execuções "
+           f"diferentes. {'; '.join(exemplos)}")
+
+
 def testar_precache() -> None:
     """Tudo que o sw promete guardar precisa existir e ser servido.
 
@@ -452,6 +512,7 @@ if __name__ == "__main__":
     testar_traducao_variante()
     testar_formato_do_indice()
     testar_totais_impressos()
+    testar_preco_e_serie_batem()
     testar_precache()
     testar_publicacao_dos_dados()
     testar_javascript()

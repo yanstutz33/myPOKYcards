@@ -161,3 +161,108 @@ export function valor(itensLista, precos) {
   }
   return { totais, semPreco, comPreco, semVariante };
 }
+
+/**
+ * Qual mercado responde pelo item — o MESMO que `valor()` usa.
+ *
+ * Isto não é detalhe. Se a carteira ao longo do tempo escolhesse outro
+ * mercado, o último ponto do gráfico não bateria com o total exibido logo
+ * acima dele, e a pessoa leria isso como app quebrado — corretamente, aliás.
+ * A escolha mora aqui e as duas contas passam por ela.
+ */
+function mercadoDoItem(it, precos) {
+  const mercados = precos[it.card_id];
+  if (!mercados?.length) return null;
+  const alvo = variantePreco(it.variante);
+  const m = mercados.find((x) => x.v === alvo);
+  return m ? { chave: `${m.v}|${m.f}`, moeda: m.c } : null;
+}
+
+/**
+ * A coleção ao longo do tempo, por moeda.
+ *
+ * O robô cota todo dia desde 15/08/2026 e esse dado nunca chegou aqui: a
+ * tela mostrava o valor de HOJE e a pergunta que quem coleciona faz — "está
+ * subindo?" — ficava sem resposta, mesmo com a série no arquivo.
+ *
+ * Três decisões que definem se o gráfico é honesto
+ * ------------------------------------------------
+ * NÃO SOMA MOEDAS. Mesma regra de `valor()`. Um total único em real pareceria
+ * valor de venda no Brasil, que é exatamente o que não sabemos.
+ *
+ * BURACO NÃO É QUEDA. Dia sem cotação repete o último valor conhecido, nunca
+ * conta zero. Contar zero desenharia um despencar que não aconteceu — a carta
+ * continua na mão da pessoa, só não foi cotada naquele dia. Medido em
+ * 26/08/2026: 96,4% das séries são completas na janela e a média é de 0,26
+ * dia faltando, então isto quase nunca entra em ação — mas quando entra, é a
+ * diferença entre um gráfico e uma mentira.
+ *
+ * NÃO PREENCHE PARA TRÁS. Antes da primeira cotação a carta simplesmente não
+ * entra. Repetir o primeiro valor para o começo da janela desenharia uma
+ * linha reta que se lê como "não mexeu", quando o certo é "não sei".
+ *
+ * `cartas[i]` diz quantas entradas sustentam cada dia. Se esse número varia,
+ * os extremos não são comparáveis, e quem desenha precisa poder avisar.
+ */
+export function valorPorDia(itensLista, precos, historico) {
+  const dias = historico?.dias;
+  if (!Array.isArray(dias) || dias.length < 2) return null;
+
+  const moedas = {};
+  const cartas = new Array(dias.length).fill(0);
+  let comSerie = 0;
+
+  for (const it of itensLista) {
+    const escolha = mercadoDoItem(it, precos);
+    if (!escolha) continue;
+    const serie = historico.series?.[it.card_id]?.[escolha.chave];
+    if (!serie) continue;
+    comSerie++;
+
+    if (!moedas[escolha.moeda]) moedas[escolha.moeda] = new Array(dias.length).fill(null);
+    const linha = moedas[escolha.moeda];
+
+    let ultimo = null;
+    for (let i = 0; i < dias.length; i++) {
+      const v = serie[i];
+      if (v !== null && v !== undefined) ultimo = v;
+      if (ultimo === null) continue;      // ainda não cotada: não entra
+      linha[i] = (linha[i] || 0) + ultimo * it.qtd;
+      cartas[i] += it.qtd;
+    }
+  }
+
+  if (!comSerie) return null;
+  return { dias, moedas, cartas, entradas: comSerie };
+}
+
+/**
+ * Quanto mudou entre as duas pontas da janela.
+ *
+ * Só compara dias em que a MESMA quantidade de cartas sustenta o total. Uma
+ * carta que entrou na cotação no meio da janela faria o total subir sozinha,
+ * e isso apareceria como valorização — a carteira teria "subido" porque a
+ * fonte passou a cotar mais coisa, não porque alguma carta ficou mais cara.
+ *
+ * Devolve `null` quando não dá para comparar, e a tela então não mostra
+ * porcentagem nenhuma. Número errado é pior que número ausente: o primeiro
+ * orienta uma decisão de venda, o segundo só deixa a pessoa sem saber.
+ */
+export function variacao(porDia) {
+  if (!porDia) return null;
+  const { cartas } = porDia;
+  let a = 0;
+  while (a < cartas.length && cartas[a] === 0) a++;
+  const b = cartas.length - 1;
+  if (a >= b || cartas[a] !== cartas[b]) return null;
+
+  const fora = {};
+  for (const [moeda, linha] of Object.entries(porDia.moedas)) {
+    const de = linha[a];
+    const para = linha[b];
+    if (de === null || para === null || !de) continue;
+    fora[moeda] = { de, para, pct: ((para - de) / de) * 100,
+                    dias: b - a + 1 };
+  }
+  return Object.keys(fora).length ? fora : null;
+}
