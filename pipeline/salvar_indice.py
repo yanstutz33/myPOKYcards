@@ -54,6 +54,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -160,8 +161,40 @@ def salvar() -> None:
         print(f"  {nome:12} {d['linhas']}")
 
 
+# O repositorio e publico, e release publica se baixa por HTTPS simples.
+#
+# Isto importa mais do que parece: RESTAURAR nao pode exigir `gh auth login`.
+# Quem restaura e alguem chegando num clone limpo — outra maquina, um agente
+# de codigo, o Yan depois de formatar — e exigir autenticacao para BAIXAR o
+# que e publico transforma "10 segundos" em "descubra como autenticar
+# primeiro". SALVAR exige gh e deve exigir: aquilo escreve.
+BASE_PUBLICA = "https://github.com/{slug}/releases/download/{tag}/{arquivo}"
+
+
+def slug_do_repo() -> str:
+    """owner/repo, tirado do remoto. Cai no valor conhecido se nao houver."""
+    r = rodar(["git", "remote", "get-url", "origin"], cwd=RAIZ)
+    if r.returncode == 0 and r.stdout.strip():
+        u = r.stdout.strip().removesuffix(".git")
+        corte = u.split("github.com")[-1].strip(":/")
+        if corte.count("/") == 1:
+            return corte
+    return "yanstutz33/myPOKYcards"
+
+
+def baixar_publico(arquivo: str, destino) -> bool:
+    url = BASE_PUBLICA.format(slug=slug_do_repo(), tag=TAG, arquivo=arquivo)
+    req = urllib.request.Request(url, headers={"User-Agent": "myPOKYcards/0.1"})
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r, open(destino, "wb") as f:
+            shutil.copyfileobj(r, f)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print(f"  {arquivo}: {str(exc)[:80]}")
+        return False
+
+
 def restaurar(forcar: bool) -> None:
-    exigir_gh()
     presentes = [n for n in BANCOS if (DADOS / n).exists()]
     if presentes and not forcar:
         raise SystemExit(
@@ -170,9 +203,15 @@ def restaurar(forcar: bool) -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        r = rodar(["gh", "release", "download", TAG, "--dir", str(tmp)])
-        if r.returncode != 0:
-            raise SystemExit(f"nao consegui baixar:\n{r.stderr}")
+        falhou = [a for a in (MANIFESTO, *(f"{n}.gz" for n in BANCOS))
+                  if not baixar_publico(a, tmp / a)]
+        if falhou:
+            faltando = ", ".join(falhou)
+            onde = f"https://github.com/{slug_do_repo()}/releases/tag/{TAG}"
+            raise SystemExit(
+                f"nao consegui baixar: {faltando}"
+                + "\n"
+                + f"A release '{TAG}' existe? Confira em {onde}")
         m = json.loads((tmp / MANIFESTO).read_text(encoding="utf-8"))
         print(f"copia de {m['gerado_em']} (commit {m['commit']})")
 
@@ -200,12 +239,9 @@ def restaurar(forcar: bool) -> None:
 
 def conferir() -> None:
     """O que esta guardado ainda e o que esta aqui?"""
-    exigir_gh()
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        r = rodar(["gh", "release", "download", TAG, "--dir", str(tmp),
-                   "--pattern", MANIFESTO])
-        if r.returncode != 0:
+        if not baixar_publico(MANIFESTO, tmp / MANIFESTO):
             raise SystemExit(f"nao ha copia guardada ainda ({TAG}).")
         guardado = json.loads((tmp / MANIFESTO).read_text(encoding="utf-8"))
 

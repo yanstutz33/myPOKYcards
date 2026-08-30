@@ -9,6 +9,9 @@ offline depois do primeiro carregamento.
 Leitor pela câmera, busca por nome, ficha completa da carta, coleção com
 valor, e painel do estado do sistema. Instalável, funciona offline.
 
+> **Vai mexer no código?** Leia [`AGENTS.md`](AGENTS.md) primeiro. São 5
+> minutos e evitam refazer trabalho já medido e descartado.
+
 ## Estado atual
 
 **Fase 1 (fundação de dados) — concluída e validada.**
@@ -158,21 +161,34 @@ python pipeline/price_model.py swsh3-136
 
 ## Rodar
 
-Num clone novo — inclusive numa sessão pela nuvem ou pelo celular:
+Num clone novo — inclusive numa sessão pela nuvem, pelo celular, ou por um
+agente de código:
 
 ```bash
 python pipeline/bootstrap.py
 ```
 
-Isso monta o catálogo em ~2 min e busca as taxas de câmbio. Suficiente para
-mexer em código, consultar cartas e rodar testes. Os estágios caros ficam
-explícitos porque têm custo muito diferente:
+**~8 segundos, sem nenhuma credencial.** O índice vem da release pública
+(7 MB comprimidos) e o preço vem do site publicado, que o robô atualiza todo
+dia. O app abre completo: reconhece carta, mostra preço de hoje e desenha a
+série histórica.
+
+Depois:
+
+```bash
+python pipeline/servir.py --porta 8137
+```
 
 | estágio | tempo | comando |
 |---|---|---|
-| catálogo | ~2 min | `bootstrap.py` (padrão) |
-| preços | ~25 min | `bootstrap.py --precos` |
-| índice de imagens | **~2 h** | `bootstrap.py --tudo` |
+| índice + preço publicados | **~8 s** | `bootstrap.py` (padrão) |
+| coletar preço na fonte | ~25 min | `bootstrap.py --precos` |
+| construir o índice do zero | **~2 h** | `bootstrap.py --construir` |
+
+Construir do zero quase nunca é o que se quer, e não é só pelo tempo: a
+reconstrução depende de CDNs de terceiros que mudam, e **10.661 cartas já
+têm arte que sumiu da fonte**. O índice publicado é o registro do que existia
+quando foi montado — refazê-lo hoje daria um índice pior.
 
 Passo a passo, se preferir controlar cada etapa:
 
@@ -188,6 +204,12 @@ Use `--langs all` para manter todos os idiomas, ou uma lista própria.
 
 ```bash
 python pipeline/build_hash_index.py --workers 16
+```
+
+Ou, muito mais rápido e mais fiel, baixar o índice pronto:
+
+```bash
+python pipeline/salvar_indice.py --restaurar
 ```
 
 ```bash
