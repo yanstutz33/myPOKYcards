@@ -415,6 +415,42 @@ Sondei antes de gastar 90 minutos numa reindexacao:
 Nada a recuperar hoje. Repetir daqui a algumas semanas:
 `python pipeline/build_hash_index.py --retry-failed`
 
+## Entregar o projeto a outro agente — FEITO (26/08/2026)
+
+Pedido: exportar o projeto para o ChatGPT/Codex trabalhar em melhorias.
+
+Isso expos uma barreira que eu tinha deixado passar. Quem clonava recebia o
+codigo sem dado nenhum, e o README mandava construir o indice em **~2
+HORAS**. Conselho obsoleto desde que o indice virou release publica — e pior
+que obsoleto, porque construir do zero da um indice PIOR: 10.661 cartas ja
+tem arte que sumiu da fonte.
+
+### O que mudou
+
+**Sem credencial.** `--restaurar` e `--conferir` deixaram de usar `gh`. O
+repositorio e publico e release publica se baixa por HTTPS simples. Exigir
+`gh auth login` para BAIXAR o que e publico transformava "10 segundos" em
+"descubra como autenticar primeiro". `--salvar` continua exigindo, e deve:
+aquilo escreve.
+
+**`bootstrap.py` lidera com o caminho rapido** e tambem traz preco, cotacao
+e serie do site publicado — os MESMOS bytes que o site serve, em vez de 25
+min de coleta para chegar ao equivalente.
+
+Ordem que importa: o download do site vem DEPOIS do `export_web_index`,
+porque ele escreve `prices.json` do `prices.db` local — que num clone novo
+nao existe, e escreveria por cima do arquivo bom.
+
+**MEDIDO** num clone virgem do GitHub, com o `gh` deliberadamente quebrado
+(script que sai com 127): **3 a 8 segundos**, 31 invariantes passando, todos
+os JSON validos, o app servindo com 32.339 cartas e a serie inteira.
+
+**`AGENTS.md`**, que e o arquivo que o Codex le por convencao. Traz o minimo
+operacional, as regras que custaram uma sessao de depuracao cada, quem e
+dono de quais arquivos publicados, e os becos sem saida ja medidos — para o
+proximo nao refazer a reindexacao de 90 min que eu ja provei nao render nada
+hoje.
+
 ## O que está pendente e é decisão sua, não técnica
 
 1. **ID de afiliado** (Mercado Livre e Shopee, cadastro gratuito). O bloco
