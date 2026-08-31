@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-08-28T20:44:46+00:00",
+ "gerado_em": "2026-08-31T16:40:58+00:00",
  "catalogo": {
   "cartas": 41856,
   "sets": 564,
@@ -61,34 +61,27 @@
   ]
  },
  "precos": {
-  "linhas": 353450,
-  "cartas_com_preco": 20449,
+  "linhas": 189221,
+  "cartas_com_preco": 19350,
   "intl_alvo": 23639,
   "intl_consultadas": 23639,
   "por_kind": {
-   "derived": 36011,
-   "listing": 145184,
-   "sold": 172255
+   "derived": 7778,
+   "listing": 118987,
+   "sold": 62456
   },
   "por_fonte": {
-   "cardmarket": 19815,
-   "tcgplayer": 18791
+   "cardmarket": 4365,
+   "tcgplayer": 18798
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-08-28T20:44:37+00:00",
+  "ultima_coleta": "2026-08-31T16:40:48+00:00",
   "mais_caras": [
    {
     "card_id": "xy7-96",
     "nome": "Primal Kyogre EX",
     "set": "xy7",
     "valor": 9800.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-146",
-    "nome": "Charizard",
-    "set": "ecard3",
-    "valor": 6800.0,
     "moeda": "EUR"
    },
    {
@@ -134,31 +127,38 @@
     "moeda": "USD"
    },
    {
-    "card_id": "sm9-161",
-    "nome": "Magikarp & Wailord GX",
-    "set": "sm9",
-    "valor": 4200.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 4000.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "lc-3",
-    "nome": "Charizard",
-    "set": "lc",
-    "valor": 3850.0,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "sm9-170",
     "nome": "Latias & Latios GX",
     "set": "sm9",
-    "valor": 3624.48,
+    "valor": 3783.92,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "neo4-109",
+    "nome": "Shining Mewtwo",
+    "set": "neo4",
+    "valor": 3227.5,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex10-105",
+    "nome": "Lugia ex",
+    "set": "ex10",
+    "valor": 2500.0,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "xy7-98",
+    "nome": "M Rayquaza EX",
+    "set": "xy7",
+    "valor": 2457.22,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "bog-8",
+    "nome": "Rocket’s Mewtwo",
+    "set": "bog",
+    "valor": 2400.0,
     "moeda": "USD"
    }
   ]
