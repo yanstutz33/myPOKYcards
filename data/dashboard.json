@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-01T14:01:07+00:00",
+ "gerado_em": "2026-09-02T13:11:52+00:00",
  "catalogo": {
   "cartas": 41856,
   "sets": 564,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 352926,
+  "linhas": 352953,
   "cartas_com_preco": 20446,
   "intl_alvo": 23639,
   "intl_consultadas": 23639,
   "por_kind": {
    "derived": 36011,
-   "listing": 144666,
-   "sold": 172249
+   "listing": 144697,
+   "sold": 172245
   },
   "por_fonte": {
    "cardmarket": 19815,
    "tcgplayer": 18785
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-01T14:00:57+00:00",
+  "ultima_coleta": "2026-09-02T13:11:41+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
@@ -141,6 +141,13 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 4271.62,
+    "moeda": "USD"
+   },
+   {
     "card_id": "neo4-113",
     "nome": "Shining Tyranitar",
     "set": "neo4",
@@ -152,13 +159,6 @@
     "nome": "Magikarp & Wailord GX",
     "set": "sm9",
     "valor": 4200.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ru1-7",
-    "nome": "Pikachu",
-    "set": "ru1",
-    "valor": 4100.0,
     "moeda": "EUR"
    }
   ]
