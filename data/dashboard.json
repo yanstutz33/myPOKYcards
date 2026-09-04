@@ -1,11 +1,11 @@
 {
- "gerado_em": "2026-09-03T13:29:35+00:00",
+ "gerado_em": "2026-09-04T13:15:32+00:00",
  "catalogo": {
-  "cartas": 41856,
+  "cartas": 41858,
   "sets": 564,
   "cartas_por_regiao": {
    "asia": 18217,
-   "intl": 23639
+   "intl": 23641
   },
   "sets_por_regiao": {
    "asia": 343,
@@ -14,11 +14,11 @@
   "idiomas": [
    {
     "lang": "en",
-    "cartas": 23546
+    "cartas": 23548
    },
    {
     "lang": "pt",
-    "cartas": 14360
+    "cartas": 14362
    },
    {
     "lang": "ja",
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 352474,
-  "cartas_com_preco": 20418,
-  "intl_alvo": 23639,
-  "intl_consultadas": 23639,
+  "linhas": 352976,
+  "cartas_com_preco": 20447,
+  "intl_alvo": 23641,
+  "intl_consultadas": 23641,
   "por_kind": {
-   "derived": 35955,
-   "listing": 144496,
-   "sold": 172023
+   "derived": 36012,
+   "listing": 144718,
+   "sold": 172246
   },
   "por_fonte": {
-   "cardmarket": 19787,
-   "tcgplayer": 18757
+   "cardmarket": 19816,
+   "tcgplayer": 18783
   },
-  "falhas_coleta": 40,
-  "ultima_coleta": "2026-09-03T13:29:23+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-09-04T13:15:19+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
