@@ -1,8 +1,12 @@
 # myPOKYcards
 
-Leitor de cartas Pokémon pela câmera, com preço. Reconhece 41.694 cartas em
-14 ms no próprio aparelho, sem enviar foto para servidor nenhum, e funciona
-offline depois do primeiro carregamento.
+Leitor de cartas Pokémon pela câmera, com preço. Catálogo de **41.856
+cartas**, das quais **32.339 são reconhecíveis pela imagem** (96,9% das
+internacionais) — a diferença são cartas cuja arte não existe em fonte
+alguma, e a interface diz isso em vez de fingir.
+
+O reconhecimento leva 14 ms no próprio aparelho, sem enviar foto para
+servidor nenhum, e funciona offline depois do primeiro carregamento.
 
 **No ar:** https://yanstutz33.github.io/myPOKYcards/sobre.html
 
@@ -20,13 +24,20 @@ O catálogo roda offline, sem depender de API de terceiro:
 
 | métrica | valor |
 |---|---|
-| sets | 563 (221 internacionais + 342 asiáticos) |
-| cartas | 41.694 |
-| pares nome × idioma | 61.918 |
+| sets | 564 (221 internacionais + 343 asiáticos) |
+| cartas | 41.856 |
+| pares nome × idioma | 62.080 |
 | colisões de `set_id` tratadas | 21 |
 
-Escopo de idiomas: **EN, JA, KO, ZH, PT**. Espanhol, francês, alemão,
-italiano, tailandês e indonésio ficam fora por decisão de produto.
+Escopo de idiomas **para o nome exibido**: EN, JA, KO, ZH, PT. Espanhol,
+francês, alemão, italiano, tailandês e indonésio ficam fora por decisão de
+produto — ninguém aqui procura carta pelo nome em tailandês.
+
+Isso **não** vale para a arte. A ilustração é a mesma em todos os idiomas, e
+o indexador tenta sete por região justamente para alcançar carta que só foi
+publicada num deles: `SV3s`, `SV5s`, `SV7s`, `SV8s` e `SV9s` existem **só em
+indonésio**, e ignorá-los custava 752 cartas. Ver `FALLBACK_LANGS` em
+`pipeline/build_hash_index.py` — não reduza aquela lista ao escopo de nomes.
 
 | idioma | cartas |
 |---|---|
@@ -46,8 +57,8 @@ o índice inteiro são alguns MB e roda offline.
 
 | | |
 |---|---|
-| cartas com hash | 30.283 |
-| sem imagem no CDN | 11.411 |
+| cartas com hash | 32.339 |
+| sem arte em nenhuma das fontes | 9.517 |
 
 Autoteste contra o índice completo, amostra aleatória de 60 cartas × 7
 degradações que simulam foto de celular:
@@ -77,7 +88,7 @@ hash, não a fonte.
 A ambiguidade não é ruído a filtrar — é informação real: a mesma arte
 **existe** em várias impressões, com preços diferentes. Então o sistema
 para de adivinhar e apresenta o grupo. `pipeline/build_art_groups.py`
-pré-calcula 4.867 grupos cobrindo 10.737 cartas, e a tela lista as irmãs
+pré-calcula 5.158 grupos cobrindo 11.423 cartas, e a tela lista as irmãs
 com seus preços para o usuário escolher pelo número impresso.
 
 Distância de hash sozinha não agrupa: ela fundia 72 cartas distintas num
@@ -92,7 +103,7 @@ catálogo.
 
 **Fase 3 (tela de leitura) — funcional.**
 
-Busca em 30.283 cartas em **14 ms**, num Web Worker, sem rede. A tela mostra
+Busca em 32.339 cartas em **14 ms**, num Web Worker, sem rede. A tela mostra
 os três candidatos com confiança — nunca um resultado único, porque o dado
 não sustenta essa certeza.
 
@@ -186,8 +197,8 @@ python pipeline/servir.py --porta 8137
 | construir o índice do zero | **~2 h** | `bootstrap.py --construir` |
 
 Construir do zero quase nunca é o que se quer, e não é só pelo tempo: a
-reconstrução depende de CDNs de terceiros que mudam, e **10.661 cartas já
-têm arte que sumiu da fonte**. O índice publicado é o registro do que existia
+reconstrução depende de CDNs de terceiros que mudam, e **9.517 cartas já
+têm arte que sumiu das fontes**. O índice publicado é o registro do que existia
 quando foi montado — refazê-lo hoje daria um índice pior.
 
 Passo a passo, se preferir controlar cada etapa:
@@ -368,22 +379,30 @@ data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
 ```
 
-## Equipe de agentes
+## Definições de agente
 
-| agente | domínio |
+`.claude/agents/` tem doze definições de papel para subagentes do Claude
+Code. **Elas descrevem intenção, não estrutura do sistema** — e é fácil ler
+a lista como se fosse arquitetura, o que ela não é.
+
+O que tem código de verdade hoje:
+
+| papel | onde vive |
 |---|---|
-| `tcg-arquiteto` | fundação, ADRs, contratos entre serviços |
-| `tcg-ingestao` | pipeline de catálogo EN/PT-BR/JA |
-| `tcg-precos` | preço de cartas nos três mercados |
-| `tcg-vision` | reconhecimento pela câmera |
-| `tcg-radar-promo` | bot de promoções de selados 24/7 |
-| `tcg-cupons` | cupons e ofertas: Shopee, AliExpress, ML, TikTok Shop, Temu |
-| `tcg-geo` | onde vender perto (km / mesmo estado) |
-| `tcg-demanda` | liquidez e sinal de interesse |
-| `tcg-especialista-cartas` | raridade, variante, EN×PT-BR×JA, falsificação |
-| `tcg-frontend` | LP, dashboard/HUD, tela de scan |
-| `tcg-compliance` | licença, ToS, privacidade, PI |
-| `tcg-qa` | qualidade de dados e testes |
+| `tcg-ingestao` | `pipeline/ingest_tcgdex.py` |
+| `tcg-precos` | `pipeline/fetch_prices.py`, `price_model.py` |
+| `tcg-vision` | `build_hash_index.py`, `web/detectar.js`, `matcher.worker.js`, `ocr.js` |
+| `tcg-frontend` | `web/` |
+| `tcg-qa` | `tests/` |
+
+O que **não existe em código nenhum**: `tcg-radar-promo` (bot de promoções),
+`tcg-cupons`, `tcg-geo` (onde vender perto) e `tcg-demanda` (liquidez). Não
+procure: `radar`, `cupom` e `liquidez` não aparecem em um só arquivo de
+`web/`, `pipeline/` ou `tests/`. São ideias registradas, não recursos.
+
+`tcg-arquiteto`, `tcg-compliance` e `tcg-especialista-cartas` orientaram
+decisões que estão documentadas nos comentários e no `PROXIMOS-PASSOS.md`,
+mas não têm módulo próprio.
 
 ## Licença dos dados
 

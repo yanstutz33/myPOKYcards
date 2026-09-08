@@ -1,8 +1,26 @@
-# Onde parei, e por onde continuar
+# Diário de decisões
 
-Escrito em 18/08/2026, no fim de uma sessão. Serve para retomar sem
-reconstruir contexto: o histórico do `git log` tem o porquê de cada decisão,
-este arquivo tem só o que ainda não foi feito.
+**Leia isto antes de confiar em qualquer número abaixo.**
+
+Este arquivo é um diário, e está em ordem **cronológica: o mais antigo vem
+primeiro**. As entradas guardam os números que eram verdade no dia em que
+foram escritas, e é assim que devem ficar — corrigi-los apagaria o registro
+de como cada conclusão foi alcançada, que é o que dá valor ao arquivo.
+
+Consequência: os números do começo estão desatualizados **de propósito**. A
+primeira entrada, de 18/08/2026, fala em "11.411 cartas sem imagem"; hoje
+são 9.517, e o caminho de OCR que ela apresenta como inexplorado já foi
+percorrido duas vezes.
+
+Onde as coisas estão de verdade:
+
+| | |
+|---|---|
+| estado atual do produto | `README.md` |
+| como rodar e o que não refazer | `AGENTS.md` |
+| o que ainda falta | o fim deste arquivo |
+
+O `git log` tem o porquê de cada decisão em detalhe.
 
 ## A descoberta que muda a prioridade
 
