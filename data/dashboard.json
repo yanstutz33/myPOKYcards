@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-07T14:47:53+00:00",
+ "gerado_em": "2026-09-08T13:21:54+00:00",
  "catalogo": {
   "cartas": 41867,
   "sets": 564,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354061,
-  "cartas_com_preco": 20460,
+  "linhas": 353192,
+  "cartas_com_preco": 20461,
   "intl_alvo": 23650,
   "intl_consultadas": 23650,
   "por_kind": {
    "derived": 36003,
-   "listing": 145512,
-   "sold": 172546
+   "listing": 144635,
+   "sold": 172554
   },
   "por_fonte": {
    "cardmarket": 19838,
-   "tcgplayer": 19061
+   "tcgplayer": 19067
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-07T14:47:39+00:00",
+  "ultima_coleta": "2026-09-08T13:21:41+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
