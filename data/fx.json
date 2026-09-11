@@ -1,21 +1,21 @@
 {
  "fonte": "PTAX / Banco Central do Brasil",
  "aviso": "Conversão, não preço do mercado brasileiro. O mercado nacional tem liquidez, imposto e frete próprios.",
- "buscado_em": "2026-09-10T13:27:04+00:00",
+ "buscado_em": "2026-09-11T13:17:47+00:00",
  "taxas": {
   "USD": {
-   "taxa": 5.1328,
-   "em": "2026-09-10 10:10:13",
+   "taxa": 5.0754,
+   "em": "2026-09-11 10:03:13",
    "unidade": "1 USD"
   },
   "EUR": {
-   "taxa": 5.9571,
-   "em": "2026-09-10 10:10:13",
+   "taxa": 5.889,
+   "em": "2026-09-11 10:03:13",
    "unidade": "1 EUR"
   },
   "JPY": {
-   "taxa": 0.03326,
-   "em": "2026-09-10 10:10:13",
+   "taxa": 0.03307,
+   "em": "2026-09-11 10:03:13",
    "unidade": "1 JPY"
   }
  }
