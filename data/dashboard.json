@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-13T13:44:04+00:00",
+ "gerado_em": "2026-09-14T15:39:05+00:00",
  "catalogo": {
   "cartas": 41867,
   "sets": 564,
@@ -61,27 +61,34 @@
   ]
  },
  "precos": {
-  "linhas": 354647,
-  "cartas_com_preco": 20462,
+  "linhas": 353975,
+  "cartas_com_preco": 20460,
   "intl_alvo": 23650,
   "intl_consultadas": 23650,
   "por_kind": {
    "derived": 36006,
-   "listing": 146081,
-   "sold": 172560
+   "listing": 145405,
+   "sold": 172564
   },
   "por_fonte": {
    "cardmarket": 19839,
    "tcgplayer": 19070
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-13T13:43:47+00:00",
+  "ultima_coleta": "2026-09-14T15:38:49+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
     "nome": "Rocket's Mewtwo ex",
     "set": "ex7",
     "valor": 28500.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 7500.0,
     "moeda": "EUR"
    },
    {
@@ -113,13 +120,6 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard2-149",
-    "nome": "Lugia",
-    "set": "ecard2",
-    "valor": 5687.5,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "neo1-9",
     "nome": "Lugia",
     "set": "neo1",
@@ -134,13 +134,6 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 4271.62,
-    "moeda": "USD"
-   },
-   {
     "card_id": "neo4-113",
     "nome": "Shining Tyranitar",
     "set": "neo4",
@@ -148,18 +141,25 @@
     "moeda": "USD"
    },
    {
-    "card_id": "sm9-161",
-    "nome": "Magikarp & Wailord GX",
-    "set": "sm9",
-    "valor": 4200.0,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "ru1-7",
     "nome": "Pikachu",
     "set": "ru1",
     "valor": 4100.0,
     "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 3950.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 3837.67,
+    "moeda": "USD"
    }
   ]
  }
