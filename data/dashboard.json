@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-15T14:11:52+00:00",
+ "gerado_em": "2026-09-16T14:06:01+00:00",
  "catalogo": {
   "cartas": 41867,
   "sets": 564,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354027,
-  "cartas_com_preco": 20452,
+  "linhas": 353910,
+  "cartas_com_preco": 20461,
   "intl_alvo": 23650,
   "intl_consultadas": 23650,
   "por_kind": {
-   "derived": 35986,
-   "listing": 145554,
-   "sold": 172487
+   "derived": 36006,
+   "listing": 145339,
+   "sold": 172565
   },
   "por_fonte": {
-   "cardmarket": 19829,
-   "tcgplayer": 19062
+   "cardmarket": 19839,
+   "tcgplayer": 19069
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-09-15T14:11:39+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-09-16T14:05:42+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
@@ -134,6 +134,13 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 4271.62,
+    "moeda": "USD"
+   },
+   {
     "card_id": "neo4-113",
     "nome": "Shining Tyranitar",
     "set": "neo4",
@@ -153,13 +160,6 @@
     "set": "ecard3",
     "valor": 3950.0,
     "moeda": "EUR"
-   },
-   {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 3837.67,
-    "moeda": "USD"
    }
   ]
  }
