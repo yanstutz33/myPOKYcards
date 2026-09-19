@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-18T13:22:20+00:00",
+ "gerado_em": "2026-09-19T12:54:47+00:00",
  "catalogo": {
   "cartas": 42055,
   "sets": 566,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354786,
-  "cartas_com_preco": 20470,
+  "linhas": 355071,
+  "cartas_com_preco": 20471,
   "intl_alvo": 23838,
   "intl_consultadas": 23838,
   "por_kind": {
    "derived": 36022,
-   "listing": 146093,
-   "sold": 172671
+   "listing": 146374,
+   "sold": 172675
   },
   "por_fonte": {
    "cardmarket": 19847,
-   "tcgplayer": 19070
+   "tcgplayer": 19071
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-18T13:22:01+00:00",
+  "ultima_coleta": "2026-09-19T12:54:26+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
@@ -134,13 +134,6 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "neo4-113",
-    "nome": "Shining Tyranitar",
-    "set": "neo4",
-    "valor": 4249.99,
-    "moeda": "USD"
-   },
-   {
     "card_id": "ru1-7",
     "nome": "Pikachu",
     "set": "ru1",
@@ -160,6 +153,13 @@
     "set": "sm9",
     "valor": 3784.54,
     "moeda": "USD"
+   },
+   {
+    "card_id": "ex5.5-4",
+    "nome": "Mudkip",
+    "set": "ex5.5",
+    "valor": 3500.0,
+    "moeda": "EUR"
    }
   ]
  }
