@@ -8,6 +8,22 @@ alguma, e a interface diz isso em vez de fingir.
 O reconhecimento leva 14 ms no próprio aparelho, sem enviar foto para
 servidor nenhum, e funciona offline depois do primeiro carregamento.
 
+## Case de portfólio — IA e visão computacional
+
+Este projeto resolve o reconhecimento de cartas Pokémon a partir da câmera com
+um pipeline de visão computacional executado inteiramente no dispositivo. Em
+vez de depender de uma API ou modelo remoto, combina hashes perceptuais,
+comparação de candidatos e regras de confiança para entregar resultado rápido,
+privado e reproduzível.
+
+Pontos que o case evidencia:
+
+- catálogo multilíngue de grande escala e índice otimizado para busca local;
+- medição com degradações realistas de câmera, e não apenas exemplos ideais;
+- apresentação honesta de ambiguidades quando a imagem não sustenta uma única
+  resposta;
+- integração de preço e procedência sem transformar estimativas em certezas.
+
 **No ar:** https://yanstutz33.github.io/myPOKYcards/sobre.html
 
 Leitor pela câmera, busca por nome, ficha completa da carta, coleção com
