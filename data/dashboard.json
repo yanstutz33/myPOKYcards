@@ -1,11 +1,11 @@
 {
- "gerado_em": "2026-09-25T14:30:14+00:00",
+ "gerado_em": "2026-09-26T13:44:23+00:00",
  "catalogo": {
-  "cartas": 42292,
+  "cartas": 42314,
   "sets": 568,
   "cartas_por_regiao": {
    "asia": 18442,
-   "intl": 23850
+   "intl": 23872
   },
   "sets_por_regiao": {
    "asia": 345,
@@ -14,7 +14,7 @@
   "idiomas": [
    {
     "lang": "en",
-    "cartas": 23748
+    "cartas": 23770
    },
    {
     "lang": "pt",
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 355339,
+  "linhas": 355278,
   "cartas_com_preco": 20472,
-  "intl_alvo": 23850,
-  "intl_consultadas": 23850,
+  "intl_alvo": 23872,
+  "intl_consultadas": 23872,
   "por_kind": {
    "derived": 36023,
-   "listing": 146635,
-   "sold": 172681
+   "listing": 146551,
+   "sold": 172704
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19074
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-25T14:29:51+00:00",
+  "ultima_coleta": "2026-09-26T13:44:00+00:00",
   "mais_caras": [
    {
     "card_id": "ex7-99",
@@ -155,10 +155,10 @@
     "moeda": "USD"
    },
    {
-    "card_id": "lc-5",
-    "nome": "Dark Dragonite",
-    "set": "lc",
-    "valor": 2700.0,
+    "card_id": "swsh7-215",
+    "nome": "Umbreon VMAX",
+    "set": "swsh7",
+    "valor": 2650.0,
     "moeda": "EUR"
    }
   ]
