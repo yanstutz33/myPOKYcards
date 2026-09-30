@@ -1,14 +1,14 @@
 {
- "gerado_em": "2026-09-29T15:28:12+00:00",
+ "gerado_em": "2026-09-30T15:35:24+00:00",
  "catalogo": {
-  "cartas": 42315,
-  "sets": 568,
+  "cartas": 42316,
+  "sets": 569,
   "cartas_por_regiao": {
-   "asia": 18442,
+   "asia": 18443,
    "intl": 23873
   },
   "sets_por_regiao": {
-   "asia": 345,
+   "asia": 346,
    "intl": 223
   },
   "idiomas": [
@@ -22,7 +22,7 @@
    },
    {
     "lang": "ja",
-    "cartas": 13448
+    "cartas": 13449
    },
    {
     "lang": "zh-tw",
@@ -61,29 +61,22 @@
   ]
  },
  "precos": {
-  "linhas": 353922,
-  "cartas_com_preco": 20462,
+  "linhas": 354286,
+  "cartas_com_preco": 20472,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36003,
-   "listing": 145308,
-   "sold": 172611
+   "derived": 36023,
+   "listing": 145560,
+   "sold": 172703
   },
   "por_fonte": {
-   "cardmarket": 19837,
-   "tcgplayer": 19065
+   "cardmarket": 19847,
+   "tcgplayer": 19075
   },
-  "falhas_coleta": 20,
-  "ultima_coleta": "2026-09-29T15:27:50+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-09-30T15:35:00+00:00",
   "mais_caras": [
-   {
-    "card_id": "ex7-99",
-    "nome": "Rocket's Mewtwo ex",
-    "set": "ex7",
-    "valor": 28500.0,
-    "moeda": "EUR"
-   },
    {
     "card_id": "xyp-XY101",
     "nome": "Mewtwo",
@@ -145,6 +138,13 @@
     "nome": "Mudkip",
     "set": "ex5.5",
     "valor": 3500.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex7-99",
+    "nome": "Rocket's Mewtwo ex",
+    "set": "ex7",
+    "valor": 3465.22,
     "moeda": "EUR"
    },
    {
