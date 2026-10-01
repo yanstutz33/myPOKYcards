@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-09-30T15:35:24+00:00",
+ "gerado_em": "2026-10-01T16:06:53+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354286,
-  "cartas_com_preco": 20472,
+  "linhas": 354406,
+  "cartas_com_preco": 20454,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36023,
-   "listing": 145560,
-   "sold": 172703
+   "derived": 35984,
+   "listing": 145900,
+   "sold": 172522
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19075
+   "cardmarket": 19827,
+   "tcgplayer": 19057
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-09-30T15:35:00+00:00",
+  "falhas_coleta": 20,
+  "ultima_coleta": "2026-10-01T16:06:26+00:00",
   "mais_caras": [
    {
     "card_id": "xyp-XY101",
@@ -148,17 +148,17 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "neo4-106",
-    "nome": "Shining Celebi",
-    "set": "neo4",
-    "valor": 3000.0,
-    "moeda": "USD"
-   },
-   {
     "card_id": "swsh7-215",
     "nome": "Umbreon VMAX",
     "set": "swsh7",
     "valor": 2650.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ru1-7",
+    "nome": "Pikachu",
+    "set": "ru1",
+    "valor": 2550.0,
     "moeda": "EUR"
    }
   ]
