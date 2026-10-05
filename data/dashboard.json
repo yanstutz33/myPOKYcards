@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-04T14:40:17+00:00",
+ "gerado_em": "2026-10-05T17:52:41+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,22 +61,36 @@
   ]
  },
  "precos": {
-  "linhas": 355140,
+  "linhas": 354412,
   "cartas_com_preco": 20475,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 146407,
-   "sold": 172710
+   "listing": 145675,
+   "sold": 172714
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19078
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-04T14:39:54+00:00",
+  "ultima_coleta": "2026-10-05T17:52:14+00:00",
   "mais_caras": [
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 7500.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "lc-3",
+    "nome": "Charizard",
+    "set": "lc",
+    "valor": 6000.0,
+    "moeda": "EUR"
+   },
    {
     "card_id": "xyp-XY101",
     "nome": "Mewtwo",
@@ -109,28 +123,14 @@
     "card_id": "ecard2-149",
     "nome": "Lugia",
     "set": "ecard2",
-    "valor": 5525.0,
+    "valor": 5500.0,
     "moeda": "EUR"
    },
    {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 4750.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-146",
-    "nome": "Charizard",
-    "set": "ecard3",
-    "valor": 3950.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 3650.0,
+    "card_id": "lc-12",
+    "nome": "Gyarados",
+    "set": "lc",
+    "valor": 4000.0,
     "moeda": "EUR"
    },
    {
@@ -141,24 +141,24 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 3474.61,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "ecard3-10",
+    "nome": "Gengar",
+    "set": "ecard3",
+    "valor": 3442.49,
+    "moeda": "EUR"
+   },
+   {
     "card_id": "ex7-99",
     "nome": "Rocket's Mewtwo ex",
     "set": "ex7",
-    "valor": 3465.22,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "swsh7-215",
-    "nome": "Umbreon VMAX",
-    "set": "swsh7",
-    "valor": 2650.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ru1-7",
-    "nome": "Pikachu",
-    "set": "ru1",
-    "valor": 2550.0,
+    "valor": 3433.11,
     "moeda": "EUR"
    }
   ]
