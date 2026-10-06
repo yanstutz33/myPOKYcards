@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-05T17:52:41+00:00",
+ "gerado_em": "2026-10-06T15:45:59+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354412,
+  "linhas": 354311,
   "cartas_com_preco": 20475,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145675,
-   "sold": 172714
+   "listing": 145573,
+   "sold": 172715
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19078
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-05T17:52:14+00:00",
+  "ultima_coleta": "2026-10-06T15:45:30+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-146",
@@ -141,13 +141,6 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 3474.61,
-    "moeda": "USD"
-   },
-   {
     "card_id": "ecard3-10",
     "nome": "Gengar",
     "set": "ecard3",
@@ -159,6 +152,13 @@
     "nome": "Rocket's Mewtwo ex",
     "set": "ex7",
     "valor": 3433.11,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 3259.99,
     "moeda": "EUR"
    }
   ]
