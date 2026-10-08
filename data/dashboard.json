@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-07T16:04:04+00:00",
+ "gerado_em": "2026-10-08T16:09:50+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,34 +61,27 @@
   ]
  },
  "precos": {
-  "linhas": 354087,
-  "cartas_com_preco": 20475,
+  "linhas": 353694,
+  "cartas_com_preco": 20468,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36023,
-   "listing": 145451,
-   "sold": 172613
+   "derived": 36003,
+   "listing": 145177,
+   "sold": 172514
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19078
+   "cardmarket": 19837,
+   "tcgplayer": 19071
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-07T16:03:01+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-10-08T16:09:22+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-146",
     "nome": "Charizard",
     "set": "ecard3",
     "valor": 7500.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "lc-3",
-    "nome": "Charizard",
-    "set": "lc",
-    "valor": 6000.0,
     "moeda": "EUR"
    },
    {
@@ -130,14 +123,28 @@
     "card_id": "sm9-170",
     "nome": "Latias & Latios GX",
     "set": "sm9",
-    "valor": 4208.33,
-    "moeda": "EUR"
+    "valor": 4499.66,
+    "moeda": "USD"
    },
    {
     "card_id": "lc-12",
     "nome": "Gyarados",
     "set": "lc",
     "valor": 4000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "pop5-3",
+    "nome": "Mew δ",
+    "set": "pop5",
+    "valor": 3700.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "lc-3",
+    "nome": "Charizard",
+    "set": "lc",
+    "valor": 3552.3,
     "moeda": "EUR"
    },
    {
@@ -148,17 +155,10 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 3442.49,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ex7-99",
-    "nome": "Rocket's Mewtwo ex",
+    "card_id": "ex7-15",
+    "nome": "Dark Dragonite",
     "set": "ex7",
-    "valor": 3433.11,
+    "valor": 3500.0,
     "moeda": "EUR"
    }
   ]
