@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-08T16:09:50+00:00",
+ "gerado_em": "2026-10-09T15:48:05+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,22 +61,29 @@
   ]
  },
  "precos": {
-  "linhas": 353694,
-  "cartas_com_preco": 20468,
+  "linhas": 353727,
+  "cartas_com_preco": 20478,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36003,
-   "listing": 145177,
-   "sold": 172514
+   "derived": 36023,
+   "listing": 145089,
+   "sold": 172615
   },
   "por_fonte": {
-   "cardmarket": 19837,
-   "tcgplayer": 19071
+   "cardmarket": 19847,
+   "tcgplayer": 19081
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-10-08T16:09:22+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-10-09T15:47:36+00:00",
   "mais_caras": [
+   {
+    "card_id": "ex13-103",
+    "nome": "Mewtwo Star",
+    "set": "ex13",
+    "valor": 9200.0,
+    "moeda": "USD"
+   },
    {
     "card_id": "ecard3-146",
     "nome": "Charizard",
@@ -151,13 +158,6 @@
     "card_id": "ex5.5-4",
     "nome": "Mudkip",
     "set": "ex5.5",
-    "valor": 3500.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ex7-15",
-    "nome": "Dark Dragonite",
-    "set": "ex7",
     "valor": 3500.0,
     "moeda": "EUR"
    }
