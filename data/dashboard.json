@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-09T15:48:05+00:00",
+ "gerado_em": "2026-10-10T15:02:14+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353727,
+  "linhas": 353968,
   "cartas_com_preco": 20478,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145089,
-   "sold": 172615
+   "listing": 145329,
+   "sold": 172616
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19081
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-09T15:47:36+00:00",
+  "ultima_coleta": "2026-10-10T15:01:45+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
@@ -85,10 +85,10 @@
     "moeda": "USD"
    },
    {
-    "card_id": "ecard3-146",
-    "nome": "Charizard",
-    "set": "ecard3",
-    "valor": 7500.0,
+    "card_id": "lc-11",
+    "nome": "Gengar",
+    "set": "lc",
+    "valor": 7000.0,
     "moeda": "EUR"
    },
    {
@@ -127,6 +127,27 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "ecard1-19",
+    "nome": "Mew",
+    "set": "ecard1",
+    "valor": 5000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard1-55",
+    "nome": "Mew",
+    "set": "ecard1",
+    "valor": 5000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard1-56",
+    "nome": "Mewtwo",
+    "set": "ecard1",
+    "valor": 5000.0,
+    "moeda": "EUR"
+   },
+   {
     "card_id": "sm9-170",
     "nome": "Latias & Latios GX",
     "set": "sm9",
@@ -138,27 +159,6 @@
     "nome": "Gyarados",
     "set": "lc",
     "valor": 4000.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "pop5-3",
-    "nome": "Mew δ",
-    "set": "pop5",
-    "valor": 3700.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "lc-3",
-    "nome": "Charizard",
-    "set": "lc",
-    "valor": 3552.3,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ex5.5-4",
-    "nome": "Mudkip",
-    "set": "ex5.5",
-    "valor": 3500.0,
     "moeda": "EUR"
    }
   ]
