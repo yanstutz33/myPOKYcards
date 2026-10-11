@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-10T15:02:14+00:00",
+ "gerado_em": "2026-10-11T15:22:53+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353968,
+  "linhas": 354603,
   "cartas_com_preco": 20478,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145329,
-   "sold": 172616
+   "listing": 145957,
+   "sold": 172623
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19081
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-10T15:01:45+00:00",
+  "ultima_coleta": "2026-10-11T15:22:24+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
@@ -148,17 +148,17 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 4499.66,
-    "moeda": "USD"
+    "card_id": "ecard3-33",
+    "nome": "Vaporeon",
+    "set": "ecard3",
+    "valor": 4999.95,
+    "moeda": "EUR"
    },
    {
-    "card_id": "lc-12",
-    "nome": "Gyarados",
-    "set": "lc",
-    "valor": 4000.0,
+    "card_id": "ecard3-8",
+    "nome": "Flareon",
+    "set": "ecard3",
+    "valor": 4999.95,
     "moeda": "EUR"
    }
   ]
