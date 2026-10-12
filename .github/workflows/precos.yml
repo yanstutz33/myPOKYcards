@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 60     # medido: ~3 min; a folga cobre a fonte lenta
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
