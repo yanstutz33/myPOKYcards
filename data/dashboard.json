@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-12T18:39:35+00:00",
+ "gerado_em": "2026-10-13T16:44:40+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353728,
-  "cartas_com_preco": 20468,
+  "linhas": 353508,
+  "cartas_com_preco": 20479,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36013,
-   "listing": 145142,
-   "sold": 172573
+   "derived": 36023,
+   "listing": 144864,
+   "sold": 172621
   },
   "por_fonte": {
-   "cardmarket": 19837,
-   "tcgplayer": 19071
+   "cardmarket": 19847,
+   "tcgplayer": 19082
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-10-12T18:39:10+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-10-13T16:44:14+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
@@ -127,22 +127,15 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard1-19",
-    "nome": "Mew",
+    "card_id": "ecard1-13",
+    "nome": "Gengar",
     "set": "ecard1",
     "valor": 5000.0,
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard1-55",
-    "nome": "Mew",
-    "set": "ecard1",
-    "valor": 5000.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard1-56",
-    "nome": "Mewtwo",
+    "card_id": "ecard1-48",
+    "nome": "Gengar",
     "set": "ecard1",
     "valor": 5000.0,
     "moeda": "EUR"
@@ -157,6 +150,13 @@
    {
     "card_id": "ecard3-8",
     "nome": "Flareon",
+    "set": "ecard3",
+    "valor": 4999.95,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-H31",
+    "nome": "Vaporeon",
     "set": "ecard3",
     "valor": 4999.95,
     "moeda": "EUR"
