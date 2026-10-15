@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-14T14:26:05+00:00",
+ "gerado_em": "2026-10-15T13:55:50+00:00",
  "catalogo": {
   "cartas": 42316,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353736,
-  "cartas_com_preco": 20469,
+  "linhas": 354013,
+  "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36003,
-   "listing": 145209,
-   "sold": 172524
+   "derived": 36023,
+   "listing": 145365,
+   "sold": 172625
   },
   "por_fonte": {
-   "cardmarket": 19837,
-   "tcgplayer": 19074
+   "cardmarket": 19847,
+   "tcgplayer": 19085
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-10-14T14:25:46+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-10-15T13:55:20+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
@@ -97,6 +97,13 @@
     "set": "lc",
     "valor": 7000.0,
     "moeda": "EUR"
+   },
+   {
+    "card_id": "lc-3",
+    "nome": "Charizard",
+    "set": "lc",
+    "valor": 6999.0,
+    "moeda": "USD"
    },
    {
     "card_id": "xyp-XY101",
@@ -127,27 +134,6 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard1-13",
-    "nome": "Gengar",
-    "set": "ecard1",
-    "valor": 5000.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard1-48",
-    "nome": "Gengar",
-    "set": "ecard1",
-    "valor": 5000.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-33",
-    "nome": "Vaporeon",
-    "set": "ecard3",
-    "valor": 4999.95,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "ecard3-8",
     "nome": "Flareon",
     "set": "ecard3",
@@ -155,10 +141,24 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard3-H31",
-    "nome": "Vaporeon",
+    "card_id": "ex11-17",
+    "nome": "Umbreon δ",
+    "set": "ex11",
+    "valor": 4450.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 4208.33,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
     "set": "ecard3",
-    "valor": 4999.95,
+    "valor": 3980.88,
     "moeda": "EUR"
    }
   ]
