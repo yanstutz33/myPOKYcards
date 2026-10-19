@@ -1,10 +1,10 @@
 {
- "gerado_em": "2026-10-18T13:02:37+00:00",
+ "gerado_em": "2026-10-19T16:10:59+00:00",
  "catalogo": {
-  "cartas": 42316,
+  "cartas": 42395,
   "sets": 569,
   "cartas_por_regiao": {
-   "asia": 18443,
+   "asia": 18522,
    "intl": 23873
   },
   "sets_por_regiao": {
@@ -22,7 +22,7 @@
    },
    {
     "lang": "ja",
-    "cartas": 13449
+    "cartas": 13598
    },
    {
     "lang": "zh-tw",
@@ -61,22 +61,29 @@
   ]
  },
  "precos": {
-  "linhas": 353998,
+  "linhas": 353994,
   "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145370,
-   "sold": 172605
+   "listing": 145367,
+   "sold": 172604
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19085
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-18T13:02:06+00:00",
+  "ultima_coleta": "2026-10-19T16:10:27+00:00",
   "mais_caras": [
+   {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 12499.95,
+    "moeda": "EUR"
+   },
    {
     "card_id": "ex13-103",
     "nome": "Mewtwo Star",
@@ -85,17 +92,17 @@
     "moeda": "USD"
    },
    {
-    "card_id": "ex6-105",
-    "nome": "Charizard ex",
-    "set": "ex6",
-    "valor": 7500.0,
+    "card_id": "ex5.5-4",
+    "nome": "Mudkip",
+    "set": "ex5.5",
+    "valor": 8500.0,
     "moeda": "EUR"
    },
    {
-    "card_id": "lc-11",
-    "nome": "Gengar",
-    "set": "lc",
-    "valor": 7000.0,
+    "card_id": "ex11-13",
+    "nome": "Rayquaza δ",
+    "set": "ex11",
+    "valor": 7749.95,
     "moeda": "EUR"
    },
    {
@@ -106,10 +113,10 @@
     "moeda": "USD"
    },
    {
-    "card_id": "ecard3-146",
-    "nome": "Charizard",
-    "set": "ecard3",
-    "valor": 6146.85,
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 6500.0,
     "moeda": "EUR"
    },
    {
@@ -141,24 +148,17 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard3-8",
-    "nome": "Flareon",
-    "set": "ecard3",
-    "valor": 4999.95,
+    "card_id": "dp5-98",
+    "nome": "Glaceon",
+    "set": "dp5",
+    "valor": 5500.0,
     "moeda": "EUR"
    },
    {
-    "card_id": "ex11-17",
-    "nome": "Umbreon δ",
-    "set": "ex11",
-    "valor": 4450.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "sm9-170",
-    "nome": "Latias & Latios GX",
-    "set": "sm9",
-    "valor": 4208.33,
+    "card_id": "neo4-6",
+    "nome": "Dark Gengar",
+    "set": "neo4",
+    "valor": 5500.0,
     "moeda": "EUR"
    }
   ]
