@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-21T14:27:09+00:00",
+ "gerado_em": "2026-10-22T14:21:57+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353985,
-  "cartas_com_preco": 20480,
+  "linhas": 353643,
+  "cartas_com_preco": 20460,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36023,
-   "listing": 145364,
-   "sold": 172598
+   "derived": 35990,
+   "listing": 145207,
+   "sold": 172446
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19085
+   "cardmarket": 19827,
+   "tcgplayer": 19065
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-21T14:26:47+00:00",
+  "falhas_coleta": 20,
+  "ultima_coleta": "2026-10-22T14:21:23+00:00",
   "mais_caras": [
    {
     "card_id": "ex5-94",
@@ -106,10 +106,10 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ex11-13",
-    "nome": "Rayquaza δ",
-    "set": "ex11",
-    "valor": 7749.95,
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 8000.0,
     "moeda": "EUR"
    },
    {
@@ -118,13 +118,6 @@
     "set": "lc",
     "valor": 6999.0,
     "moeda": "USD"
-   },
-   {
-    "card_id": "ecard2-149",
-    "nome": "Lugia",
-    "set": "ecard2",
-    "valor": 6500.0,
-    "moeda": "EUR"
    },
    {
     "card_id": "xyp-XY101",
@@ -155,10 +148,17 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "dp5-98",
-    "nome": "Glaceon",
-    "set": "dp5",
-    "valor": 5500.0,
+    "card_id": "ex10-105",
+    "nome": "Lugia ex",
+    "set": "ex10",
+    "valor": 4500.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-149",
+    "nome": "Ho-oh",
+    "set": "ecard3",
+    "valor": 4299.0,
     "moeda": "EUR"
    }
   ]
