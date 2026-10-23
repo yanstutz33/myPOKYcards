@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-22T14:21:57+00:00",
+ "gerado_em": "2026-10-23T14:10:35+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 353643,
-  "cartas_com_preco": 20460,
+  "linhas": 354021,
+  "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 35990,
-   "listing": 145207,
-   "sold": 172446
+   "derived": 36023,
+   "listing": 145368,
+   "sold": 172630
   },
   "por_fonte": {
-   "cardmarket": 19827,
-   "tcgplayer": 19065
+   "cardmarket": 19847,
+   "tcgplayer": 19085
   },
-  "falhas_coleta": 20,
-  "ultima_coleta": "2026-10-22T14:21:23+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-10-23T14:10:02+00:00",
   "mais_caras": [
    {
     "card_id": "ex5-94",
@@ -89,6 +89,13 @@
     "nome": "Charizard",
     "set": "ecard3",
     "valor": 12499.95,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex11-16",
+    "nome": "Tyranitar δ",
+    "set": "ex11",
+    "valor": 10000.0,
     "moeda": "EUR"
    },
    {
@@ -145,13 +152,6 @@
     "nome": "Mew",
     "set": "xyp",
     "valor": 5799.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ex10-105",
-    "nome": "Lugia ex",
-    "set": "ex10",
-    "valor": 4500.0,
     "moeda": "EUR"
    },
    {
