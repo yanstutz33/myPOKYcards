@@ -38,6 +38,7 @@ OBRIGATORIOS = [
     ("tema.css", 2_000),
     ("scan.css", 2_000),
     ("pokedex.css", 4_000),
+    ("vidro.css", 4_000),
     ("detectar.js", 2_000),
     ("camera.js", 1_500),
     ("som.js", 2_000),

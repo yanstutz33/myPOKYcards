@@ -1,0 +1,464 @@
+/* myPOKYcards — camada "liquid glass".
+   ==================================================================
+
+   Carregada por ÚLTIMO em todas as telas. Troca a pele "aparelho de
+   plástico vermelho" por vidro: superfícies translúcidas com desfoque do
+   que está atrás, borda clara fina, brilho especular no alto e sombra
+   longa e macia. Não muda estrutura nem comportamento — só pele.
+
+   Por que vidro aqui funciona e não é enfeite: no leitor, a faixa de topo,
+   a dica e a gaveta ficam SOBRE a câmera. Com vidro, a pessoa continua
+   vendo a carta borrada atrás do painel em vez de um retângulo opaco
+   escondendo o visor — que era a reclamação do teste real ("está ficando
+   na frente da carta").
+
+   A cor da carta (`--tipo`) continua dirigindo o brilho do resultado: o
+   vidro é neutro de propósito, para a única cor forte ser a da carta.
+
+   `backdrop-filter` sem suporte (navegador antigo) cai no fundo
+   semitransparente escuro, que continua legível. */
+
+:root {
+  --v-fundo:      rgba(28, 32, 46, 0.42);
+  --v-fundo-2:    rgba(255, 255, 255, 0.08);
+  --v-fundo-3:    rgba(255, 255, 255, 0.14);
+  --v-forte:      rgba(16, 19, 30, 0.62);
+  --v-borda:      rgba(255, 255, 255, 0.20);
+  --v-borda-alta: rgba(255, 255, 255, 0.42);
+  --v-blur:       blur(24px) saturate(180%);
+  --v-blur-forte: blur(34px) saturate(200%);
+  --v-brilho:
+    inset 0 1px 0 rgba(255, 255, 255, 0.40),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --v-sombra:     0 18px 50px -12px rgba(0, 0, 0, 0.55);
+  --v-raio:       22px;
+  --v-raio-p:     14px;
+
+  --acento:       #9FE6FF;
+  --acento-2:     #C9A8FF;
+  --texto:        #F4F7FC;
+  --texto-2:      rgba(236, 241, 250, 0.66);
+
+  /* Tokens antigos redirecionados: as regras de pokedex.css que derivam
+     deles mudam junto, sem precisar ser reescritas uma a uma. */
+  --carta-borda:   var(--acento);
+  --carta-borda-2: var(--acento-2);
+  /* O chassi vermelho vira vidro neutro. São ~40 regras antigas usando
+     estes quatro tokens (bordas de 3px, sombras "que afundam"); trocar o
+     token apaga o vermelho de todas, inclusive das que esta camada não
+     reescreve uma a uma. */
+  --chassi:        rgba(255, 255, 255, 0.10);
+  --chassi-claro:  rgba(255, 255, 255, 0.16);
+  --chassi-escuro: rgba(255, 255, 255, 0.06);
+  --chassi-borda:  rgba(255, 255, 255, 0.14);
+  --casco:         rgba(14, 16, 24, 0.6);
+  --casco-alto:    rgba(28, 32, 46, 0.6);
+  --casco-baixo:   #06070C;
+  --led-ambar:     #FFD27A;
+  --font-titulo:   system-ui, -apple-system, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+}
+
+/* ============================================================ fundo
+   Aurora escura fixa. Vidro sobre fundo liso parece cinza; é a cor
+   difusa atrás que faz a superfície parecer vidro. */
+/* O fundo vai no <html> e o <body> fica transparente: com fundo próprio, o
+   body pintaria POR CIMA da aurora (camada de z-index negativo). */
+html:has(.scan-body, .painel-body) { background: #06070C; }
+.scan-body, .painel-body {
+  background: transparent;
+  color: var(--texto);
+}
+.painel-body::before, .scan-body::before {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 30vmax at 12% 8%,  rgba(88, 120, 255, 0.38), transparent 70%),
+    radial-gradient(34vmax 30vmax at 92% 18%, rgba(196, 92, 255, 0.30), transparent 70%),
+    radial-gradient(40vmax 34vmax at 70% 92%, rgba(40, 214, 196, 0.24), transparent 70%),
+    radial-gradient(30vmax 26vmax at 8% 86%,  rgba(255, 92, 140, 0.20), transparent 70%);
+  filter: blur(10px);
+}
+
+/* ===================================================== peça de vidro
+   Uma regra só para todas as superfícies, para elas nunca divergirem. */
+.topbar,
+.painel-top,
+.hint,
+.sheet,
+.ficha-caixa,
+.kpi, .linha, .prog, .passo, .limite,
+.nodata,
+.b-item,
+.busca-campo input,
+.etapas {
+  background: var(--v-fundo);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda);
+  box-shadow: var(--v-brilho), var(--v-sombra);
+  color: var(--texto);
+}
+
+/* Botões: cápsulas de vidro. Sem a sombra "que afunda" do plástico: no
+   vidro o toque escurece e encolhe um pouco. */
+.topnav a,
+.audio,
+.jogo-sel,
+.secundaria, .lanterna,
+.ir-scan, .lp-btn,
+.actions button, .painel-body button,
+.fa-guardar, .fa-compartilhar,
+.guardar-btn, .mult-pm,
+.alt, .buscar-manual,
+.ficha-fechar, .ficha-irma {
+  background: var(--v-fundo-2);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda);
+  box-shadow: var(--v-brilho);
+  color: var(--texto);
+  text-shadow: none;
+  transition: background 140ms ease, transform 120ms ease, border-color 140ms ease;
+}
+.topnav a, .jogo-sel, .lp-btn, .ir-scan, .secundaria, .fa-guardar,
+.fa-compartilhar, .guardar-btn, .buscar-manual, .actions button,
+.painel-body button { border-radius: 999px; }
+
+.topnav a:hover, .audio:hover, .jogo-sel:hover, .secundaria:hover,
+.lanterna:hover, .ir-scan:hover, .lp-btn:hover, .actions button:hover,
+.painel-body button:hover, .fa-guardar:hover, .fa-compartilhar:hover,
+.guardar-btn:hover, .mult-pm:hover, .alt:hover, .buscar-manual:hover,
+.ficha-irma:hover {
+  background: var(--v-fundo-3);
+  border-color: var(--v-borda-alta);
+}
+.topnav a:active, .audio:active, .secundaria:active, .lanterna:active,
+.ir-scan:active, .lp-btn:active, .actions button:active,
+.painel-body button:active, .fa-guardar:active, .guardar-btn:active,
+.mult-pm:active, .alt:active {
+  transform: scale(0.97);
+  box-shadow: var(--v-brilho);
+}
+
+/* Ação principal: vidro tingido. Uma por tela, então pode chamar atenção. */
+.acoes-base button.primary,
+.lp-btn.primaria,
+.actions button.primary,
+.guardar-btn:first-child {
+  background:
+    linear-gradient(135deg, rgba(120, 170, 255, 0.55), rgba(186, 120, 255, 0.45)),
+    var(--v-fundo-2);
+  border: 1px solid var(--v-borda-alta);
+  color: #fff;
+  box-shadow: var(--v-brilho), 0 10px 30px -8px rgba(130, 120, 255, 0.55);
+}
+.acoes-base button.primary:active { transform: scale(0.98); }
+.guardar-btn.feito {
+  background: linear-gradient(135deg, rgba(90, 220, 160, 0.45), rgba(60, 190, 220, 0.35)),
+    var(--v-fundo-2);
+  color: #fff;
+  border-color: rgba(140, 255, 210, 0.5);
+}
+
+/* ============================================================ leitor */
+.topbar {
+  /* Margem, não `inset`: a faixa é `position: relative` (pokedex.css vence
+     scan.css), e com relative o inset DESLOCA a caixa em vez de encolhê-la
+     — passava 10 px da tela e criava rolagem lateral (medido em 375 px). */
+  inset: auto;
+  margin: calc(0.5rem + env(safe-area-inset-top)) 0.6rem 0;
+  z-index: 6;
+  padding: 0.5rem 0.6rem 0.5rem 0.9rem;
+  border-radius: var(--v-raio);
+  border-bottom: 1px solid var(--v-borda);
+}
+.painel-body .topbar, .busca-body .topbar { margin: 0.6rem; }
+.topbar .brand, .painel-top .brand {
+  color: var(--texto-2);
+  text-shadow: none;
+  letter-spacing: 0.01em;
+}
+.topbar .brand b, .painel-top .brand b {
+  color: var(--texto);
+  font-family: var(--font-titulo);
+  font-weight: 800;
+}
+.status { color: var(--texto); }
+.dot { width: 10px; height: 10px; box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1); }
+.dot.on { box-shadow: 0 0 0 3px rgba(70, 217, 107, 0.18), 0 0 12px var(--led-verde); }
+.audio { width: 34px; height: 34px; border-radius: 50%; }
+
+/* No celular a faixa não cabe numa linha (marca, contagem, seletor, som e
+   três links). Em vez de deixar o navegador quebrar onde der — o som caía
+   sozinho na segunda linha —, a ordem é decidida: marca, contagem e som em
+   cima; seletor e links embaixo, o seletor ocupando o que sobra. */
+@media (max-width: 560px) {
+  .scan-body .topbar { flex-wrap: wrap; row-gap: 0.45rem; }
+  .scan-body .topbar .brand { order: 1; }
+  .scan-body .topbar .status { order: 2; margin-left: auto; }
+  .scan-body .topbar .audio { order: 3; }
+  /* Base de 120px: na primeira linha sobram ~70px e ele vira "Todos...";
+     com a base, cai para a linha dos links e cresce até preenchê-la. */
+  .scan-body .topbar .jogo-sel { order: 4; flex: 1 1 120px; min-width: 0; max-width: none; }
+  .scan-body .topbar .topnav { order: 5; }
+}
+.jogo-sel { background-color: var(--v-fundo-2); }
+
+.stage {
+  background: #000;
+  border: 0;
+  box-shadow: none;
+}
+.stage::before {
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.55);
+}
+.corner {
+  border-color: rgba(255, 255, 255, 0.92);
+  filter: drop-shadow(0 0 8px rgba(159, 230, 255, 0.7));
+}
+.frame::after { border: 1px solid rgba(255, 255, 255, 0.18); }
+.sweep {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  box-shadow: 0 0 18px rgba(159, 230, 255, 0.8);
+}
+.achado {
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 14px;
+  box-shadow: 0 0 0 100vmax rgba(3, 5, 10, 0.5),
+              0 0 26px -2px color-mix(in srgb, var(--tipo, var(--acento)) 80%, transparent);
+}
+
+.hint {
+  border-radius: 999px;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+}
+.hint.alerta {
+  color: #fff;
+  background: rgba(255, 170, 60, 0.38);
+  border-color: rgba(255, 210, 140, 0.6);
+}
+
+.barra { background: none; }
+/* Disparador no estilo câmera: anel branco, miolo de vidro. */
+.captura {
+  width: 74px; height: 74px; min-height: 74px;
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.6), var(--v-brilho);
+}
+.captura:active { transform: scale(0.94); box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.6); }
+.captura-anel {
+  width: 54px; height: 54px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.35);
+}
+.lanterna { border-radius: 50%; }
+.lanterna.ligada {
+  background: rgba(255, 210, 122, 0.55);
+  border-color: rgba(255, 230, 170, 0.8);
+  color: #2A1B00;
+  box-shadow: var(--v-brilho), 0 0 22px rgba(255, 210, 122, 0.7);
+}
+
+.acoes-base {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  padding: 0.4rem 0.6rem calc(0.6rem + env(safe-area-inset-bottom));
+}
+.acoes-base button.primary {
+  border-radius: 999px;
+  font-family: var(--font-titulo);
+  font-weight: 700;
+  letter-spacing: 0;
+  min-height: 52px;
+}
+
+/* Gaveta: vidro mais denso — é onde se LÊ, e texto sobre vídeo em
+   movimento precisa de um fundo mais calmo. */
+.sheet {
+  background: var(--v-forte);
+  -webkit-backdrop-filter: var(--v-blur-forte);
+  backdrop-filter: var(--v-blur-forte);
+  border-radius: 28px;
+  margin: 0 0.5rem 0.4rem;
+  border-top: 1px solid var(--v-borda-alta);
+}
+
+/* O resultado: vidro com brilho da cor da carta, em vez de papel creme.
+   Os tokens de "tinta" passam a ser claros DENTRO do resultado, então
+   todas as regras antigas que usam --carta-tinta acompanham. */
+.hit {
+  --carta-tinta: var(--texto);
+  --carta-tinta-2: var(--texto-2);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--tipo) 26%, transparent), transparent 60%),
+    rgba(255, 255, 255, 0.06);
+  border: 1px solid color-mix(in srgb, var(--tipo) 45%, var(--v-borda));
+  border-radius: var(--v-raio);
+  box-shadow: var(--v-brilho), 0 14px 40px -14px color-mix(in srgb, var(--tipo) 60%, transparent);
+  color: var(--texto);
+}
+.hit::after { display: none; }
+.hit.top .hit-name, .hit-name { color: var(--texto); font-family: var(--font-titulo); font-weight: 750; }
+.hit-conf b { color: color-mix(in srgb, var(--tipo) 55%, #fff); }
+.hit.foil::before { opacity: 0.45; mix-blend-mode: soft-light; }
+.miniatura {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.valor { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+.valor-num { font-family: var(--font-titulo); font-weight: 800; color: var(--texto); }
+.selo-raridade {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tipo) 22%, rgba(255, 255, 255, 0.06));
+  border: 1px solid color-mix(in srgb, var(--tipo) 50%, transparent);
+  color: color-mix(in srgb, var(--tipo) 40%, #fff);
+}
+.selo-jogo:not(.selo-pokemon) { border-radius: 999px; }
+.sheet .hit.incerto {
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 190, 90, 0.22), transparent 60%),
+    rgba(255, 255, 255, 0.05);
+}
+.incerto-aviso {
+  background: rgba(255, 190, 90, 0.14);
+  border: 1px solid rgba(255, 210, 140, 0.35);
+  border-radius: var(--v-raio-p);
+  color: var(--texto);
+}
+.alt { border-radius: var(--v-raio-p); }
+.alt-conf { color: var(--acento); }
+.alts-titulo, .alt-meta { color: var(--texto-2); }
+.mult-pm { border-radius: 50%; }
+.mult-n { color: var(--texto); }
+.guardar-tem, .valor-src, .toque-dica { color: var(--texto-2); }
+.toque-dica { color: var(--acento); }
+
+.etapas { border-radius: var(--v-raio); }
+.diag {
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid rgba(70, 217, 107, 0.4);
+  border-radius: var(--v-raio-p);
+}
+
+/* ============================================================ ficha */
+.ficha {
+  background: rgba(4, 6, 12, 0.4);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.ficha-caixa {
+  background: var(--v-forte);
+  -webkit-backdrop-filter: var(--v-blur-forte);
+  backdrop-filter: var(--v-blur-forte);
+  border-radius: 28px 28px 0 0;
+  border-color: var(--v-borda-alta);
+}
+.ficha-topo { border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+.ficha-topo h2 { font-family: var(--font-titulo); font-weight: 800; }
+.ficha-fechar { border-radius: 50%; }
+.ficha-arte, .ficha-arte-caixa { border-radius: 16px; }
+.ficha-arte-caixa {
+  box-shadow: 0 24px 60px -18px color-mix(in srgb, var(--tipo) 70%, transparent);
+}
+.ficha-bloco h3 { color: var(--acento); font-family: var(--font-titulo); font-weight: 700; }
+.ficha-nota, .fx-linha dt { color: var(--texto-2); }
+.fx-linha { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.fx-linha code { background: rgba(255, 255, 255, 0.08); border-radius: 6px; }
+.tabela-precos th { color: var(--texto-2); border-bottom: 1px solid rgba(255, 255, 255, 0.12); }
+.tabela-precos td { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.ficha-irma { border-radius: var(--v-raio-p); }
+.mkt-loja { border-radius: 999px; }
+
+/* ===================================================== painel e coleção */
+.painel-top {
+  margin: calc(0.6rem + env(safe-area-inset-top)) 0.6rem 0;
+  border-radius: 26px;
+  border-bottom: 1px solid var(--v-borda);
+}
+.painel-top h1 {
+  font-family: var(--font-titulo);
+  font-weight: 800;
+  color: var(--texto);
+  text-shadow: none;
+}
+.bloco > h2 {
+  font-family: var(--font-titulo);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--acento);
+}
+
+/* Os contêineres deixam de ser "moldura com divisórias" — era o fundo
+   deles aparecendo pelos buracos da grade que fazia blocos vazios
+   vermelhos quando a última linha não fechava. Agora cada item é uma
+   peça de vidro solta, e sobra só espaço vazio. */
+.kpis, .linhas, .passos, .limites {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  gap: 0.6rem;
+}
+.kpis { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
+.kpi, .linha, .prog, .passo, .limite { border-radius: 18px; }
+.kpi b, .linha-val, .prog-nome { font-family: var(--font-titulo); font-weight: 800; color: var(--texto); }
+.kpi small, .kpi em, .linha-sub, .prog-num, .prog-nota { color: var(--texto-2); }
+
+.trilho { background: rgba(255, 255, 255, 0.08); border-radius: 999px; overflow: hidden; }
+.trilho i.feito { background: linear-gradient(90deg, #5BE3B0, var(--acento)); }
+.trilho i.falta { background: rgba(255, 255, 255, 0.06); opacity: 1; }
+.mini-barra { background: rgba(255, 255, 255, 0.08); border-radius: 999px; overflow: hidden; }
+.mini-barra i { background: linear-gradient(90deg, var(--acento), var(--acento-2)); border-radius: 999px; }
+
+.painel-pe { border-top: 1px solid rgba(255, 255, 255, 0.1); color: var(--texto-2); }
+.painel-pe a { color: var(--acento); }
+.nodata { border-radius: var(--v-raio-p); border-left: 1px solid var(--v-borda); }
+
+/* landing */
+.lp-hero { border-bottom: 0; }
+.lp-hero h1 {
+  font-family: var(--font-titulo);
+  font-weight: 800;
+  background: linear-gradient(120deg, #fff 30%, var(--acento) 60%, var(--acento-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.lp-sub { color: var(--texto-2); }
+.lp-tipos li { border-radius: 999px; opacity: 0.85; }
+.passo-n { color: var(--acento); }
+.limite h3 { color: var(--led-ambar); }
+
+/* busca */
+.busca-campo input { border-radius: 999px; color: var(--texto); }
+.busca-campo input::placeholder { color: var(--texto-2); }
+.b-item { border-radius: 18px; }
+.b-item img { border-radius: 8px; }
+.b-meta, .b-sem { color: var(--texto-2); }
+.b-preco { color: var(--texto); }
+
+/* Sem suporte a backdrop-filter, o vidro fica mais opaco para o texto
+   continuar legível sobre a câmera. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar, .sheet, .ficha-caixa, .hint, .painel-top { background: rgba(16, 19, 30, 0.9); }
+}
+
+/* Quem pediu menos transparência no sistema recebe superfícies sólidas. */
+@media (prefers-reduced-transparency: reduce) {
+  .topbar, .sheet, .ficha-caixa, .hint, .painel-top, .kpi, .linha, .prog,
+  .b-item { background: #141826; -webkit-backdrop-filter: none; backdrop-filter: none; }
+}

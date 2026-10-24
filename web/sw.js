@@ -58,7 +58,7 @@ const ESSENCIAIS = [
   "./buscar.html", "./buscar.js", "./busca-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
   "./sobre.html", "./sobre.js", "./sobre.css",
-  "./pokedex.css", "./pwa.js",
+  "./pokedex.css", "./vidro.css", "./pwa.js",
   // O ícone maskable é o que o Android usa na tela de início. Faltava aqui:
   // instalar o app sem sinal deixava o atalho sem ícone próprio.
   "./manifest.json", "./icone.svg", "./icone-maskable.svg",
