@@ -462,3 +462,153 @@ html:has(.scan-body, .painel-body) { background: #06070C; }
   .topbar, .sheet, .ficha-caixa, .hint, .painel-top, .kpi, .linha, .prog,
   .b-item { background: #141826; -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
+
+/* ============================================================ carteira
+   Custo, resultado, top 3 e período — os pedaços que fazem a coleção
+   virar carteira. Verde e vermelho só no RESULTADO: é a única informação
+   desta tela em que a direção importa mais que o número. */
+.carteira {
+  background: var(--v-fundo);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda);
+  box-shadow: var(--v-brilho), var(--v-sombra);
+  border-radius: var(--v-raio);
+}
+.carteira > h2 { color: var(--acento); }
+.carteira-nota { color: var(--texto-2); }
+
+.kpi.resultado.sobe b, .custo-res.sobe { color: #6EF0B0; }
+.kpi.resultado.cai b, .custo-res.cai { color: #FF8A9A; }
+
+.periodos {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  margin: 0 0 0.8rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--v-borda);
+}
+.periodos button {
+  min-height: 30px;
+  padding: 0 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--texto-2);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.painel-body .periodos button.ativo, .painel-body .periodos button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: var(--v-brilho);
+}
+
+.top3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.top-carta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.6rem;
+  border-radius: 18px;
+  background: var(--v-fundo);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda);
+  box-shadow: var(--v-brilho), var(--v-sombra);
+  min-width: 0;
+}
+.top-carta img, .top-sem {
+  width: 100%;
+  aspect-ratio: 63 / 88;
+  object-fit: cover;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 12px 26px -12px rgba(0, 0, 0, 0.8);
+}
+.top-pos {
+  position: absolute;
+  top: 0.35rem; left: 0.35rem;
+  z-index: 1;
+  width: 24px; height: 24px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  font-size: 0.75rem; font-weight: 800;
+  background: rgba(10, 12, 20, 0.6);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda-alta);
+}
+.top-nome {
+  font-size: 0.8rem; font-weight: 700;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.top-valor { font-family: var(--font-titulo); font-weight: 800; font-size: 1rem; }
+.top-sub { font-size: 0.7rem; color: var(--texto-2); }
+
+/* Custo: recolhido numa linha, abre no lugar. */
+.custo { grid-column: 1 / -1; font-size: 0.8rem; }
+.custo summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.5rem;
+  align-items: center;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--v-borda);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--texto-2);
+}
+.custo summary::-webkit-details-marker { display: none; }
+.custo[open] summary { color: var(--texto); }
+.custo-res { font-weight: 700; }
+.custo-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.8rem;
+  border-radius: var(--v-raio-p);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--v-borda);
+}
+.custo-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--texto-2);
+}
+.custo-form input, .custo-form select {
+  min-height: 40px;
+  padding: 0 0.7rem;
+  border-radius: 12px;
+  border: 1px solid var(--v-borda);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  color-scheme: dark;
+}
+.custo-form input:focus, .custo-form select:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+.custo-botoes { grid-column: 1 / -1; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.custo-botoes button { min-height: 40px; padding: 0 1rem; }
+
+@media (max-width: 420px) {
+  .top3 { gap: 0.4rem; }
+  .top-carta { padding: 0.45rem; }
+  .top-valor { font-size: 0.88rem; }
+}

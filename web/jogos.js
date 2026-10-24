@@ -61,6 +61,16 @@ export function urlArte(catalog, caminho, qualidade = "low") {
   if (caminho.startsWith("tcgp:")) {
     return `${TCGP}/${caminho.slice(5)}_${TAM_TCGP[qualidade] || TAM_TCGP.low}.jpg`;
   }
+  // As 554 cartas Pokémon com arte da pokemontcg.io (complementar_arte.py)
+  // guardam o endereço COMPLETO — o exportador só tira o prefixo do TCGdex.
+  // Antes daqui, toda tela montava "assets.tcgdex.net/https://images...",
+  // e essas cartas apareciam sem arte em todo lugar (achado em 24/10/2026,
+  // no top 3 da coleção). A versão grande da fonte é `_hires.png`.
+  if (/^https?:\/\//.test(caminho)) {
+    return qualidade === "high" && caminho.includes("images.pokemontcg.io/")
+      ? caminho.replace(/\.png$/, "_hires.png")
+      : caminho;
+  }
   // `media` não existe no TCGdex; a `low` é a imagem que o índice usou.
   return `${catalog.cdn}/${caminho}/${qualidade === "high" ? "high" : "low"}.png`;
 }

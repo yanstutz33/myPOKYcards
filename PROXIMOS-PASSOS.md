@@ -574,3 +574,35 @@ o do Pokémon ficou idêntico com o índice combinado.
 - Cartas em paisagem: indexar as duas rotações com marca de rotação, e
   medir se o detector de borda as entrega em pé.
 
+## Carteira com custo e lucro — FEITA (24/10/2026)
+
+Pedido: "a carteira estilo MonPrice". Depois de estudar o que o MonPrice
+mostra publicamente, quatro peças: preço pago e data por carta,
+lucro/prejuízo, as três mais valiosas e filtro de período no gráfico.
+
+**A decisão que define se o lucro é honesto: moeda.** Quem está no Brasil
+paga em real, e a cotação é em dólar ou euro. O resultado é calculado na
+moeda em que a pessoa PAGOU; quando a cotação está em outra, o valor de
+hoje é convertido pela PTAX e a linha sai marcada "≈", com a explicação na
+tela. Moedas de custo diferentes não se somam, pela mesma regra do total.
+
+Fica fora do lucro, contado à parte: carta sem custo informado, carta sem
+cotação da variante guardada, e par de moedas sem taxa.
+
+**Período por data de calendário, não por número de pontos.** Depois de 30
+dias o histórico é semanal; "últimos 90 pontos" seria quase um ano. O
+rótulo antigo "36 dias" contava pontos — eram 71 dias. Corrigido.
+
+### Achado no caminho: 554 cartas sem arte em todo o app
+
+As cartas Pokémon com arte da pokemontcg.io guardam o endereço COMPLETO em
+`caminho_arte`, e toda tela montava `assets.tcgdex.net/https://images...`.
+Não aparecia em teste porque a amostra quase nunca caía nelas; apareceu no
+top 3 da coleção de teste. `urlArte()` (web/jogos.js) agora reconhece URL
+completa — e como todas as telas passam por ela desde a Fase 9, a correção
+vale para leitor, ficha, busca e coleção de uma vez.
+
+Verificado no navegador, em 375 px e no desktop: custo salvo e removido,
+valor negativo recusado, lucro conferido à mão (Gnaw: 2 × US$ 27,53 × PTAX
+5,0376 − R$ 240 = +R$ 37,38), os quatro períodos, sem rolagem lateral.
+

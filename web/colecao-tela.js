@@ -10,6 +10,7 @@ import * as colecao from "./colecao.js";
 import * as grafico from "./grafico.js";
 import * as pwa from "./pwa.js";
 import { variantePreco } from "./colecao.js";
+import { urlArte } from "./jogos.js";
 
 const alvo = document.getElementById("colecao");
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
@@ -52,9 +53,40 @@ function emReal(valor, moeda) {
  * (ver `colecao.variacao`). Carta que entrou na cotacao no meio da janela
  * faria a carteira "subir" sem nenhuma carta ter ficado mais cara.
  */
+/**
+ * Janela do gráfico. 30 dias é o padrão porque é o trecho com ponto
+ * DIÁRIO — antes disso o histórico é semanal (ver export_historico.py).
+ * A escolha fica no aparelho só por conveniência.
+ */
+const PERIODOS = [[7, "7 d"], [30, "30 d"], [90, "90 d"], [0, "Tudo"]];
+let periodo = (() => {
+  try {
+    // Sem escolha salva, `Number(null)` daria 0 — que é o código de "Tudo".
+    const bruto = localStorage.getItem("mypokycards:periodo");
+    const v = bruto === null ? NaN : Number(bruto);
+    return PERIODOS.some(([n]) => n === v) ? v : 30;
+  } catch { return 30; }
+})();
+
+function periodosHtml() {
+  return `<div class="periodos" role="group" aria-label="Período do gráfico">${
+    PERIODOS.map(([n, rot]) => `<button type="button" data-periodo="${n}"
+      aria-pressed="${n === periodo}" class="${n === periodo ? "ativo" : ""}">${rot}</button>`)
+      .join("")}</div>`;
+}
+
 function carteiraHtml(itens) {
-  const porDia = colecao.valorPorDia(itens, precos, historico);
-  if (!porDia) return "";
+  const inteira = colecao.valorPorDia(itens, precos, historico);
+  if (!inteira) return "";
+  const porDia = colecao.recortar(inteira, periodo);
+  if (!porDia) {
+    return `<section class="carteira">
+      <h2>Sua coleção ao longo do tempo</h2>
+      ${periodosHtml()}
+      <p class="carteira-nota">Ainda não há dois dias de cotação dentro deste
+        período. Escolha um período maior.</p>
+    </section>`;
+  }
 
   const varia = colecao.variacao(porDia);
   const graficos = Object.entries(porDia.moedas).map(([moeda, valores]) =>
@@ -66,7 +98,10 @@ function carteiraHtml(itens) {
       // `undefined` deixaria a figura calcular da propria linha, ignorando a
       // regra da cesta. Passar explicitamente null esconde a porcentagem.
       variacao: varia?.[moeda]?.pct ?? null,
-      nota: `${porDia.dias.length} dias`,
+      // Dias de CALENDÁRIO entre as pontas, não número de pontos: o passado
+      // é semanal, e 36 pontos cobriam 71 dias.
+      nota: `${Math.round((Date.parse(porDia.dias[porDia.dias.length - 1])
+        - Date.parse(porDia.dias[0])) / 86400000) + 1} dias`,
     })).filter(Boolean).join("");
 
   if (!graficos) return "";
@@ -74,6 +109,7 @@ function carteiraHtml(itens) {
   const n = porDia.dias.length;
   return `<section class="carteira">
     <h2>Sua coleção ao longo do tempo</h2>
+    ${periodosHtml()}
     ${graficos}
     <p class="carteira-nota">${
       varia
@@ -145,6 +181,73 @@ function guardadoHtml() {
   </div>`;
 }
 
+/**
+ * As três que mais valem, com a arte. É o que a pessoa mostra para alguém
+ * — e o que mais pesa se o valor mudar.
+ */
+function topHtml(itens) {
+  const top = colecao.maisValiosas(itens, precos, fx, 3);
+  if (!top.length) return "";
+  return `<section class="bloco">
+    <h2>Mais valiosas</h2>
+    <div class="top3">${top.map(({ it, m, total }, k) => {
+      const i = catalogo.ids.indexOf(it.card_id);
+      const meta = i >= 0 ? catalogo.meta[i] : null;
+      const arte = meta?.[7] ? urlArte(catalogo, meta[7], "media") : "";
+      return `<div class="top-carta">
+        <span class="top-pos">${k + 1}</span>
+        ${arte ? `<img alt="" decoding="async" src="${esc(arte)}">`
+               : `<span class="top-sem"></span>`}
+        <span class="top-nome">${esc(meta ? meta[0] : it.card_id)}</span>
+        <span class="top-valor">${fmt(total, m.c)}</span>
+        <span class="top-sub">${esc(it.variante || "")}${it.qtd > 1 ? ` · ×${it.qtd}` : ""}</span>
+      </div>`;
+    }).join("")}</div>
+    ${top.some(({ m }) => m.c !== top[0].m.c) ? `<p class="prog-nota">Ordem
+      pela conversão PTAX; cada valor aparece na moeda do próprio mercado.</p>` : ""}
+  </section>`;
+}
+
+/**
+ * Custo e resultado de uma entrada, com o formulário recolhido.
+ *
+ * `<details>` em vez de um modal: abre no lugar, funciona sem JS para
+ * abrir e fechar, e o teclado do celular não cobre um campo que fugiu
+ * para o meio da tela.
+ */
+function custoHtml(it, r, m) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const moedaPadrao = it.pago?.moeda || "BRL";
+  const resumo = it.pago
+    ? `Pago ${fmt(it.pago.valor, it.pago.moeda)}${it.qtd > 1 ? " cada" : ""}${
+        it.compradoEm ? ` em ${esc(it.compradoEm.split("-").reverse().join("/"))}` : ""}`
+    : "Custo";
+  const resultadoTxt = r
+    ? `<span class="custo-res ${r.lucro >= 0 ? "sobe" : "cai"}">${r.aproximado ? "≈ " : ""}${
+        r.lucro >= 0 ? "+" : "−"}${fmt(Math.abs(r.lucro), r.moeda)}${
+        r.pct === null ? "" : ` (${r.pct >= 0 ? "+" : ""}${r.pct.toLocaleString("pt-BR",
+          { maximumFractionDigits: 1 })}%)`}</span>`
+    : it.pago && !m ? `<span class="custo-res">sem cotação para comparar</span>` : "";
+  return `<details class="custo">
+    <summary>${resumo} ${resultadoTxt}</summary>
+    <form class="custo-form" data-card="${esc(it.card_id)}" data-var="${esc(it.variante || "")}">
+      <label>Preço pago por unidade
+        <input name="valor" type="number" inputmode="decimal" min="0" step="0.01"
+               value="${it.pago ? it.pago.valor : ""}" placeholder="0,00"></label>
+      <label>Moeda
+        <select name="moeda">${colecao.MOEDAS_CUSTO.map((c) =>
+          `<option value="${c}"${c === moedaPadrao ? " selected" : ""}>${c}</option>`).join("")}
+        </select></label>
+      <label>Data da compra
+        <input name="data" type="date" max="${hoje}" value="${esc(it.compradoEm || "")}"></label>
+      <div class="custo-botoes">
+        <button type="submit" class="primary">Salvar</button>
+        ${it.pago ? `<button type="button" data-limpar-custo>Remover custo</button>` : ""}
+      </div>
+    </form>
+  </details>`;
+}
+
 function desenhar() {
   const itens = colecao.itens();
 
@@ -167,7 +270,19 @@ function desenhar() {
       <em>${semPreco ? "não entram em nenhum total" : "todas cotadas"}</em></div>`,
   ].join("");
 
+  // Investido e resultado, por moeda de CUSTO (ver colecao.resultado).
+  const res = colecao.resultado(itens, precos, fx);
+  const kpisResultado = Object.entries(res.porMoeda).map(([moeda, g]) =>
+    `<div class="kpi"><small>Investido em ${esc(moeda)}</small><b>${fmt(g.custo, moeda)}</b>
+       <em>${N(g.cartas)} carta(s) com custo informado</em></div>
+     <div class="kpi resultado ${g.lucro >= 0 ? "sobe" : "cai"}">
+       <small>${g.lucro >= 0 ? "Lucro" : "Prejuízo"}${g.aproximado ? " (≈)" : ""}</small>
+       <b>${g.aproximado ? "≈ " : ""}${g.lucro >= 0 ? "+" : "−"}${fmt(Math.abs(g.lucro), moeda)}</b>
+       <em>${g.pct === null ? "custo zero" : `${g.pct >= 0 ? "+" : ""}${g.pct.toLocaleString("pt-BR",
+         { maximumFractionDigits: 1 })}% · vale ${fmt(g.hoje, moeda)} hoje`}</em></div>`).join("");
+
   const carteira = carteiraHtml(itens);
+  const top = topHtml(itens);
 
   // Ordena por valor decrescente; o que não tem preço vai para o fim, não
   // para o começo com valor zero.
@@ -196,6 +311,7 @@ function desenhar() {
       <span class="linha-sub">${esc(set)} · ${esc(it.variante || "variante não informada")}
         · <code>${esc(it.card_id)}</code></span>
       <span class="linha-val">${valorTxt}</span>
+      ${custoHtml(it, res.linhas.get(colecao.chaveDoItem(it)), m)}
       <div class="linha-acoes">
         <button data-acao="menos" data-card="${esc(it.card_id)}"
                 data-var="${esc(it.variante || "")}" aria-label="remover uma">−</button>
@@ -208,7 +324,16 @@ function desenhar() {
   alvo.innerHTML = `
     <section class="bloco">
       <h2>Resumo</h2>
-      <div class="kpis">${kpis}</div>
+      <div class="kpis">${kpis}${kpisResultado}</div>
+      ${Object.values(res.porMoeda).some((g) => g.aproximado) ? `<p class="prog-nota">
+        <strong>≈</strong> quando você pagou numa moeda e a cotação é em outra:
+        o valor de hoje foi convertido pela PTAX para comparar. É estimativa —
+        o preço no Brasil tem frete, imposto e liquidez próprios.</p>` : ""}
+      ${res.semCusto && Object.keys(res.porMoeda).length ? `<p class="prog-nota">
+        ${N(res.semCusto)} carta(s) sem custo informado ficam fora do lucro.</p>` : ""}
+      ${!Object.keys(res.porMoeda).length ? `<p class="prog-nota">Informe quanto
+        pagou em cada carta (botão <strong>Custo</strong>, na lista) para ver
+        lucro ou prejuízo.</p>` : ""}
       ${Object.keys(totais).length > 1 ? `<p class="prog-nota">
         Os totais ficam separados por moeda de propósito. Somar tudo em real
         daria a impressão de ser o valor de venda no Brasil — e é justamente
@@ -223,6 +348,7 @@ function desenhar() {
         variante seria dizer que um reverse holo vale o mesmo que o normal —
         então também ficam de fora.</p>` : ""}
     </section>
+    ${top}
     ${carteira}
 
     <section class="bloco">
@@ -288,6 +414,23 @@ alvo.addEventListener("click", async (ev) => {
     return;
   }
 
+  const p = ev.target.closest("button[data-periodo]");
+  if (p) {
+    periodo = Number(p.dataset.periodo);
+    try { localStorage.setItem("mypokycards:periodo", String(periodo)); } catch { /* só conveniência */ }
+    desenhar();
+    return;
+  }
+
+  const limpa = ev.target.closest("button[data-limpar-custo]");
+  if (limpa) {
+    const f = limpa.closest("form");
+    colecao.definirCompra(f.dataset.card, f.dataset.var || null, { valor: null, data: null });
+    desenhar();
+    ondeEstamos();
+    return;
+  }
+
   const b = ev.target.closest("button[data-acao]");
   if (!b) return;
   const n = colecao.adicionar(b.dataset.card, b.dataset.var || null,
@@ -298,6 +441,29 @@ alvo.addEventListener("click", async (ev) => {
   if (n === null) {
     b.textContent = "!";
     b.title = "o navegador não deixou gravar";
+    return;
+  }
+  desenhar();
+  ondeEstamos();
+});
+
+alvo.addEventListener("submit", (ev) => {
+  const f = ev.target.closest("form.custo-form");
+  if (!f) return;
+  ev.preventDefault();
+  const d = new FormData(f);
+  const ok = colecao.definirCompra(f.dataset.card, f.dataset.var || null, {
+    valor: String(d.get("valor") || "").replace(",", "."),
+    moeda: d.get("moeda"),
+    data: d.get("data") || null,
+  });
+  if (!ok) {
+    // Valor inválido ou navegador recusando gravar: o campo diz, a tela não
+    // finge que salvou.
+    const campo = f.querySelector("[name=valor]");
+    campo.setCustomValidity("Valor inválido, ou o navegador não deixou gravar");
+    campo.reportValidity();
+    setTimeout(() => campo.setCustomValidity(""), 2500);
     return;
   }
   desenhar();
