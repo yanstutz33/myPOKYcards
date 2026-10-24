@@ -27,6 +27,31 @@
   <div class="busca-campo">
     <input id="q" type="search" inputmode="search" autocomplete="off"
            placeholder="Nome, expansão ou número…" aria-label="Buscar carta">
+    <!-- Filtros. Com algum escolhido, a busca roda sem nome: "Enchanted de
+         Lorcana acima de R$ 500" é uma pergunta inteira. A faixa é em real
+         pela PTAX; a lista continua mostrando cada preço na moeda dele. -->
+    <div class="filtros" id="filtros">
+      <select id="fJogo" aria-label="Jogo">
+        <option value="">Todos os jogos</option>
+        <option value="pokemon">Pokémon</option>
+        <option value="onepiece">One Piece</option>
+        <option value="lorcana">Lorcana</option>
+        <option value="riftbound">Riftbound</option>
+      </select>
+      <select id="fRaridade" aria-label="Raridade">
+        <option value="">Qualquer raridade</option>
+      </select>
+      <input id="fMin" type="number" inputmode="decimal" min="0" step="1"
+             placeholder="R$ mín." aria-label="Preço mínimo em reais">
+      <input id="fMax" type="number" inputmode="decimal" min="0" step="1"
+             placeholder="R$ máx." aria-label="Preço máximo em reais">
+      <select id="fOrdem" aria-label="Ordenar">
+        <option value="relevancia">Relevância</option>
+        <option value="maior">Mais caras</option>
+        <option value="menor">Mais baratas</option>
+      </select>
+      <button type="button" id="fLimpar" hidden>Limpar</button>
+    </div>
   </div>
 
   <main class="busca-lista" id="lista">

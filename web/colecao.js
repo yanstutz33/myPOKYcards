@@ -48,8 +48,107 @@ function gravar(dados) {
   }
 }
 
-/** Chave de item: a mesma carta em variantes diferentes são itens distintos. */
-const chaveItem = (cardId, variante) => `${cardId}|${variante || "-"}`;
+/**
+ * Coleções nomeadas ("Fichário", "Para vender", "Deck"...).
+ *
+ * A coleção que já existia vira "Principal", e as entradas dela CONTINUAM
+ * com a chave antiga, sem o campo `col`. Isso não é economia: é o que faz
+ * a mudança não precisar de migração — quem atualiza o app abre a coleção
+ * exatamente como estava, e um backup exportado antes desta versão importa
+ * igual. Só entrada de outra coleção ganha `col` e chave com três partes.
+ */
+export const PADRAO = "Principal";
+const CHAVE_COLECOES = "mypokycards:colecoes:v1";
+const CHAVE_ATIVA = "mypokycards:colecao-ativa:v1";
+
+const colDe = (it) => it?.col || PADRAO;
+
+/** Chave de item: mesma carta em variante OU coleção diferente é outro item. */
+const chaveItem = (cardId, variante, col = PADRAO) =>
+  col === PADRAO ? `${cardId}|${variante || "-"}` : `${cardId}|${variante || "-"}|${col}`;
+
+/** Nomes das coleções: as que têm cartas e as criadas ainda vazias. */
+export function colecoes() {
+  let criadas = [];
+  try { criadas = JSON.parse(localStorage.getItem(CHAVE_COLECOES) || "[]"); } catch { /* vazio */ }
+  const nomes = new Set([PADRAO, ...criadas, ...Object.values(ler()).map(colDe)]);
+  return [...nomes];
+}
+
+function gravarNomes(nomes) {
+  try {
+    localStorage.setItem(CHAVE_COLECOES, JSON.stringify(nomes.filter((n) => n !== PADRAO)));
+    return true;
+  } catch { return false; }
+}
+
+/** Cria uma coleção vazia. Nome repetido não duplica; nome vazio não cria. */
+export function criarColecao(nome) {
+  const n = String(nome || "").trim().slice(0, 40);
+  if (!n) return null;
+  const nomes = colecoes();
+  if (!nomes.includes(n)) nomes.push(n);
+  return gravarNomes(nomes) ? n : null;
+}
+
+/**
+ * Apaga uma coleção SEM apagar carta: o que estava nela volta para a
+ * Principal, somando quantidades. Excluir a pasta e perder trinta cartas
+ * de uma vez seria o erro que este módulo inteiro tenta evitar.
+ */
+export function excluirColecao(nome) {
+  if (!nome || nome === PADRAO) return false;
+  const dados = ler();
+  for (const [k, it] of Object.entries(dados)) {
+    if (colDe(it) !== nome) continue;
+    delete dados[k];
+    juntar(dados, { ...it, col: undefined });
+  }
+  if (!gravar(dados)) return false;
+  gravarNomes(colecoes().filter((n) => n !== nome));
+  if (ativa() === nome) definirAtiva(PADRAO);
+  return true;
+}
+
+/** Para onde vão as cartas guardadas pelo leitor e pela ficha. */
+export function ativa() {
+  try {
+    const n = localStorage.getItem(CHAVE_ATIVA);
+    return n && colecoes().includes(n) ? n : PADRAO;
+  } catch { return PADRAO; }
+}
+
+export function definirAtiva(nome) {
+  try { localStorage.setItem(CHAVE_ATIVA, nome); } catch { /* só conveniência */ }
+}
+
+/** Soma `it` em `dados`, juntando com a entrada igual se já existir. */
+function juntar(dados, it) {
+  const col = colDe(it);
+  const k = chaveItem(it.card_id, it.variante, col);
+  const atual = dados[k];
+  if (!atual) {
+    const novo = { ...it };
+    if (col === PADRAO) delete novo.col; else novo.col = col;
+    dados[k] = novo;
+    return;
+  }
+  atual.qtd += it.qtd;
+  atual.pago ||= it.pago;
+  atual.compradoEm ||= it.compradoEm;
+}
+
+/** Move uma entrada inteira para outra coleção. */
+export function mover(cardId, variante, de, para) {
+  if (de === para) return true;
+  const dados = ler();
+  const k = chaveItem(cardId, variante, de);
+  const it = dados[k];
+  if (!it) return false;
+  delete dados[k];
+  juntar(dados, { ...it, col: para });
+  return gravar(dados);
+}
 
 /**
  * Duas fontes, dois vocabulários para a mesma coisa.
@@ -84,10 +183,11 @@ export function variantePreco(v) {
   return VARIANTE_PRECO[v] || v;
 }
 
-export function adicionar(cardId, variante, quantidade = 1) {
+export function adicionar(cardId, variante, quantidade = 1, col = ativa()) {
   const dados = ler();
-  const k = chaveItem(cardId, variante);
-  const atual = dados[k] || { card_id: cardId, variante: variante || null, qtd: 0 };
+  const k = chaveItem(cardId, variante, col);
+  const atual = dados[k] || { card_id: cardId, variante: variante || null, qtd: 0,
+                              ...(col === PADRAO ? {} : { col }) };
   atual.qtd += quantidade;
   atual.em = atual.em || new Date().toISOString();
   if (atual.qtd <= 0) delete dados[k];
@@ -107,9 +207,9 @@ export function adicionar(cardId, variante, quantidade = 1) {
  */
 export const MOEDAS_CUSTO = ["BRL", "USD", "EUR"];
 
-export function definirCompra(cardId, variante, { valor, moeda, data }) {
+export function definirCompra(cardId, variante, { valor, moeda, data }, col = PADRAO) {
   const dados = ler();
-  const it = dados[chaveItem(cardId, variante)];
+  const it = dados[chaveItem(cardId, variante, col)];
   if (!it) return false;
   if (valor === null || valor === undefined || valor === "") {
     delete it.pago;
@@ -172,7 +272,7 @@ export function resultado(itensLista, precos, fx) {
     g.hoje += hoje;
     g.cartas += it.qtd;
     g.aproximado ||= aproximado;
-    linhas.set(chaveItem(it.card_id, it.variante),
+    linhas.set(chaveItem(it.card_id, it.variante, colDe(it)),
       { custo, hoje, lucro: hoje - custo, moeda: it.pago.moeda, aproximado,
         pct: custo > 0 ? ((hoje - custo) / custo) * 100 : null });
   }
@@ -184,7 +284,8 @@ export function resultado(itensLista, precos, fx) {
 }
 
 /** Resultado de um item, pela mesma conta do total. */
-export const chaveDoItem = (it) => chaveItem(it.card_id, it.variante);
+export const chaveDoItem = (it) => chaveItem(it.card_id, it.variante, colDe(it));
+export const colecaoDoItem = colDe;
 
 /**
  * As cartas que mais valem, somando a quantidade.
@@ -206,8 +307,52 @@ export function maisValiosas(itensLista, precos, fx, n = 3) {
     .slice(0, n);
 }
 
-export function quantidade(cardId, variante) {
-  return ler()[chaveItem(cardId, variante)]?.qtd || 0;
+/**
+ * A coleção como planilha.
+ *
+ * Ponto e vírgula e vírgula decimal: é o que o Excel em português abre com
+ * duplo clique, sem assistente de importação. Com vírgula como separador,
+ * "1.142,80" viraria duas colunas. O BOM no começo faz o Excel ler acento
+ * como UTF-8 em vez de "Ã©".
+ *
+ * Valor de hoje e lucro saem só quando existem — célula vazia é "não sei",
+ * e um 0 numa planilha entra em soma como se fosse medido.
+ */
+export function csv(itensLista, catalogo, precos, fx) {
+  const n = (v) => (v === null || v === undefined || !Number.isFinite(v))
+    ? "" : v.toFixed(2).replace(".", ",");
+  // Aspas e quebras por CÓDIGO de caractere, sem regex nem escape. Duas
+  // tentativas anteriores quebraram: o detector de string cortada
+  // (tests/checar_js.py) lia a aspa dentro do regex como string aberta, e a
+  // versão com escape unicode virou aspa literal no caminho até o disco.
+  const ASPA = String.fromCharCode(34);
+  const ESPECIAIS = [";", ASPA, String.fromCharCode(10), String.fromCharCode(13)];
+  const cel = (v) => {
+    const s = String(v ?? "");
+    return ESPECIAIS.some((c) => s.includes(c))
+      ? ASPA + s.split(ASPA).join(ASPA + ASPA) + ASPA : s;
+  };
+  const res = resultado(itensLista, precos, fx);
+  const cab = ["colecao", "card_id", "nome", "expansao", "numero", "variante", "qtd",
+    "preco_unit", "moeda_preco", "valor_total", "pago_unit", "moeda_pago",
+    "comprado_em", "lucro", "lucro_aproximado", "adicionada_em"];
+  const linhas = itensLista.map((it) => {
+    const i = catalogo?.ids?.indexOf(it.card_id) ?? -1;
+    const meta = i >= 0 ? catalogo.meta[i] : null;
+    const m = (precos[it.card_id] || []).find((x) => x.v === variantePreco(it.variante));
+    const r = res.linhas.get(chaveItem(it.card_id, it.variante, colDe(it)));
+    return [colDe(it), it.card_id, meta?.[0] ?? "", meta?.[1] ?? "", meta?.[2] ?? "",
+      it.variante ?? "", it.qtd, n(m?.ref), m?.c ?? "", n(m ? m.ref * it.qtd : null),
+      n(it.pago?.valor), it.pago?.moeda ?? "", it.compradoEm ?? "",
+      n(r?.lucro), r ? (r.aproximado ? "sim" : "não") : "",
+      (it.em || "").slice(0, 10)].map(cel).join(";");
+  });
+  // BOM por código, não literal: invisível no fonte, sumiria numa edição.
+  return String.fromCharCode(0xFEFF) + [cab.join(";"), ...linhas].join("\r\n");
+}
+
+export function quantidade(cardId, variante, col = ativa()) {
+  return ler()[chaveItem(cardId, variante, col)]?.qtd || 0;
 }
 
 export function itens() {
@@ -228,8 +373,13 @@ export function importar(itens) {
   let somadas = 0;
   for (const it of itens) {
     if (!it?.card_id || typeof it.qtd !== "number" || it.qtd <= 0) continue;
-    const k = chaveItem(it.card_id, it.variante);
-    const atual = dados[k] || { card_id: it.card_id, variante: it.variante || null, qtd: 0 };
+    // Nome de coleção vem de arquivo: texto livre, cortado no mesmo limite
+    // de quem cria pela tela.
+    const col = typeof it.col === "string" && it.col.trim()
+      ? it.col.trim().slice(0, 40) : PADRAO;
+    const k = chaveItem(it.card_id, it.variante, col);
+    const atual = dados[k] || { card_id: it.card_id, variante: it.variante || null, qtd: 0,
+                                ...(col === PADRAO ? {} : { col }) };
     atual.qtd += it.qtd;
     atual.em = atual.em || it.em || new Date().toISOString();
     // Custo e data vêm junto, mas não pisam no que já existe aqui: o

@@ -606,3 +606,38 @@ Verificado no navegador, em 375 px e no desktop: custo salvo e removido,
 valor negativo recusado, lucro conferido à mão (Gnaw: 2 × US$ 27,53 × PTAX
 5,0376 − R$ 240 = +R$ 37,38), os quatro períodos, sem rolagem lateral.
 
+## Coleções, histórico de leituras, busca com filtros e CSV — FEITO (24/10/2026)
+
+O resto do que o MonPrice mostra publicamente e fazia sentido aqui.
+
+**Coleções nomeadas sem migração.** A coleção que existia vira "Principal" e
+as entradas dela continuam com a chave antiga, sem campo `col`. Quem
+atualiza abre tudo igual, e backup exportado antes importa igual. Só
+entrada de outra coleção ganha chave de três partes. Testado com uma
+coleção no formato antigo: abriu com as mesmas 6 cartas.
+
+Excluir uma coleção NÃO apaga carta: o que estava nela volta para a
+Principal, somando. O backup JSON é sempre a coleção inteira; a planilha
+sai da aba que está na tela, com a coluna `colecao`.
+
+**Histórico de leituras.** Toda carta travada fica registrada no aparelho
+(300 no máximo). A mesma carta lida em sequência — 10 minutos — vira uma
+linha "×3", e o botão de guardar usa essa quantidade. `?demo` fica fora.
+
+**Busca com filtros.** Jogo, raridade (a lista muda com o jogo), faixa de
+preço em real pela PTAX e ordenação. Com filtro, a busca roda sem nome.
+Carta sem cotação sai de qualquer busca com faixa: "não sei" não está
+entre 10 e 100.
+
+**CSV.** Ponto e vírgula, vírgula decimal e BOM: abre com duplo clique no
+Excel em português. Célula vazia quando não se sabe — zero entraria em soma.
+
+### Dois tropeços registrados
+
+- O detector de string cortada (`checar_js.py`) lê `/` logo depois de
+  `return` como divisão, e acusou aspa dentro de regex. Reescrito com
+  códigos de caractere, sem afrouxar o detector.
+- Um `"` escrito por ferramenta chegou ao disco como aspa literal e
+  quebrou o arquivo; o `﻿` virou caractere invisível. Escape unicode em
+  edição automática não é confiável: use `String.fromCharCode`.
+

@@ -20,6 +20,9 @@ import * as som from "./som.js";
 import * as ficha from "./ficha.js";
 import * as busca from "./buscar.js";
 import * as jogos from "./jogos.js";
+import * as leituras from "./leituras.js";
+
+const EH_DEMO = new URLSearchParams(location.search).has("demo");
 
 const els = {
   video: document.getElementById("video"),
@@ -987,6 +990,8 @@ function margem(results) {
  */
 function travar(cardId, manual = false) {
   escolhido = 0;
+  // `?demo` lê a arte do catálogo, não uma carta da pessoa: fora do histórico.
+  if (!EH_DEMO) leituras.registrar(cardId, manual);
   if (manual) som.somCapturou();
   else som.somReconheceu();
   // Vibração curta: confirma no tato o que a tela e o som confirmam, e é o
@@ -1190,6 +1195,8 @@ function guardarHtml(cardId, variantes) {
     <div class="mults" role="group" aria-label="Quantas cópias guardar por toque">${chips}</div>
     <div class="guardar-btns">${botoes}</div>
     ${jaTem ? `<span class="guardar-tem">${jaTem} desta carta na coleção</span>` : ""}
+    ${colecao.ativa() !== colecao.PADRAO ? `<span class="guardar-tem">Guardando em
+      <strong>${escapeHtml(colecao.ativa())}</strong></span>` : ""}
   </div>`;
 }
 

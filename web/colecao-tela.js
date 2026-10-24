@@ -11,6 +11,7 @@ import * as grafico from "./grafico.js";
 import * as pwa from "./pwa.js";
 import { variantePreco } from "./colecao.js";
 import { urlArte } from "./jogos.js";
+import * as leituras from "./leituras.js";
 
 const alvo = document.getElementById("colecao");
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
@@ -230,7 +231,8 @@ function custoHtml(it, r, m) {
     : it.pago && !m ? `<span class="custo-res">sem cotação para comparar</span>` : "";
   return `<details class="custo">
     <summary>${resumo} ${resultadoTxt}</summary>
-    <form class="custo-form" data-card="${esc(it.card_id)}" data-var="${esc(it.variante || "")}">
+    <form class="custo-form" data-card="${esc(it.card_id)}" data-var="${esc(it.variante || "")}"
+          data-col="${esc(colecao.colecaoDoItem(it))}">
       <label>Preço pago por unidade
         <input name="valor" type="number" inputmode="decimal" min="0" step="0.01"
                value="${it.pago ? it.pago.valor : ""}" placeholder="0,00"></label>
@@ -248,12 +250,96 @@ function custoHtml(it, r, m) {
   </details>`;
 }
 
-function desenhar() {
-  const itens = colecao.itens();
+/**
+ * As últimas leituras, com o botão de guardar ao lado.
+ *
+ * Guarda na variante "normal" quando a carta tem, senão na primeira que o
+ * catálogo lista — a mesma escolha padrão do leitor. Quem quer outra
+ * variante abre a ficha, que mostra todas.
+ */
+const UTEIS = ["normal", "holo", "reverse", "foil", "holofoil", "cold-foil",
+  "1st-edition", "unlimited"];
 
-  if (!itens.length) {
+function leiturasHtml() {
+  const lista = leituras.ler().slice(0, 12);
+  if (!lista.length) return "";
+  return `<section class="bloco">
+    <h2>Lidas recentemente</h2>
+    <div class="leituras">${lista.map((l) => {
+      const i = catalogo.ids.indexOf(l.card_id);
+      if (i < 0) return "";
+      const meta = catalogo.meta[i];
+      const variantes = (meta[5] || []).filter((v) => UTEIS.includes(v));
+      const v = variantes.includes("normal") ? "normal" : variantes[0] || "normal";
+      const m = (precos[l.card_id] || []).find((x) => x.v === variantePreco(v))
+        || (precos[l.card_id] || [])[0];
+      const arte = meta[7] ? urlArte(catalogo, meta[7]) : "";
+      return `<div class="leitura">
+        ${arte ? `<img alt="" loading="lazy" decoding="async" src="${esc(arte)}">`
+               : `<span class="leitura-sem"></span>`}
+        <span class="leitura-nome">${esc(meta[0])}${l.n > 1
+          ? ` <span class="leitura-n" title="lida ${l.n} vezes em sequência">×${l.n}</span>` : ""}</span>
+        <span class="leitura-sub">${esc(meta[1])} · ${esc(leituras.quando(l.em))}</span>
+        <span class="leitura-preco">${m ? fmt(m.ref, m.c) : "sem cotação"}</span>
+        <button type="button" data-guardar-leitura="${esc(l.card_id)}" data-var="${esc(v)}"
+                data-n="${l.n}" aria-label="Guardar ${esc(meta[0])} na coleção">+ ${
+                  l.n > 1 ? l.n : ""}</button>
+      </div>`;
+    }).join("")}</div>
+    <div class="actions"><button type="button" data-limpar-leituras>Limpar histórico</button></div>
+  </section>`;
+}
+
+/**
+ * Qual coleção está na tela. "Todas" soma as coleções — a pergunta "quanto
+ * vale tudo o que eu tenho" não pode exigir abrir uma por uma.
+ */
+const TODAS = "__todas__";
+let vista = (() => {
+  try { return localStorage.getItem("mypokycards:vista") || TODAS; } catch { return TODAS; }
+})();
+
+function abasHtml(todos) {
+  const nomes = colecao.colecoes();
+  if (vista !== TODAS && !nomes.includes(vista)) vista = TODAS;
+  const conta = (nome) => todos.filter((it) => colecao.colecaoDoItem(it) === nome)
+    .reduce((s, it) => s + it.qtd, 0);
+  const ativa = colecao.ativa();
+  const aba = (valor, rotulo, n) => `<button type="button" data-vista="${esc(valor)}"
+      aria-pressed="${vista === valor}" class="${vista === valor ? "ativo" : ""}">${
+      esc(rotulo)} <small>${N(n)}</small></button>`;
+  return `<div class="abas-col">
+    <div class="abas" role="group" aria-label="Coleções">
+      ${aba(TODAS, "Todas", todos.reduce((s, it) => s + it.qtd, 0))}
+      ${nomes.map((n) => aba(n, n, conta(n))).join("")}
+      <button type="button" class="aba-nova" data-nova-colecao>+ Nova</button>
+    </div>
+    ${vista !== TODAS ? `<p class="abas-nota">${vista === ativa
+      ? "O leitor guarda as cartas <strong>nesta coleção</strong>."
+      : `O leitor guarda em <strong>${esc(ativa)}</strong>.
+         <button type="button" class="link" data-ativar="${esc(vista)}">Guardar nesta</button>`}
+      ${vista !== colecao.PADRAO ? `<button type="button" class="link perigo"
+         data-excluir-colecao="${esc(vista)}">Excluir coleção</button>` : ""}</p>` : ""}
+  </div>`;
+}
+
+function desenhar() {
+  const todos = colecao.itens();
+
+  if (!todos.length && colecao.colecoes().length === 1) {
     alvo.innerHTML = `<p class="empty">Nenhuma carta guardada ainda.<br>
-      Abra o leitor, aponte para uma carta e toque em <strong>Guardar</strong>.</p>`;
+      Abra o leitor, aponte para uma carta e toque em <strong>Guardar</strong>.</p>
+      ${leiturasHtml()}`;
+    return;
+  }
+  const abas = abasHtml(todos);
+  const itens = vista === TODAS ? todos
+    : todos.filter((it) => colecao.colecaoDoItem(it) === vista);
+  if (!itens.length) {
+    alvo.innerHTML = `${abas}<p class="empty">Esta coleção está vazia.<br>
+      Use <strong>Guardar nesta</strong> e as cartas lidas virão para cá, ou mova
+      cartas de outra coleção pelo menu de cada uma.</p>
+      ${leiturasHtml()}`;
     return;
   }
 
@@ -300,6 +386,7 @@ function desenhar() {
     return b.unit * b.it.qtd - a.unit * a.it.qtd;
   });
 
+  const nomesCol = colecao.colecoes();
   const lista = linhas.map(({ it, meta, m }) => {
     const nome = meta ? meta[0] : it.card_id;
     const set = meta ? `${meta[1]} · ${meta[2]}` : "";
@@ -309,19 +396,28 @@ function desenhar() {
     return `<div class="linha">
       <span>${esc(nome)} ${it.qtd > 1 ? `<strong>×${it.qtd}</strong>` : ""}</span>
       <span class="linha-sub">${esc(set)} · ${esc(it.variante || "variante não informada")}
-        · <code>${esc(it.card_id)}</code></span>
+        · <code>${esc(it.card_id)}</code>${vista === TODAS && nomesCol.length > 1
+          ? ` · <span class="linha-col">${esc(colecao.colecaoDoItem(it))}</span>` : ""}</span>
       <span class="linha-val">${valorTxt}</span>
       ${custoHtml(it, res.linhas.get(colecao.chaveDoItem(it)), m)}
       <div class="linha-acoes">
+        ${nomesCol.length > 1 ? `<select data-mover data-card="${esc(it.card_id)}"
+            data-var="${esc(it.variante || "")}" data-col="${esc(colecao.colecaoDoItem(it))}"
+            aria-label="Mover para outra coleção">${nomesCol.map((n) =>
+              `<option value="${esc(n)}"${n === colecao.colecaoDoItem(it) ? " selected" : ""}>${
+                esc(n)}</option>`).join("")}</select>` : ""}
         <button data-acao="menos" data-card="${esc(it.card_id)}"
-                data-var="${esc(it.variante || "")}" aria-label="remover uma">−</button>
+                data-var="${esc(it.variante || "")}" data-col="${esc(colecao.colecaoDoItem(it))}"
+                aria-label="remover uma">−</button>
         <button data-acao="mais" data-card="${esc(it.card_id)}"
-                data-var="${esc(it.variante || "")}" aria-label="adicionar uma">+</button>
+                data-var="${esc(it.variante || "")}" data-col="${esc(colecao.colecaoDoItem(it))}"
+                aria-label="adicionar uma">+</button>
       </div>
     </div>`;
   }).join("");
 
   alvo.innerHTML = `
+    ${abas}
     <section class="bloco">
       <h2>Resumo</h2>
       <div class="kpis">${kpis}${kpisResultado}</div>
@@ -350,12 +446,14 @@ function desenhar() {
     </section>
     ${top}
     ${carteira}
+    ${leiturasHtml()}
 
     <section class="bloco">
       <h2>Cartas</h2>
       <div class="linhas">${lista}</div>
       <div class="actions">
-        <button id="exportar" class="primary">Exportar</button>
+        <button id="exportar" class="primary">Exportar backup</button>
+        <button id="exportarCsv">Planilha (CSV)</button>
         <button id="importar">Importar</button>
         <button id="limpar">Apagar tudo</button>
       </div>
@@ -364,6 +462,12 @@ function desenhar() {
     </section>`;
 
   document.getElementById("exportar").onclick = exportar;
+  // A planilha sai da coleção que está na tela: "Todas" exporta tudo, com a
+  // coluna `colecao` dizendo de onde é cada linha.
+  document.getElementById("exportarCsv").onclick = () => baixar(
+    colecao.csv(itens, catalogo, precos, fx), "text/csv;charset=utf-8",
+    `colecao-mypokycards-${vista === TODAS ? "todas" : vista.replace(/[^\w-]+/g, "_")}-${
+      new Date().toISOString().slice(0, 10)}.csv`);
   document.getElementById("importar").onclick = () =>
     document.getElementById("arquivo").click();
   document.getElementById("arquivo").onchange = async (ev) => {
@@ -390,14 +494,20 @@ function desenhar() {
  * Exporta como download. `URL.createObjectURL` + link temporário, porque a
  * coleção nunca sai do aparelho — não há servidor para gerar o arquivo.
  */
-function exportar() {
-  const blob = new Blob([JSON.stringify(colecao.itens(), null, 2)],
-    { type: "application/json" });
+function baixar(texto, tipo, nome) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `colecao-mypokycards-${new Date().toISOString().slice(0, 10)}.json`;
+  a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
+  a.download = nome;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function exportar() {
+  // O backup é SEMPRE a coleção inteira, todas as pastas: é o arquivo que
+  // restaura o aparelho, e um backup parcial que parece completo é o pior
+  // tipo de backup.
+  baixar(JSON.stringify(colecao.itens(), null, 2), "application/json",
+    `colecao-mypokycards-${new Date().toISOString().slice(0, 10)}.json`);
   // Registra a digital do momento. Sem isso o aviso de "não exportada" teria
   // que ser genérico e permanente, e aviso permanente vira parte do cenário:
   // a pessoa para de ler e ele deixa de servir para o dia em que importa.
@@ -414,6 +524,61 @@ alvo.addEventListener("click", async (ev) => {
     return;
   }
 
+  const guardar = ev.target.closest("button[data-guardar-leitura]");
+  if (guardar) {
+    // A quantidade lida em sequência é a quantidade guardada: quem leu ×4
+    // tem quatro na mão. Na coleção que está na tela, ou na ativa em "Todas".
+    const destino = vista === TODAS ? colecao.ativa() : vista;
+    const n = colecao.adicionar(guardar.dataset.guardarLeitura, guardar.dataset.var,
+      Number(guardar.dataset.n) || 1, destino);
+    if (n === null) { guardar.textContent = "!"; return; }
+    desenhar();
+    ondeEstamos();
+    return;
+  }
+  if (ev.target.closest("button[data-limpar-leituras]")) {
+    if (confirm("Limpar o histórico de leituras? A coleção não é afetada.")) {
+      leituras.limpar();
+      desenhar();
+    }
+    return;
+  }
+
+  const aba = ev.target.closest("button[data-vista]");
+  if (aba) {
+    vista = aba.dataset.vista;
+    try { localStorage.setItem("mypokycards:vista", vista); } catch { /* só conveniência */ }
+    desenhar();
+    return;
+  }
+  if (ev.target.closest("button[data-nova-colecao]")) {
+    const nome = prompt("Nome da nova coleção (ex.: Para vender, Fichário, Deck)");
+    const criada = colecao.criarColecao(nome);
+    if (criada) {
+      vista = criada;
+      try { localStorage.setItem("mypokycards:vista", vista); } catch { /* idem */ }
+      desenhar();
+    }
+    return;
+  }
+  const ativar = ev.target.closest("button[data-ativar]");
+  if (ativar) {
+    colecao.definirAtiva(ativar.dataset.ativar);
+    desenhar();
+    return;
+  }
+  const excluir = ev.target.closest("button[data-excluir-colecao]");
+  if (excluir) {
+    const nome = excluir.dataset.excluirColecao;
+    if (confirm(`Excluir a coleção “${nome}”? As cartas dela voltam para a ${
+      colecao.PADRAO} — nenhuma carta é apagada.`) && colecao.excluirColecao(nome)) {
+      vista = TODAS;
+      desenhar();
+      ondeEstamos();
+    }
+    return;
+  }
+
   const p = ev.target.closest("button[data-periodo]");
   if (p) {
     periodo = Number(p.dataset.periodo);
@@ -425,7 +590,8 @@ alvo.addEventListener("click", async (ev) => {
   const limpa = ev.target.closest("button[data-limpar-custo]");
   if (limpa) {
     const f = limpa.closest("form");
-    colecao.definirCompra(f.dataset.card, f.dataset.var || null, { valor: null, data: null });
+    colecao.definirCompra(f.dataset.card, f.dataset.var || null, { valor: null, data: null },
+      f.dataset.col);
     desenhar();
     ondeEstamos();
     return;
@@ -434,13 +600,24 @@ alvo.addEventListener("click", async (ev) => {
   const b = ev.target.closest("button[data-acao]");
   if (!b) return;
   const n = colecao.adicionar(b.dataset.card, b.dataset.var || null,
-    b.dataset.acao === "mais" ? 1 : -1);
+    b.dataset.acao === "mais" ? 1 : -1, b.dataset.col || colecao.PADRAO);
   // `adicionar` devolve null quando o navegador recusa gravar (modo privado,
   // cota cheia). O leitor ja avisava; esta tela redesenhava como se tivesse
   // dado certo, e o numero voltava ao anterior sem explicacao nenhuma.
   if (n === null) {
     b.textContent = "!";
     b.title = "o navegador não deixou gravar";
+    return;
+  }
+  desenhar();
+  ondeEstamos();
+});
+
+alvo.addEventListener("change", (ev) => {
+  const sel = ev.target.closest("select[data-mover]");
+  if (!sel) return;
+  if (!colecao.mover(sel.dataset.card, sel.dataset.var || null, sel.dataset.col, sel.value)) {
+    sel.value = sel.dataset.col;    // o navegador recusou gravar: volta como estava
     return;
   }
   desenhar();
@@ -456,7 +633,7 @@ alvo.addEventListener("submit", (ev) => {
     valor: String(d.get("valor") || "").replace(",", "."),
     moeda: d.get("moeda"),
     data: d.get("data") || null,
-  });
+  }, f.dataset.col);
   if (!ok) {
     // Valor inválido ou navegador recusando gravar: o campo diz, a tela não
     // finge que salvou.

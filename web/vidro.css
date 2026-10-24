@@ -612,3 +612,145 @@ html:has(.scan-body, .painel-body) { background: #06070C; }
   .top-carta { padding: 0.45rem; }
   .top-valor { font-size: 0.88rem; }
 }
+
+/* ======================================================= coleções nomeadas
+   Mesmo trilho de cápsulas do filtro de período: são o mesmo tipo de
+   controle (escolher uma visão), então têm a mesma cara. Rola de lado no
+   celular em vez de quebrar em três linhas. */
+.abas-col { display: flex; flex-direction: column; gap: 0.5rem; }
+.abas {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--v-borda);
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.abas::-webkit-scrollbar { display: none; }
+.painel-body .abas button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--texto-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.painel-body .abas button small { opacity: 0.7; font-weight: 500; margin-left: 0.2rem; }
+.painel-body .abas button.ativo {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: var(--v-brilho);
+}
+.painel-body .abas .aba-nova { color: var(--acento); }
+.abas-nota { margin: 0; font-size: 0.8rem; color: var(--texto-2); display: flex;
+  flex-wrap: wrap; gap: 0.3rem 0.8rem; align-items: center; }
+.painel-body button.link {
+  min-height: 0; padding: 0; border: 0; background: none; box-shadow: none;
+  color: var(--acento); font-weight: 600; text-decoration: underline;
+  text-underline-offset: 3px; border-radius: 0;
+}
+.painel-body button.link.perigo { color: #FF9AA8; }
+.linha-col {
+  padding: 0 0.45rem; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08); border: 1px solid var(--v-borda);
+}
+.linha-acoes select[data-mover] {
+  max-width: 8.5rem;
+  min-height: 34px;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--v-borda);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.78rem;
+  color-scheme: dark;
+}
+.linha-acoes { display: flex; gap: 0.35rem; align-items: center; justify-content: flex-end; }
+
+/* ======================================================= lidas recentemente */
+.leituras { display: flex; flex-direction: column; gap: 0.45rem; }
+.leitura {
+  display: grid;
+  grid-template-columns: 38px 1fr auto auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.1rem 0.7rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 16px;
+  background: var(--v-fundo);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  border: 1px solid var(--v-borda);
+  box-shadow: var(--v-brilho);
+}
+.leitura img, .leitura-sem {
+  grid-row: 1 / span 2;
+  width: 38px; aspect-ratio: 63 / 88; object-fit: cover;
+  border-radius: 6px; background: rgba(255, 255, 255, 0.06);
+}
+.leitura-nome { font-weight: 700; font-size: 0.88rem; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leitura-n {
+  margin-left: 0.25rem; padding: 0 0.4rem; border-radius: 999px;
+  background: rgba(159, 230, 255, 0.2); color: var(--acento); font-size: 0.75rem;
+}
+.leitura-sub { grid-column: 2; font-size: 0.72rem; color: var(--texto-2);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leitura-preco { grid-row: 1 / span 2; grid-column: 3; font-weight: 700; font-size: 0.85rem; }
+.painel-body .leitura button {
+  grid-row: 1 / span 2; grid-column: 4;
+  min-width: 40px; min-height: 36px; padding: 0 0.7rem;
+}
+
+/* ============================================================ filtros de busca
+   Uma linha de cápsulas que rola de lado no celular. Os campos de preço são
+   estreitos de propósito: cabem "R$ máx." e quatro dígitos, que é o que se
+   digita ali. */
+.busca-campo { background: none; border-bottom: 0; }
+.filtros {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.filtros::-webkit-scrollbar { display: none; }
+.filtros select, .busca-campo .filtros input, .filtros button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 36px;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--v-borda);
+  background: var(--v-fundo-2);
+  -webkit-backdrop-filter: var(--v-blur);
+  backdrop-filter: var(--v-blur);
+  box-shadow: var(--v-brilho);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.82rem;
+  color-scheme: dark;
+}
+.busca-campo .filtros input { width: 6.4rem; }
+.filtros select { max-width: 12rem; }
+.filtros button { color: var(--acento); font-weight: 600; cursor: pointer; }
+.filtros select:focus-visible, .busca-campo .filtros input:focus {
+  outline: 2px solid var(--acento);
+  outline-offset: 1px;
+}
+
+/* Em tela estreita o valor grande ("US$ 1.489,13") quebrava entre símbolo
+   e número, em duas linhas. Menor e sem quebra dentro do valor. */
+@media (max-width: 480px) {
+  .kpi b { font-size: 1.35rem; white-space: nowrap; }
+}
