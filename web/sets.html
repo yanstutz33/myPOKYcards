@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#06070C">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icone.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>myPOKYcards · Sets</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="painel.css">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="pokedex.css">
+  <link rel="stylesheet" href="vidro.css">
+</head>
+<body class="painel-body">
+
+  <header class="painel-top">
+    <div>
+      <span class="brand">myPOKY<b>cards</b></span>
+      <h1 id="titulo">Sets</h1>
+    </div>
+    <a class="ir-scan" href="colecao.html">Coleção</a>
+    <a class="ir-scan" href="buscar.html">Buscar</a>
+    <a class="ir-scan" href="index.html">Abrir leitor →</a>
+  </header>
+
+  <main id="sets" class="painel">
+    <p class="empty">Carregando…</p>
+  </main>
+
+  <footer class="painel-pe">
+    <p>A completude conta cartas <strong>diferentes</strong> que você tem, em
+      qualquer variante e qualquer coleção, sobre as cartas do set que o
+      leitor reconhece. Carta sem imagem em fonte nenhuma não entra na conta —
+      o número impresso do set aparece ao lado quando é conhecido.</p>
+  </footer>
+
+  <div class="ficha" id="ficha" hidden></div>
+
+  <script type="module" src="sets-tela.js"></script>
+  <script type="module" src="pwa.js"></script>
+</body>
+</html>

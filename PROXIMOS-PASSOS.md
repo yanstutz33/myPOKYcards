@@ -641,3 +641,28 @@ Excel em português. Célula vazia quando não se sabe — zero entraria em soma
   quebrou o arquivo; o `﻿` virou caractere invisível. Escape unicode em
   edição automática não é confiável: use `String.fromCharCode`.
 
+## Navegar por set, com completude — FEITO (24/10/2026)
+
+`sets.html`: os 421 sets do índice, os que a pessoa começou primeiro, cada
+um com "tenho X de Y" e barra. Aberto, o set mostra a grade em ordem de
+número — as que tem em cor com ✓, as que faltam apagadas — e quanto
+custaria completar.
+
+**"Tenho" é carta DIFERENTE**, em qualquer variante e qualquer coleção:
+três cópias não completam três posições, e o reverse holo ocupa a posição
+tanto quanto o normal.
+
+**O denominador é o índice, não o número impresso.** O impresso ("/204")
+deixa fora secretas e Enchanted, que se colecionam; o catálogo inteiro
+exigiria baixar 41 mil cartas. O impresso aparece ao lado quando é
+conhecido (Pokémon), para a diferença ficar visível.
+
+**Cartas gigantes fora da conta.** A grade mostrou "5/204" duas vezes: uma
+era "Hades (Oversized)", produto promocional com o número da carta. 12 no
+índice; continuam no leitor e na busca, saem da completude. Com isso o
+The First Chapter fecha em 216 = 204 + 12 Enchanted, o tamanho real.
+
+**Custo para completar** pela variante mais barata de cada carta que
+falta, por moeda, com as sem cotação contadas à parte. Medido no teste:
+US$ 3.210,09 para as 213 que faltavam no The First Chapter.
+

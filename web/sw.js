@@ -56,6 +56,7 @@ const ESSENCIAIS = [
   "./matcher.worker.js",
   "./colecao.html", "./colecao-tela.js",
   "./buscar.html", "./buscar.js", "./busca-tela.js",
+  "./sets.html", "./sets-tela.js",
   "./painel.html", "./painel.js", "./painel.css",
   "./sobre.html", "./sobre.js", "./sobre.css",
   "./pokedex.css", "./vidro.css", "./pwa.js",

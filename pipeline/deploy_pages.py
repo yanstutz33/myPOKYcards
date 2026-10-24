@@ -53,6 +53,8 @@ OBRIGATORIOS = [
     ("jogos.js", 1_000),
     ("painel.html", 500),
     ("colecao.html", 500),
+    ("sets.html", 500),
+    ("sets-tela.js", 2_000),
     ("sobre.html", 2_000),
     ("data/numeros.json", 50),
     ("colecao.js", 1_000),
