@@ -523,3 +523,146 @@ Abrir no navegador, com o site servido:
 
 Antes de qualquer publicação: `python tests/test_invariantes.py` (29
 checagens) e `python tests/checar_js.py`.
+
+## One Piece, Lorcana e Riftbound — FEITO (24/10/2026)
+
+Pedido: "deixar o scanner na versão pro max, lendo Riftbound, One Piece e
+Lorcana além dos Pokémon".
+
+**Fonte única: TCGCSV** (espelho diário da API do TCGplayer). Medido antes de
+escolher: Lorcast e Riftcodex trazem o id do TCGplayer, a OPTCG API não. Com
+o TCGCSV o `productId` é catálogo, imagem e preço ao mesmo tempo — join
+nativo, o mesmo critério que escolheu o TCGdex.
+
+**Um índice só.** Os três entram no mesmo index.bin, depois do Pokémon, com
+`regiao` = jogo. O seletor de jogo é opcional: "Todos" continua sendo o
+padrão, e escolher um jogo só tira os outros da disputa.
+
+Números do dia: 11.879 cartas indexadas em 11 min, zero falha de download,
+152 em paisagem deixadas de fora de propósito. Autoteste no README (Fase 9);
+o do Pokémon ficou idêntico com o índice combinado.
+
+### Decisões que vieram de olhar, não de deduzir
+
+- **Limiar de grupo 40**, não 14 como eu ia usar. Montei pranchas com pares
+  de mesmo nome por faixa de distância: até 40 era sempre a mesma arte
+  (reimpressão em Premium Booster, promo com carimbo WINNER). Cartas
+  aleatórias ficam a 61 ou mais.
+- **SAMPLE no One Piece.** Só apareceu na prancha. Medido com carimbo
+  sintético: 14 a 24 de deslocamento. Não calibrei limiar contra isso — seria
+  calibrar contra cena sintética, que este diário já registrou três vezes
+  como ajuste contra ruído.
+
+### O que NÃO foi verificado
+
+- **Carta física de One Piece, Lorcana ou Riftbound.** Tudo acima é imagem
+  da fonte degradada por software. O travamento automático com a marca
+  SAMPLE é a dúvida principal.
+- **O robô diário com os jogos.** `refresh_prices.py` ganhou dois passos
+  (`jogos.py catalogo` e `precos`), rodados aqui à mão; a execução no
+  runner só acontece depois do merge.
+- **Liga One Piece / Lorcana / Riftbound.** Respondem 403 a robô; o formato
+  do link não foi visto funcionando, então não entrou.
+
+### Próximos passos possíveis
+
+- Carimbar "SAMPLE" no recorte da câmera numa SEGUNDA busca restrita a One
+  Piece, para comparar marca com marca. Só depois de medir com carta física
+  se o travamento de fato sofre.
+- OCR do número para One Piece ("OP01-001") e Lorcana ("20/204"): resolveria
+  as reimpressões como o OCR do Pokémon resolve as irmãs.
+- Cartas em paisagem: indexar as duas rotações com marca de rotação, e
+  medir se o detector de borda as entrega em pé.
+
+## Carteira com custo e lucro — FEITA (24/10/2026)
+
+Pedido: "a carteira estilo MonPrice". Depois de estudar o que o MonPrice
+mostra publicamente, quatro peças: preço pago e data por carta,
+lucro/prejuízo, as três mais valiosas e filtro de período no gráfico.
+
+**A decisão que define se o lucro é honesto: moeda.** Quem está no Brasil
+paga em real, e a cotação é em dólar ou euro. O resultado é calculado na
+moeda em que a pessoa PAGOU; quando a cotação está em outra, o valor de
+hoje é convertido pela PTAX e a linha sai marcada "≈", com a explicação na
+tela. Moedas de custo diferentes não se somam, pela mesma regra do total.
+
+Fica fora do lucro, contado à parte: carta sem custo informado, carta sem
+cotação da variante guardada, e par de moedas sem taxa.
+
+**Período por data de calendário, não por número de pontos.** Depois de 30
+dias o histórico é semanal; "últimos 90 pontos" seria quase um ano. O
+rótulo antigo "36 dias" contava pontos — eram 71 dias. Corrigido.
+
+### Achado no caminho: 554 cartas sem arte em todo o app
+
+As cartas Pokémon com arte da pokemontcg.io guardam o endereço COMPLETO em
+`caminho_arte`, e toda tela montava `assets.tcgdex.net/https://images...`.
+Não aparecia em teste porque a amostra quase nunca caía nelas; apareceu no
+top 3 da coleção de teste. `urlArte()` (web/jogos.js) agora reconhece URL
+completa — e como todas as telas passam por ela desde a Fase 9, a correção
+vale para leitor, ficha, busca e coleção de uma vez.
+
+Verificado no navegador, em 375 px e no desktop: custo salvo e removido,
+valor negativo recusado, lucro conferido à mão (Gnaw: 2 × US$ 27,53 × PTAX
+5,0376 − R$ 240 = +R$ 37,38), os quatro períodos, sem rolagem lateral.
+
+## Coleções, histórico de leituras, busca com filtros e CSV — FEITO (24/10/2026)
+
+O resto do que o MonPrice mostra publicamente e fazia sentido aqui.
+
+**Coleções nomeadas sem migração.** A coleção que existia vira "Principal" e
+as entradas dela continuam com a chave antiga, sem campo `col`. Quem
+atualiza abre tudo igual, e backup exportado antes importa igual. Só
+entrada de outra coleção ganha chave de três partes. Testado com uma
+coleção no formato antigo: abriu com as mesmas 6 cartas.
+
+Excluir uma coleção NÃO apaga carta: o que estava nela volta para a
+Principal, somando. O backup JSON é sempre a coleção inteira; a planilha
+sai da aba que está na tela, com a coluna `colecao`.
+
+**Histórico de leituras.** Toda carta travada fica registrada no aparelho
+(300 no máximo). A mesma carta lida em sequência — 10 minutos — vira uma
+linha "×3", e o botão de guardar usa essa quantidade. `?demo` fica fora.
+
+**Busca com filtros.** Jogo, raridade (a lista muda com o jogo), faixa de
+preço em real pela PTAX e ordenação. Com filtro, a busca roda sem nome.
+Carta sem cotação sai de qualquer busca com faixa: "não sei" não está
+entre 10 e 100.
+
+**CSV.** Ponto e vírgula, vírgula decimal e BOM: abre com duplo clique no
+Excel em português. Célula vazia quando não se sabe — zero entraria em soma.
+
+### Dois tropeços registrados
+
+- O detector de string cortada (`checar_js.py`) lê `/` logo depois de
+  `return` como divisão, e acusou aspa dentro de regex. Reescrito com
+  códigos de caractere, sem afrouxar o detector.
+- Um `"` escrito por ferramenta chegou ao disco como aspa literal e
+  quebrou o arquivo; o `﻿` virou caractere invisível. Escape unicode em
+  edição automática não é confiável: use `String.fromCharCode`.
+
+## Navegar por set, com completude — FEITO (24/10/2026)
+
+`sets.html`: os 421 sets do índice, os que a pessoa começou primeiro, cada
+um com "tenho X de Y" e barra. Aberto, o set mostra a grade em ordem de
+número — as que tem em cor com ✓, as que faltam apagadas — e quanto
+custaria completar.
+
+**"Tenho" é carta DIFERENTE**, em qualquer variante e qualquer coleção:
+três cópias não completam três posições, e o reverse holo ocupa a posição
+tanto quanto o normal.
+
+**O denominador é o índice, não o número impresso.** O impresso ("/204")
+deixa fora secretas e Enchanted, que se colecionam; o catálogo inteiro
+exigiria baixar 41 mil cartas. O impresso aparece ao lado quando é
+conhecido (Pokémon), para a diferença ficar visível.
+
+**Cartas gigantes fora da conta.** A grade mostrou "5/204" duas vezes: uma
+era "Hades (Oversized)", produto promocional com o número da carta. 12 no
+índice; continuam no leitor e na busca, saem da completude. Com isso o
+The First Chapter fecha em 216 = 204 + 12 Enchanted, o tamanho real.
+
+**Custo para completar** pela variante mais barata de cada carta que
+falta, por moeda, com as sem cotação contadas à parte. Medido no teste:
+US$ 3.210,09 para as 213 que faltavam no The First Chapter.
+

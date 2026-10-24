@@ -3,7 +3,8 @@ Atualizacao diaria de preco, para rodar em maquina descartavel.
 
 O que precisa existir e o que nao precisa
 -----------------------------------------
-NAO precisa: `hashes.db` (8 MB, horas para reconstruir) nem `index.bin`.
+NAO precisa: `hashes.db` (8 MB, horas para reconstruir), `index.bin`, nem
+os hashes de `jogos.db` — dos outros jogos so o catalogo e refeito aqui.
 O indice de reconhecimento nao muda quando o preco muda — ele ja esta
 publicado e fica onde esta. Este script toca apenas em `prices.json`,
 `fx.json` e a parte de preco do `dashboard.json`.
@@ -68,6 +69,12 @@ def main(site: str, stale_days: int, workers: int, saida: Path) -> None:
     rodar(f"preços: reconsultando o que tem mais de {stale_days} dia(s)",
           "pipeline/fetch_prices.py", "--region", "intl",
           "--workers", str(workers), "--stale-days", str(stale_days))
+    # One Piece, Lorcana e Riftbound. O catálogo é refeito aqui pelo mesmo
+    # motivo que o do Pokémon: ~1 min, só JSON, e é ele que diz quais
+    # produtos são CARTA. Sem ele a série histórica guardaria todo dia o
+    # preço de booster e display, que ninguém escaneia.
+    rodar("outros jogos: catálogo (TCGCSV)", "pipeline/jogos.py", "catalogo")
+    rodar("outros jogos: preço do dia", "pipeline/jogos.py", "precos")
     rodar("histórico: exportando a série atualizada",
           "pipeline/history_io.py", "exportar")
     rodar("câmbio", "pipeline/fetch_fx.py", "--out", str(saida / "fx.json"))
@@ -115,9 +122,26 @@ def main(site: str, stale_days: int, workers: int, saida: Path) -> None:
     if novo.get("reconhecimento") is None and antigo.get("reconhecimento"):
         novo["reconhecimento"] = antigo["reconhecimento"]
         print("  bloco de reconhecimento preservado do painel publicado")
+    # Mesma coisa por jogo: o runner refaz catalogo e preco, nao as imagens,
+    # entao `com_hash` sai zerado daqui. O numero certo e o que o leitor
+    # PUBLICADO reconhece, e esse esta no `por_regiao` do cards.json que ja
+    # foi baixado acima — melhor fonte que o painel de ontem, que no primeiro
+    # dia depois da publicacao ainda nem tem o bloco.
+    por_regiao = cards.get("por_regiao") or {}
+    for jogo, bloco in (novo.get("jogos") or {}).items():
+        velho = (antigo.get("jogos") or {}).get(jogo) or {}
+        if not bloco.get("com_hash"):
+            bloco["com_hash"] = por_regiao.get(jogo, velho.get("com_hash", 0))
+            bloco["paisagem"] = velho.get("paisagem", bloco.get("paisagem", 0))
     novo["gerado_em"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     (saida / "dashboard.json").write_text(
         json.dumps(novo, ensure_ascii=False, indent=1), encoding="utf-8")
+    # numeros.json saiu do mesmo export_dashboard com os mesmos zeros.
+    numeros = saida / "numeros.json"
+    if numeros.exists() and novo.get("jogos"):
+        n = json.loads(numeros.read_text(encoding="utf-8"))
+        n["jogos"] = {k: v["com_hash"] for k, v in novo["jogos"].items()}
+        numeros.write_text(json.dumps(n, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print(f"\npronto. Arquivos para publicar em {saida}:")
     for f in sorted(saida.iterdir()):
