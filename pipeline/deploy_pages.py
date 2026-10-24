@@ -49,6 +49,7 @@ OBRIGATORIOS = [
     ("pwa.js", 200),
     ("icone.svg", 200),
     ("tema.js", 500),
+    ("jogos.js", 1_000),
     ("painel.html", 500),
     ("colecao.html", 500),
     ("sobre.html", 2_000),

@@ -73,6 +73,11 @@ const VARIANTE_PRECO = {
   "unlimited-holofoil": "unlimited-holofoil",
   "1st-edition": "1st-edition",
   "1st-edition-holofoil": "1st-edition-holofoil",
+  // One Piece, Lorcana e Riftbound: catálogo e preço vêm da MESMA fonte
+  // (TCGCSV), então o vocabulário já coincide. Listados mesmo assim para que
+  // a tradução seja explícita e o invariante enxergue os três.
+  foil: "foil",
+  "cold-foil": "cold-foil",
 };
 
 export function variantePreco(v) {

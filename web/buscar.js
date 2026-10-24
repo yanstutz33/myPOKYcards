@@ -9,6 +9,8 @@
  * nenhuma requisição, funciona offline.
  */
 
+import { selo, urlArte, jogoDaRegiao, JOGOS } from "./jogos.js";
+
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -31,7 +33,11 @@ let indice = null;   // string normalizada por carta, na mesma ordem de ids
 function construirIndice() {
   // Uma passada, guardada em memória. 30 mil strings custam ~2 MB de RAM e
   // evitam normalizar tudo a cada tecla digitada.
-  indice = catalogo.meta.map((m) => normalizar(`${m[0]} ${m[1]} ${m[2]}`));
+  // O nome do jogo entra no texto pesquisável: "luffy one piece" e
+  // "elsa lorcana" acham o que se espera, e "ariel" sozinho continua achando
+  // todas as Ariel de qualquer jogo.
+  indice = catalogo.meta.map((m) =>
+    normalizar(`${m[0]} ${m[1]} ${m[2]} ${JOGOS[jogoDaRegiao(m[4])].nome}`));
 }
 
 /**
@@ -78,10 +84,10 @@ export function linhaHtml(i) {
   const [nome, set, numero, raridade, regiao, , , caminho] = catalogo.meta[i];
   return `<button class="b-item" data-card="${esc(id)}">
     ${caminho ? `<img alt="" loading="lazy" decoding="async"
-         src="${catalogo.cdn}/${esc(caminho)}/low.png">` : `<span class="b-semarte"></span>`}
+         src="${esc(urlArte(catalogo, caminho))}">` : `<span class="b-semarte"></span>`}
     <span class="b-nome">${esc(nome)}</span>
     <span class="b-meta">${esc(set)} · ${esc(numero)}${
-      raridade ? ` · ${esc(raridade)}` : ""} · ${regiao === "asia" ? "JA" : "INTL"}</span>
+      raridade ? ` · ${esc(raridade)}` : ""} · ${selo(regiao)}</span>
     ${precoResumo(id)}
   </button>`;
 }

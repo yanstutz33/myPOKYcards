@@ -523,3 +523,54 @@ Abrir no navegador, com o site servido:
 
 Antes de qualquer publicação: `python tests/test_invariantes.py` (29
 checagens) e `python tests/checar_js.py`.
+
+## One Piece, Lorcana e Riftbound — FEITO (24/10/2026)
+
+Pedido: "deixar o scanner na versão pro max, lendo Riftbound, One Piece e
+Lorcana além dos Pokémon".
+
+**Fonte única: TCGCSV** (espelho diário da API do TCGplayer). Medido antes de
+escolher: Lorcast e Riftcodex trazem o id do TCGplayer, a OPTCG API não. Com
+o TCGCSV o `productId` é catálogo, imagem e preço ao mesmo tempo — join
+nativo, o mesmo critério que escolheu o TCGdex.
+
+**Um índice só.** Os três entram no mesmo index.bin, depois do Pokémon, com
+`regiao` = jogo. O seletor de jogo é opcional: "Todos" continua sendo o
+padrão, e escolher um jogo só tira os outros da disputa.
+
+Números do dia: 11.879 cartas indexadas em 11 min, zero falha de download,
+152 em paisagem deixadas de fora de propósito. Autoteste no README (Fase 9);
+o do Pokémon ficou idêntico com o índice combinado.
+
+### Decisões que vieram de olhar, não de deduzir
+
+- **Limiar de grupo 40**, não 14 como eu ia usar. Montei pranchas com pares
+  de mesmo nome por faixa de distância: até 40 era sempre a mesma arte
+  (reimpressão em Premium Booster, promo com carimbo WINNER). Cartas
+  aleatórias ficam a 61 ou mais.
+- **SAMPLE no One Piece.** Só apareceu na prancha. Medido com carimbo
+  sintético: 14 a 24 de deslocamento. Não calibrei limiar contra isso — seria
+  calibrar contra cena sintética, que este diário já registrou três vezes
+  como ajuste contra ruído.
+
+### O que NÃO foi verificado
+
+- **Carta física de One Piece, Lorcana ou Riftbound.** Tudo acima é imagem
+  da fonte degradada por software. O travamento automático com a marca
+  SAMPLE é a dúvida principal.
+- **O robô diário com os jogos.** `refresh_prices.py` ganhou dois passos
+  (`jogos.py catalogo` e `precos`), rodados aqui à mão; a execução no
+  runner só acontece depois do merge.
+- **Liga One Piece / Lorcana / Riftbound.** Respondem 403 a robô; o formato
+  do link não foi visto funcionando, então não entrou.
+
+### Próximos passos possíveis
+
+- Carimbar "SAMPLE" no recorte da câmera numa SEGUNDA busca restrita a One
+  Piece, para comparar marca com marca. Só depois de medir com carta física
+  se o travamento de fato sofre.
+- OCR do número para One Piece ("OP01-001") e Lorcana ("20/204"): resolveria
+  as reimpressões como o OCR do Pokémon resolve as irmãs.
+- Cartas em paisagem: indexar as duas rotações com marca de rotação, e
+  medir se o detector de borda as entrega em pé.
+

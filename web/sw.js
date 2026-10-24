@@ -38,7 +38,12 @@
  * A frescura do dado não depende dessa versão: o `fetch` abaixo responde do
  * cache e revalida pela rede, então preço novo entra na abertura seguinte. */
 const VERSAO = "v1";
-const FORMATO_DADOS = "1";
+// "2": o layout do index.bin é o mesmo, mas desde 24/10/2026 o cards.json
+// traz `por_regiao` e cartas de outros jogos que o app novo espera achar.
+// Revalidar arquivo a arquivo podia deixar um aparelho com o index.bin novo
+// e o cards.json velho — posições sem carta correspondente. Trocar o nome do
+// cache descarta os dois juntos.
+const FORMATO_DADOS = "2";
 
 const CACHE_APP = `poky-app-${VERSAO}`;
 const CACHE_DADOS = `poky-dados-${FORMATO_DADOS}`;
@@ -47,6 +52,7 @@ const ESSENCIAIS = [
   "./", "./index.html", "./style.css", "./tema.css", "./scan.css",
   "./app.js", "./capture.js", "./detectar.js", "./camera.js",
   "./tema.js", "./colecao.js", "./som.js", "./ficha.js", "./mercado.js", "./ocr.js", "./etapas.js", "./grafico.js",
+  "./jogos.js",
   "./matcher.worker.js",
   "./colecao.html", "./colecao-tela.js",
   "./buscar.html", "./buscar.js", "./busca-tela.js",
