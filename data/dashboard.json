@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-25T13:36:37+00:00",
+ "gerado_em": "2026-10-26T15:48:45+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,34 +61,34 @@
   ]
  },
  "precos": {
-  "linhas": 354032,
-  "cartas_com_preco": 20480,
+  "linhas": 353895,
+  "cartas_com_preco": 20470,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36023,
-   "listing": 145365,
-   "sold": 172644
+   "derived": 36003,
+   "listing": 145284,
+   "sold": 172608
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19085
+   "cardmarket": 19837,
+   "tcgplayer": 19075
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-25T13:36:13+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-10-26T15:48:06+00:00",
   "mais_caras": [
    {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 35000.0,
+    "card_id": "xyp-XY202",
+    "nome": "Pikachu",
+    "set": "xyp",
+    "valor": 14950.0,
     "moeda": "EUR"
    },
    {
-    "card_id": "ex5-94",
-    "nome": "Kyogre ex",
-    "set": "ex5",
-    "valor": 15557.89,
+    "card_id": "xyp-XY95",
+    "nome": "Pikachu",
+    "set": "xyp",
+    "valor": 14950.0,
     "moeda": "EUR"
    },
    {
@@ -110,6 +110,13 @@
     "nome": "Lugia",
     "set": "ecard2",
     "valor": 8000.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-10",
+    "nome": "Gengar",
+    "set": "ecard3",
+    "valor": 7911.25,
     "moeda": "EUR"
    },
    {
@@ -152,13 +159,6 @@
     "nome": "Mew",
     "set": "xyp",
     "valor": 5799.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ru1-7",
-    "nome": "Pikachu",
-    "set": "ru1",
-    "valor": 4590.0,
     "moeda": "EUR"
    }
   ]
