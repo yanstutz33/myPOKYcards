@@ -19,6 +19,10 @@ import { RESTRICOES_VIDEO, temLanterna, definirLanterna, focarEm, condicaoDeLuz,
 import * as som from "./som.js";
 import * as ficha from "./ficha.js";
 import * as busca from "./buscar.js";
+import * as jogos from "./jogos.js";
+import * as leituras from "./leituras.js";
+
+const EH_DEMO = new URLSearchParams(location.search).has("demo");
 
 const els = {
   video: document.getElementById("video"),
@@ -84,7 +88,7 @@ function comparacaoHtml(caminho) {
     <span class="confere-vs" aria-hidden="true">≟</span>
     <figure class="confere-lado">
       ${caminho
-        ? `<img src="${catalog.cdn}/${escapeHtml(caminho)}/low.png" alt="A carta encontrada no catálogo" decoding="async">`
+        ? `<img src="${escapeHtml(jogos.urlArte(catalog, caminho, "media"))}" alt="A carta encontrada no catálogo" decoding="async">`
         : `<span class="confere-sem">sem arte</span>`}
       <figcaption>o que ele achou</figcaption>
     </figure>
@@ -269,14 +273,15 @@ async function carregarPrecos() {
 function onWorkerMessage(ev) {
   const msg = ev.data;
   if (msg.type === "ready") {
-    setStatus(`${msg.count.toLocaleString("pt-BR")} cartas`, "on");
     els.toggle.textContent = "Ligar leitor";
     els.toggle.disabled = false;
+    prepararSeletorDeJogo();
     const q = new URLSearchParams(location.search);
     if (q.has("demo")) demo(q.get("demo") || undefined);
     return;
   }
   if (msg.type === "error") return fatal(msg.message);
+  if (msg.type === "filtrado") return;
   if (msg.type === "result") {
     // Pedidos da leitura por foto tem dono proprio: sao comparados entre si
     // antes de virar tela, entao nao podem entrar no fluxo ao vivo.
@@ -292,6 +297,51 @@ function onWorkerMessage(ev) {
       if (msg.results[0]) travar(catalog.ids[msg.results[0].i], true);
     }
   }
+}
+
+/**
+ * Qual jogo está na frente da câmera.
+ *
+ * "Todos" é o padrão e continua funcionando sem a pessoa escolher nada: o
+ * índice é um só. Escolher um jogo serve a quem sabe o que tem na mão — tira
+ * da disputa as cartas dos outros três, e é aí que um vizinho parecido de
+ * outro jogo deixa de poder ganhar.
+ */
+let jogoAtivo = "todos";
+
+function prepararSeletorDeJogo() {
+  const sel = document.getElementById("jogo");
+  jogoAtivo = jogos.lerEscolha();
+  if (sel) {
+    // O número ao lado do nome é o que o filtro alcança de fato, não o jogo
+    // inteiro: carta sem imagem na fonte não entra no índice.
+    for (const opt of sel.options) {
+      const n = jogos.contagem(catalog, opt.value);
+      opt.textContent = `${opt.dataset.nome} (${n.toLocaleString("pt-BR")})`;
+      opt.disabled = opt.value !== "todos" && !n;
+    }
+    if (sel.querySelector(`option[value="${jogoAtivo}"]`)?.disabled) jogoAtivo = "todos";
+    sel.value = jogoAtivo;
+    sel.hidden = false;
+    sel.addEventListener("change", () => {
+      jogoAtivo = sel.value;
+      jogos.gravarEscolha(jogoAtivo);
+      aplicarFiltro();
+    });
+  }
+  aplicarFiltro();
+}
+
+function aplicarFiltro() {
+  worker.postMessage({ type: "filtro", mascara: jogos.mascara(catalog, jogoAtivo) });
+  const n = jogos.contagem(catalog, jogoAtivo);
+  setStatus(`${n.toLocaleString("pt-BR")} cartas`, "on");
+}
+
+/** O filtro escolhido deixa esta carta entrar? */
+function noFiltro(i) {
+  if (jogoAtivo === "todos") return true;
+  return jogos.JOGOS[jogoAtivo]?.regioes.includes(catalog.meta[i]?.[4]);
 }
 
 function fatal(message) {
@@ -651,7 +701,8 @@ async function capturarAgora() {
   });
 
   etapas.concluir("recorte", `${variantes.length} enquadramentos`);
-  etapas.comecar("hash", `Comparando com ${catalog.count.toLocaleString("pt-BR")} cartas`);
+  etapas.comecar("hash", `Comparando com ${
+    jogos.contagem(catalog, jogoAtivo).toLocaleString("pt-BR")} cartas`);
 
   const lidas = await Promise.all(
     variantes.map(async (rect) => ({ rect, r: await medir(capture(els.video, rect)) })));
@@ -703,6 +754,10 @@ async function capturarAgora() {
 async function conferirComTexto(resultados) {
   const topo = resultados[0];
   if (topo && topo.confidence >= TRAVA_CONF && destacado(resultados)) return resultados;
+  // O vocabulário e a geometria do OCR são de carta Pokémon (nome no alto à
+  // esquerda, nomes.json do TCGdex). Num filtro de outro jogo, ler o nome
+  // custaria 600 ms para, no melhor caso, propor uma carta Pokémon.
+  if (jogoAtivo !== "todos" && jogoAtivo !== "pokemon") return resultados;
 
   const fonte = recorteAtualCanvas();
   if (!fonte) return resultados;
@@ -738,7 +793,7 @@ async function conferirComTexto(resultados) {
   // caso das cartas fora do indice de imagens.
   const novos = lido.candidatos
     .map((id) => catalog.ids.indexOf(id))
-    .filter((i) => i >= 0)
+    .filter((i) => i >= 0 && noFiltro(i))
     .slice(0, 3)
     // `score` e `confidence` vem do texto, nao do hash: a confianca e a nota
     // de contencao, e a distancia fica indefinida de proposito — nao existe
@@ -785,6 +840,11 @@ function setDoCardId(cardId) {
 async function desempatarPorNumero(resultados) {
   const topo = resultados[0];
   if (!topo || topo.porTexto) return resultados;
+  // As caixas de leitura do número (GEOMETRIAS_NUMERO em ocr.js) foram
+  // medidas no rodapé da carta Pokémon. Os outros jogos imprimem o número
+  // em outro lugar e em outro formato ("OP01-001", "20/204"); a lista de
+  // impressões irmãs continua aparecendo para a escolha manual.
+  if (!jogos.ePokemon(catalog.meta[topo.i]?.[4])) return resultados;
 
   const grupo = catalog.meta[topo.i]?.[8];
   if (grupo === undefined || grupo === -1) return resultados;
@@ -930,6 +990,8 @@ function margem(results) {
  */
 function travar(cardId, manual = false) {
   escolhido = 0;
+  // `?demo` lê a arte do catálogo, não uma carta da pessoa: fora do histórico.
+  if (!EH_DEMO) leituras.registrar(cardId, manual);
   if (manual) som.somCapturou();
   else som.somReconheceu();
   // Vibração curta: confirma no tato o que a tela e o som confirmam, e é o
@@ -1058,7 +1120,7 @@ function irmasHtml(cardId) {
     return `<button class="irma" data-card="${escapeHtml(id)}">
       <span class="irma-nome">${escapeHtml(nome)}</span>
       <span class="irma-meta">${escapeHtml(set)} · ${escapeHtml(numero)} · ${
-        regiao === "asia" ? "JA" : "INTL"}</span>
+        jogos.selo(regiao)}</span>
       <span class="irma-preco">${escapeHtml(s)}</span>
     </button>`;
   }).join("");
@@ -1085,7 +1147,11 @@ function irmasHtml(cardId) {
  * não têm preço próprio (erro de impressão, marcador de tiragem) ficam de
  * fora: guardar por elas quebraria o cálculo de valor da coleção.
  */
-const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited"];
+// `foil`, `holofoil` e `cold-foil` são os acabamentos que o TCGplayer cota
+// em One Piece, Riftbound e Lorcana — cada um com preço próprio, então cada
+// um é guardado à parte, como reverse e holo no Pokémon.
+const VARIANTES_UTEIS = ["normal", "holo", "reverse", "1st-edition", "unlimited",
+  "foil", "holofoil", "cold-foil"];
 
 /**
  * Quantidade por toque.
@@ -1129,6 +1195,8 @@ function guardarHtml(cardId, variantes) {
     <div class="mults" role="group" aria-label="Quantas cópias guardar por toque">${chips}</div>
     <div class="guardar-btns">${botoes}</div>
     ${jaTem ? `<span class="guardar-tem">${jaTem} desta carta na coleção</span>` : ""}
+    ${colecao.ativa() !== colecao.PADRAO ? `<span class="guardar-tem">Guardando em
+      <strong>${escapeHtml(colecao.ativa())}</strong></span>` : ""}
   </div>`;
 }
 
@@ -1313,14 +1381,14 @@ function cartaHtml(r, results) {
         eFoil(raridade) ? " foil" : ""}${
         caminho ? " com-mini" : ""}" style="--tipo:${cor}" data-ficha="${escapeHtml(id)}">
     ${caminho ? `<img class="miniatura" alt="" loading="lazy" decoding="async"
-         src="${catalog.cdn}/${escapeHtml(caminho)}/low.png">` : ""}
+         src="${escapeHtml(jogos.urlArte(catalog, caminho))}">` : ""}
     <h3 class="hit-name">${escapeHtml(nome)} ${energiasHtml(tipos)}</h3>
     <div class="hit-conf"><b>${(r.confidence * 100).toFixed(0)}%</b><small>${
       r.porTexto ? "pelo nome" : "certeza"}</small></div>
     <div class="hit-meta">
       <span>${escapeHtml(set)} · ${escapeHtml(numero)}</span>
       ${raridade ? `<span class="selo-raridade">${escapeHtml(raridade)}</span>` : ""}
-      <span>${regiao === "asia" ? "JA" : "INTL"}</span>
+      <span class="selo-jogo selo-${escapeHtml(jogos.jogoDaRegiao(regiao))}">${jogos.selo(regiao)}</span>
       <span class="toque-dica">toque para ver tudo →</span>
     </div>
     ${r.porNumero ? `<p class="por-texto">Impressão escolhida pelo
@@ -1360,6 +1428,9 @@ function alternativasHtml(results) {
 
 function motivoSemPreco(cardId, regiao) {
   if (!precosProntos) return "buscando preço…";
+  if (!jogos.ePokemon(regiao)) {
+    return "Sem cotação no TCGplayer hoje para esta impressão";
+  }
   return digital(cardId)
     ? "Carta do TCG Pocket — jogo digital, sem mercado físico"
     : regiao === "asia"
@@ -1415,7 +1486,9 @@ function carregarCarta(cardId) {
     img.crossOrigin = "anonymous";
     img.onload = () => res(img);
     img.onerror = () => rej(new Error("não foi possível carregar a arte"));
-    img.src = `${catalog.cdn}/${caminho}/low.png`;
+    // `media`: a mesma resolução que o indexador hasheou. Nos outros jogos a
+    // miniatura de 200 px deslocaria bits sem que nada estivesse errado.
+    img.src = jogos.urlArte(catalog, caminho, "media");
   });
 }
 
