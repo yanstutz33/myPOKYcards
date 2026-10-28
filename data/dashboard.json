@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-27T15:11:02+00:00",
+ "gerado_em": "2026-10-28T15:46:10+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,36 +61,22 @@
   ]
  },
  "precos": {
-  "linhas": 354118,
+  "linhas": 354122,
   "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
    "listing": 145365,
-   "sold": 172730
+   "sold": 172734
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19085
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-27T15:10:38+00:00",
+  "ultima_coleta": "2026-10-28T15:45:34+00:00",
   "mais_caras": [
-   {
-    "card_id": "xyp-XY202",
-    "nome": "Pikachu",
-    "set": "xyp",
-    "valor": 14950.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "xyp-XY95",
-    "nome": "Pikachu",
-    "set": "xyp",
-    "valor": 14950.0,
-    "moeda": "EUR"
-   },
    {
     "card_id": "ex13-103",
     "nome": "Mewtwo Star",
@@ -159,6 +145,20 @@
     "nome": "Mew",
     "set": "xyp",
     "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-149",
+    "nome": "Ho-oh",
+    "set": "ecard3",
+    "valor": 4299.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-32",
+    "nome": "Umbreon",
+    "set": "ecard3",
+    "valor": 4299.0,
     "moeda": "EUR"
    }
   ]
