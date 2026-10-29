@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-28T15:46:10+00:00",
+ "gerado_em": "2026-10-29T15:58:37+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,13 +61,13 @@
   ]
  },
  "precos": {
-  "linhas": 354122,
+  "linhas": 354125,
   "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145365,
+   "listing": 145368,
    "sold": 172734
   },
   "por_fonte": {
@@ -75,7 +75,7 @@
    "tcgplayer": 19085
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-28T15:45:34+00:00",
+  "ultima_coleta": "2026-10-29T15:57:56+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
@@ -89,13 +89,6 @@
     "nome": "Mudkip",
     "set": "ex5.5",
     "valor": 8500.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard2-149",
-    "nome": "Lugia",
-    "set": "ecard2",
-    "valor": 8000.0,
     "moeda": "EUR"
    },
    {
@@ -145,6 +138,13 @@
     "nome": "Mew",
     "set": "xyp",
     "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard2-149",
+    "nome": "Lugia",
+    "set": "ecard2",
+    "valor": 4438.89,
     "moeda": "EUR"
    },
    {
