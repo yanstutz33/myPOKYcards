@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-10-29T15:58:37+00:00",
+ "gerado_em": "2026-10-30T15:35:07+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354125,
+  "linhas": 354126,
   "cartas_com_preco": 20480,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
    "derived": 36023,
-   "listing": 145368,
-   "sold": 172734
+   "listing": 145366,
+   "sold": 172737
   },
   "por_fonte": {
    "cardmarket": 19847,
    "tcgplayer": 19085
   },
   "falhas_coleta": 0,
-  "ultima_coleta": "2026-10-29T15:57:56+00:00",
+  "ultima_coleta": "2026-10-30T15:34:44+00:00",
   "mais_caras": [
    {
     "card_id": "ex13-103",
