@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-01T15:51:47+00:00",
+ "gerado_em": "2026-11-02T19:13:10+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,22 +61,29 @@
   ]
  },
  "precos": {
-  "linhas": 353825,
-  "cartas_com_preco": 20460,
+  "linhas": 353922,
+  "cartas_com_preco": 20470,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 35994,
-   "listing": 145236,
-   "sold": 172595
+   "derived": 36003,
+   "listing": 145279,
+   "sold": 172640
   },
   "por_fonte": {
-   "cardmarket": 19827,
-   "tcgplayer": 19065
+   "cardmarket": 19837,
+   "tcgplayer": 19075
   },
-  "falhas_coleta": 30,
-  "ultima_coleta": "2026-11-01T15:51:07+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-02T19:12:36+00:00",
   "mais_caras": [
+   {
+    "card_id": "ecard3-10",
+    "nome": "Gengar",
+    "set": "ecard3",
+    "valor": 12312.5,
+    "moeda": "EUR"
+   },
    {
     "card_id": "ex13-103",
     "nome": "Mewtwo Star",
@@ -92,10 +99,10 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 7911.25,
+    "card_id": "neo1-9",
+    "nome": "Lugia",
+    "set": "neo1",
+    "valor": 8400.0,
     "moeda": "EUR"
    },
    {
@@ -104,6 +111,13 @@
     "set": "lc",
     "valor": 6999.0,
     "moeda": "USD"
+   },
+   {
+    "card_id": "ecard2-40",
+    "nome": "Tyranitar",
+    "set": "ecard2",
+    "valor": 6800.0,
+    "moeda": "EUR"
    },
    {
     "card_id": "ecard3-146",
@@ -145,20 +159,6 @@
     "nome": "Lugia",
     "set": "ecard2",
     "valor": 4438.89,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-149",
-    "nome": "Ho-oh",
-    "set": "ecard3",
-    "valor": 4299.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-32",
-    "nome": "Umbreon",
-    "set": "ecard3",
-    "valor": 4299.0,
     "moeda": "EUR"
    }
   ]
