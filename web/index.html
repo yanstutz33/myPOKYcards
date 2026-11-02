@@ -8,11 +8,12 @@
   <link rel="icon" href="icone.svg" type="image/svg+xml">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>myPOKYcards · Leitor de cartas</title>
+  <title>myPOKYcards · Leitor de cartas Pokémon, One Piece, Lorcana e Riftbound</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="tema.css">
   <link rel="stylesheet" href="scan.css">
   <link rel="stylesheet" href="pokedex.css">
+  <link rel="stylesheet" href="vidro.css">
 </head>
 <body class="scan-body">
 
@@ -22,6 +23,15 @@
       <span class="dot" id="dot"></span>
       <span id="statusText">carregando…</span>
     </span>
+    <!-- Qual jogo está na mão. Nasce oculto e só aparece com o índice
+         carregado, porque o número ao lado de cada nome vem dele. -->
+    <select id="jogo" class="jogo-sel" aria-label="Jogo de cartas" hidden>
+      <option value="todos" data-nome="Todos os jogos">Todos os jogos</option>
+      <option value="pokemon" data-nome="Pokémon">Pokémon</option>
+      <option value="onepiece" data-nome="One Piece">One Piece</option>
+      <option value="lorcana" data-nome="Lorcana">Lorcana</option>
+      <option value="riftbound" data-nome="Riftbound">Riftbound</option>
+    </select>
     <button id="audio" class="audio" aria-pressed="true" aria-label="Desligar sons">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
         <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
@@ -146,8 +156,8 @@
                autocomplete="off" enterkeyhint="search" aria-label="Buscar carta">
         <button class="br-fechar" id="brFechar" aria-label="Fechar busca">✕</button>
       </header>
-      <p class="br-nota">Nem toda carta pode ser reconhecida por foto — 27% do
-        catálogo não tem imagem em fonte nenhuma. Aqui elas aparecem.</p>
+      <p class="br-nota">Nem toda carta pode ser reconhecida por foto — parte do
+        catálogo Pokémon não tem imagem em fonte nenhuma. Aqui elas aparecem.</p>
       <div class="br-lista" id="brLista"></div>
     </div>
   </div>

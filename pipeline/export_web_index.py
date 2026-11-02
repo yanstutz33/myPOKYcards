@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 
 MAGIC = b"YTCG"
-VERSION = 1
+VERSION = 2   # 2: outros jogos no mesmo indice (ver FORMATO_DADOS em sw.js)
 CDN = "https://assets.tcgdex.net"
 FIELDS = ("phash", "dhash", "ahash", "dhash_r", "dhash_g", "dhash_b")
 
@@ -112,6 +112,13 @@ def _totais_impressos(cards_db: Path, ids: list[str]) -> dict[str, int]:
     return fora
 
 
+def _contar_regioes(meta: list[list]) -> dict[str, int]:
+    out: dict[str, int] = {}
+    for m in meta:
+        out[m[4]] = out.get(m[4], 0) + 1
+    return out
+
+
 def _indices_por_grupo(ids: list[str], meta: list[list]) -> dict[str, list[int]]:
     out: dict[str, list[int]] = {}
     for i, m in enumerate(meta):
@@ -121,7 +128,57 @@ def _indices_por_grupo(ids: list[str], meta: list[list]) -> dict[str, list[int]]
     return out
 
 
-def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
+# Cada grupo de reimpressao dos outros jogos ganha id a partir daqui. Os
+# grupos Pokemon sao numerados de 0 em diante e passam pouco de 5 mil; o
+# deslocamento evita que um grupo de Lorcana vire irmao de um Charizard.
+GRUPO_JOGOS = 1_000_000
+
+
+def _linhas_jogos(jogos_db: Path) -> list[tuple]:
+    """(card_id, hashes, meta) dos outros jogos, no MESMO schema do Pokemon.
+
+    Entram no mesmo index.bin e no mesmo cards.json, depois das cartas
+    Pokemon. Um indice so, e nao um por jogo, porque o leitor nao sabe de
+    antemao qual jogo esta na frente da camera — e a busca em 45 mil cartas
+    continua abaixo de um quadro de video.
+
+    `caminho_arte` vem como "tcgp:<productId>". O prefixo diz ao cliente que
+    a arte esta no CDN do TCGplayer e nao no do TCGdex; o resto do schema e
+    identico, e por isso a busca, a ficha e a colecao funcionam sem um ramo
+    por jogo.
+    """
+    if not jogos_db.exists():
+        print("  (sem jogos.db — só Pokémon no índice)")
+        return []
+    conn = sqlite3.connect(f"file:{jogos_db}?mode=ro", uri=True)
+    grupo_de = dict(conn.execute("SELECT card_id, group_id FROM art_groups"))
+    rows = conn.execute(
+        f"""SELECT h.card_id, {', '.join('h.' + f for f in FIELDS)},
+                   c.jogo, s.nome, c.numero, c.raridade, c.variants_json,
+                   c.product_id, c.tipos_json, c.categoria, c.nome
+            FROM hashes h
+            JOIN cards c USING(card_id)
+            JOIN sets  s ON s.set_id = c.set_id
+            ORDER BY c.jogo, h.card_id""").fetchall()
+    conn.close()
+
+    fora = []
+    for r in rows:
+        card_id, hashes = r[0], r[1:7]
+        jogo, set_nome, numero, raridade, variantes, pid, tipos, categoria, nome = r[7:]
+        g = grupo_de.get(card_id)
+        fora.append((card_id, hashes, {
+            "nome": nome, "set": set_nome, "numero": numero, "raridade": raridade,
+            "regiao": jogo, "variantes": json.loads(variantes),
+            "caminho": f"tcgp:{pid}",
+            "grupo": GRUPO_JOGOS + g if g is not None else -1,
+            "tipos": json.loads(tipos), "categoria": categoria,
+        }))
+    return fora
+
+
+def export(cards_db: Path, hashes_db: Path, out_dir: Path,
+           jogos_db: Path = Path("data/jogos.db")) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     conn = sqlite3.connect(f"file:{hashes_db}?mode=ro", uri=True)
@@ -216,6 +273,21 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
             interna(r[21], categorias, idx_categoria),
         ])
 
+    pokemon = len(ids)
+    for card_id, hashes, m in _linhas_jogos(jogos_db):
+        buf += struct.pack("<6Q", *(int(h, 16) for h in hashes))
+        ids.append(card_id)
+        meta.append([
+            m["nome"], m["set"], m["numero"], m["raridade"] or "", m["regiao"],
+            m["variantes"], ["en"], m["caminho"], m["grupo"], m["tipos"],
+            -1, None, None, "", interna(m["categoria"], categorias, idx_categoria),
+        ])
+    # A contagem do header foi escrita antes de saber quantas cartas viriam
+    # dos outros jogos. Reescrita aqui: com o numero velho, o matcher leria
+    # so as cartas Pokemon e os outros jogos nunca seriam propostos — sem
+    # erro nenhum, que e o modo de falha que mais custa achar.
+    struct.pack_into("<I", buf, 6, len(ids))
+
     (out_dir / "index.bin").write_bytes(buf)
     _export_prices(out_dir, set(ids))
 
@@ -240,7 +312,11 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         # cartas do set nao serviria — sets modernos tem secretas alem do
         # total impresso (sv01 tem 258 cartas e imprime "/198"), e a conta
         # daria um numero que nunca aparece em carta nenhuma.
-        "totais": _totais_impressos(cards_db, ids),
+        "totais": _totais_impressos(cards_db, ids[:pokemon]),
+        # Quantas cartas reconheciveis por jogo. O seletor de jogo do leitor
+        # mostra o numero ao lado do nome: "Lorcana (3.598)" diz o que o
+        # filtro alcanca, em vez de prometer o jogo inteiro.
+        "por_regiao": _contar_regioes(meta),
     }
     raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
     (out_dir / "cards.json").write_bytes(raw)
@@ -248,7 +324,8 @@ def export(cards_db: Path, hashes_db: Path, out_dir: Path) -> None:
         fh.write(raw)
 
     mb = lambda n: f"{n/1024/1024:.2f} MB"  # noqa: E731
-    print(f"cartas exportadas : {len(ids)}")
+    print(f"cartas exportadas : {len(ids)}  ({pokemon} Pokémon, "
+          f"{len(ids) - pokemon} de outros jogos)")
     print(f"  index.bin       : {mb(len(buf))}")
     print(f"  cards.json      : {mb(len(raw))}")
     print(f"  cards.json.gz   : {mb((out_dir / 'cards.json.gz').stat().st_size)}")
@@ -260,5 +337,7 @@ if __name__ == "__main__":
     ap.add_argument("--cards", default=Path("data/cards.db"), type=Path)
     ap.add_argument("--hashes", default=Path("data/hashes.db"), type=Path)
     ap.add_argument("--out", default=Path("web/data"), type=Path)
+    ap.add_argument("--jogos", default=Path("data/jogos.db"), type=Path,
+                    help="Lorcana, One Piece e Riftbound (pipeline/jogos.py)")
     a = ap.parse_args()
-    export(a.cards, a.hashes, a.out)
+    export(a.cards, a.hashes, a.out, a.jogos)

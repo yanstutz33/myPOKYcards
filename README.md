@@ -1,6 +1,9 @@
 # myPOKYcards
 
-Leitor de cartas Pokémon pela câmera, com preço. Catálogo de **41.856
+Leitor de cartas pela câmera, com preço — **Pokémon, One Piece, Disney
+Lorcana e Riftbound**, no mesmo índice e no mesmo leitor (ver Fase 9).
+
+Pokémon: Catálogo de **41.856
 cartas**, das quais **32.339 são reconhecíveis pela imagem** (96,9% das
 internacionais) — a diferença são cartas cuja arte não existe em fonte
 alguma, e a interface diz isso em vez de fingir.
@@ -375,6 +378,86 @@ e os 7 MB de dados usam cache-first com atualização em segundo plano. A
 arte das cartas não é cacheada: vem do CDN de origem e não é nossa para
 guardar.
 
+**Fase 9 (One Piece, Lorcana e Riftbound) — funcional.**
+
+Os três jogos entram no MESMO `index.bin` do Pokémon. Quem aponta a câmera
+não diz antes qual jogo é, e a busca continua abaixo de um quadro de vídeo.
+Um seletor na faixa do leitor restringe a busca a um jogo quando a pessoa
+sabe o que tem na mão — e aí uma carta parecida de outro jogo deixa de poder
+ganhar.
+
+Fonte: **TCGCSV**, espelho diário da API do TCGplayer. O mesmo `productId`
+carrega catálogo, imagem e preço, que é o mesmo argumento que escolheu o
+TCGdex para Pokémon: join nativo. As APIs de comunidade (Lorcast, OPTCG API,
+Riftcodex) têm metadado mais rico, mas cada uma usa id próprio, e a OPTCG
+API nem traz o id do TCGplayer — One Piece exigiria casar por nome, onde
+"Roronoa Zoro (Parallel)" vale 300× o "Roronoa Zoro" ao lado.
+
+Medido em 24/10/2026:
+
+| jogo | catálogo | com imagem | reconhecíveis | com preço hoje |
+|---|---|---|---|---|
+| One Piece | 7.082 | 6.852 | **6.830** | ver painel |
+| Lorcana | 3.612 | 3.612 | **3.488** | ver painel |
+| Riftbound | 1.760 | 1.568 | **1.561** | ver painel |
+
+A diferença entre "com imagem" e "reconhecíveis" são as cartas em paisagem
+(124 Locations do Lorcana, campos de batalha do Riftbound). No total, 11.458
+cartas dos três jogos têm cotação no dia da medição.
+
+Autoteste (`match.py`, 60 cartas sorteadas × 7 degradações, contra o índice
+COMBINADO de 44.218 cartas, como no navegador):
+
+| degradação | top-1 exato | + reimpressão de mesma arte |
+|---|---|---|
+| JPEG | 98,3% | 100% |
+| resolução ÷4 | 100% | 100% |
+| subexposta | 95,0% | 100% |
+| superexposta | 88,3% | 100% |
+| rotação 2,5° | 90,0% | 100% |
+| recorte 3,5% | 85,0% | 96,7% |
+| luz amarelada | 96,7% | 100% |
+
+Os erros de top-1 são a mesma arte em outra impressão (promo × booster,
+"Premium Booster" que reimprime cartas antigas) — o mesmo fenômeno do
+Pokémon, tratado do mesmo jeito: 2.086 grupos, maior com 7 cartas. **O
+Pokémon não piorou**: o autoteste dele deu números idênticos com e sem os
+outros jogos no índice.
+
+**Limitação medida, não resolvida: a marca "SAMPLE" do One Piece.** Quase
+toda imagem de One Piece no TCGplayer (e na OPTCG API, que usa as mesmas)
+vem com "SAMPLE" estampado no meio da arte; a carta física não tem. Um
+carimbo sintético igual, aplicado em cartas limpas de Lorcana, desloca o
+hash em 14 (mediana) a 24 (máximo) — contra 61+ entre cartas diferentes.
+Continua reconhecível, mas gasta parte da folga do travamento automático.
+Quanto, só um teste com carta física diz (`?diag`).
+
+O preço entra no mesmo `prices.db`, com o mesmo vocabulário de fonte e
+métrica, então ficha, gráfico, coleção e conversão para real funcionam sem
+saber de qual jogo a carta é. O robô diário refaz catálogo e preço dos três
+(~1 min, só JSON). Acabamentos novos: `foil`, `holofoil`, `cold-foil`.
+
+O que ficou de fora, de propósito:
+
+- **Cartas em paisagem** (campos de batalha do Riftbound): o recorte da
+  câmera é em pé, e a arte deitada chegaria girada para um lado ou para o
+  outro. Indexar uma rotação acertaria metade das vezes com ar de certeza.
+- **OCR** de nome e número: a geometria foi medida no rodapé Pokémon. Nos
+  outros jogos as reimpressões de mesma arte aparecem como lista para a
+  escolha pelo número impresso.
+- **Liga One Piece / Lorcana / Riftbound**: os sites respondem 403 a
+  qualquer verificação automática, e um formato de link que não vi
+  funcionar pode estar quebrado. A ficha linka o produto no TCGplayer, que é
+  a fonte do preço.
+
+```bash
+python pipeline/jogos.py tudo
+```
+
+```bash
+python pipeline/match.py --selftest --jogos data/jogos.db --amostra-jogos --sample 60
+```
+
 ## Estrutura
 
 ```
@@ -390,6 +473,8 @@ pipeline/fetch_fx.py          taxas PTAX oficiais (Banco Central)
 pipeline/export_web_index.py  bancos -> índice binário do navegador
 pipeline/export_dashboard.py  estado do sistema -> dashboard.json
 pipeline/deploy_pages.py      publica web/ no GitHub Pages (branch gh-pages)
+pipeline/jogos.py             One Piece, Lorcana, Riftbound (TCGCSV -> jogos.db, prices.db)
+web/jogos.js                  o que muda por jogo: selo, arte, filtro, rótulos
 web/                          landing, leitor, coleção e painel (PWA instalável) (tema.css/tema.js = camada temática)
 data/                         bancos gerados (não versionado)
 .claude/agents/               equipe de 12 agentes de domínio
@@ -423,5 +508,8 @@ mas não têm módulo próprio.
 ## Licença dos dados
 
 Catálogo derivado de [`tcgdex/cards-database`](https://github.com/tcgdex/cards-database) — MIT.
-Arte e marca Pokémon pertencem à The Pokémon Company; este projeto é de
-terceiro e não é afiliado nem endossado.
+One Piece, Lorcana e Riftbound: dados do TCGplayer pelo espelho público
+[TCGCSV](https://tcgcsv.com); as imagens são hasheadas e descartadas, e a
+tela aponta para o CDN de origem — nada de arte é redistribuído.
+Arte e marcas pertencem à The Pokémon Company, Bandai, Disney/Ravensburger e
+Riot Games; este projeto é de terceiro e não é afiliado nem endossado.

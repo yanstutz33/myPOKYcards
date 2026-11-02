@@ -100,6 +100,24 @@ function idade(iso) {
     </section>`);
   }
 
+  // ------------------------------------------------------------ outros jogos
+  // O denominador de cada barra é o que tem imagem na fonte, não o catálogo
+  // inteiro: carta sem imagem nunca poderia ter hash, e contá-la como "falta"
+  // diria que o indexador está atrasado quando ele está completo.
+  if (d.jogos) {
+    const NOMES = { onepiece: "One Piece", lorcana: "Disney Lorcana", riftbound: "Riftbound" };
+    const barras = Object.entries(d.jogos).map(([jogo, x]) => progresso(
+      NOMES[jogo] || jogo, x.com_hash, x.com_imagem,
+      `${N(x.cartas)} cartas no catálogo · ${N(x.com_preco)} com cotação hoje${
+        x.paisagem ? ` · ${N(x.paisagem)} em paisagem ficam fora do leitor` : ""}`)).join("");
+    partes.push(`<section class="bloco">
+      <h2>Outros jogos</h2>
+      <p class="prog-nota">Catálogo, imagem e preço do TCGplayer, pelo espelho
+        diário TCGCSV. Mesmo índice e mesmo leitor do Pokémon.</p>
+      ${barras}
+    </section>`);
+  }
+
   // ------------------------------------------------------------------ preços
   if (d.precos) {
     const p = d.precos;
