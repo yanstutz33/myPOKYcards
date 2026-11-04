@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-03T16:58:32+00:00",
+ "gerado_em": "2026-11-04T16:57:02+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354196,
-  "cartas_com_preco": 20483,
+  "linhas": 354183,
+  "cartas_com_preco": 20464,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36023,
-   "listing": 145426,
-   "sold": 172747
+   "derived": 36021,
+   "listing": 145447,
+   "sold": 172715
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19090
+   "cardmarket": 19846,
+   "tcgplayer": 19073
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-11-03T16:57:52+00:00",
+  "falhas_coleta": 40,
+  "ultima_coleta": "2026-11-04T16:56:21+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
