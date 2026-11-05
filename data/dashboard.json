@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-04T16:57:02+00:00",
+ "gerado_em": "2026-11-05T17:13:18+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354183,
-  "cartas_com_preco": 20464,
+  "linhas": 354435,
+  "cartas_com_preco": 20473,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36021,
-   "listing": 145447,
-   "sold": 172715
+   "derived": 36003,
+   "listing": 145764,
+   "sold": 172668
   },
   "por_fonte": {
-   "cardmarket": 19846,
-   "tcgplayer": 19073
+   "cardmarket": 19837,
+   "tcgplayer": 19081
   },
-  "falhas_coleta": 40,
-  "ultima_coleta": "2026-11-04T16:56:21+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-05T17:12:35+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -96,13 +96,6 @@
     "nome": "Mudkip",
     "set": "ex5.5",
     "valor": 8500.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "neo1-9",
-    "nome": "Lugia",
-    "set": "neo1",
-    "valor": 8400.0,
     "moeda": "EUR"
    },
    {
@@ -145,6 +138,13 @@
     "nome": "Mew",
     "set": "xyp",
     "valor": 5799.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ex6-105",
+    "nome": "Charizard ex",
+    "set": "ex6",
+    "valor": 5099.99,
     "moeda": "EUR"
    },
    {
