@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-05T17:13:18+00:00",
+ "gerado_em": "2026-11-06T16:43:24+00:00",
  "catalogo": {
   "cartas": 42395,
   "sets": 569,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 354435,
-  "cartas_com_preco": 20473,
+  "linhas": 354458,
+  "cartas_com_preco": 20483,
   "intl_alvo": 23873,
   "intl_consultadas": 23873,
   "por_kind": {
-   "derived": 36003,
-   "listing": 145764,
-   "sold": 172668
+   "derived": 36023,
+   "listing": 145661,
+   "sold": 172774
   },
   "por_fonte": {
-   "cardmarket": 19837,
-   "tcgplayer": 19081
+   "cardmarket": 19847,
+   "tcgplayer": 19091
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-11-05T17:12:35+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-11-06T16:42:48+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -99,17 +99,17 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "ecard3-146",
+    "nome": "Charizard",
+    "set": "ecard3",
+    "valor": 8149.98,
+    "moeda": "EUR"
+   },
+   {
     "card_id": "ecard2-40",
     "nome": "Tyranitar",
     "set": "ecard2",
     "valor": 6800.0,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard3-146",
-    "nome": "Charizard",
-    "set": "ecard3",
-    "valor": 6146.85,
     "moeda": "EUR"
    },
    {
