@@ -1,24 +1,24 @@
 {
- "gerado_em": "2026-11-07T15:28:08+00:00",
+ "gerado_em": "2026-11-08T15:54:02+00:00",
  "catalogo": {
-  "cartas": 42395,
-  "sets": 569,
+  "cartas": 42536,
+  "sets": 570,
   "cartas_por_regiao": {
    "asia": 18522,
-   "intl": 23873
+   "intl": 24014
   },
   "sets_por_regiao": {
    "asia": 346,
-   "intl": 223
+   "intl": 224
   },
   "idiomas": [
    {
     "lang": "en",
-    "cartas": 23771
+    "cartas": 23912
    },
    {
     "lang": "pt",
-    "cartas": 14535
+    "cartas": 14676
    },
    {
     "lang": "ja",
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 355249,
-  "cartas_com_preco": 20485,
-  "intl_alvo": 23873,
-  "intl_consultadas": 23873,
+  "linhas": 361639,
+  "cartas_com_preco": 20920,
+  "intl_alvo": 24014,
+  "intl_consultadas": 24014,
   "por_kind": {
-   "derived": 36023,
-   "listing": 146440,
-   "sold": 172786
+   "derived": 36648,
+   "listing": 149490,
+   "sold": 175501
   },
   "por_fonte": {
-   "cardmarket": 19847,
-   "tcgplayer": 19093
+   "cardmarket": 20293,
+   "tcgplayer": 19777
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-11-07T15:27:23+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-08T15:53:19+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -83,13 +83,6 @@
     "set": "ecard3",
     "valor": 12312.5,
     "moeda": "EUR"
-   },
-   {
-    "card_id": "ex13-103",
-    "nome": "Mewtwo Star",
-    "set": "ex13",
-    "valor": 9200.0,
-    "moeda": "USD"
    },
    {
     "card_id": "ex5.5-4",
@@ -152,6 +145,13 @@
     "nome": "Latias & Latios GX",
     "set": "sm9",
     "valor": 4619.79,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "30th-R",
+    "nome": "Mew",
+    "set": "30th",
+    "valor": 4492.45,
     "moeda": "USD"
    },
    {
