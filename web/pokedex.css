@@ -1812,3 +1812,46 @@ body.lendo.travado .sheet { max-height: 52dvh; }
   right: 0.5rem;
   z-index: 6;
 }
+
+/* ------------------------------------------------------- seletor de jogo */
+/* Mesma pílula escura dos links da faixa: é um controle da faixa, não um
+   formulário. Estreito de propósito — em 375 px a faixa já leva marca, LED,
+   som e três links, e o nome longo ("Todos os jogos (44.793)") corta com
+   reticências em vez de empurrar o resto para fora da tela. */
+.jogo-sel {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 11rem;
+  height: 30px;
+  padding: 0 1.6rem 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E")
+    no-repeat right 0.6rem center / 0.6rem;
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  appearance: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+.jogo-sel:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.jogo-sel option { color: #111; background: #fff; }
+@media (max-width: 420px) {
+  .jogo-sel { max-width: 7.5rem; padding-left: 0.55rem; }
+}
+
+/* Selo do jogo no resultado. Pokémon segue como antes (INTL/JA); os outros
+   ganham contorno para a pessoa notar de relance que o leitor achou uma
+   carta de OUTRO jogo — o caso em que vale olhar duas vezes. */
+.selo-jogo:not(.selo-pokemon) {
+  padding: 0 0.35rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

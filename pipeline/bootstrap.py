@@ -120,6 +120,8 @@ def main(construir: bool, precos: bool, manter_fonte: Path | None) -> None:
               [sys.executable, "pipeline/build_hash_index.py", "--workers", "16"])
         passo("grupos de impressões indistinguíveis",
               [sys.executable, "pipeline/build_art_groups.py"])
+        passo("One Piece, Lorcana e Riftbound (~12 min)",
+              [sys.executable, "pipeline/jogos.py", "tudo"])
     else:
         # `--restaurar` traz o PAR hashes.db + cards.db, então não há catálogo
         # a montar depois. Ele se recusa a sobrescrever banco existente, e é
@@ -137,6 +139,13 @@ def main(construir: bool, precos: bool, manter_fonte: Path | None) -> None:
               [sys.executable, "pipeline/fetch_prices.py",
                "--region", "intl", "--workers", "10"])
         passo("taxas de câmbio (PTAX)", [sys.executable, "pipeline/fetch_fx.py"])
+
+    # Cópia guardada antes de 24/10/2026 não traz jogos.db. O leitor abre só
+    # com Pokémon, e isto diz como completar em vez de deixar parecer que o
+    # app perdeu três jogos.
+    if not (RAIZ / "data" / "jogos.db").exists():
+        print("\n(sem jogos.db: o leitor vai abrir só com Pokémon. Para One Piece,")
+        print(" Lorcana e Riftbound: python pipeline/jogos.py tudo  — ~12 min)")
 
     passo("exportando índice para o navegador",
           [sys.executable, "pipeline/export_web_index.py"])

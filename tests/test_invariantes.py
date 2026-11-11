@@ -34,7 +34,9 @@ IDIOMAS_NO_ESCOPO = {"en", "ja", "ko", "zh-tw", "zh-cn", "pt", "pt-br"}
 # e com erro de impressao (text-error, missing-hp) — so os tres primeiros
 # tem preco proprio.
 VARIANTE_CATALOGO = ['1995-1998-copyright', '1999-2000-copyright', '1999-copyright', '2019-copyright', '2020-copyright', 'aoki-error', 'blue-border', 'd-ink-dot-error', 'energy-symbol-error', 'evolution-box-error', 'glossy', 'gold-border', 'holo', 'japanese-back', 'lenticular', 'metal', 'missing-expansion-symbol', 'missing-hp', 'missing-retreat-cost', 'nintedo-error', 'no-e-reader', 'no-holo-error', 'no-rarity', 'normal', 'peelable-ditto', 'phanphy-error', 'rarity-error', 'reverse', 'shadowless', 'shadowless-red-cheek', 'shifted-energy-cost', 'text-error', 'unlimited']
-VARIANTE_PRECO = ['1st-edition', '1st-edition-holofoil', 'holofoil', 'normal', 'reverse-holofoil', 'unlimited', 'unlimited-holofoil']
+VARIANTE_PRECO = ['1st-edition', '1st-edition-holofoil', 'holofoil', 'normal', 'reverse-holofoil', 'unlimited', 'unlimited-holofoil',
+                  # One Piece, Lorcana e Riftbound (pipeline/jogos.py, ACABAMENTO)
+                  'foil', 'cold-foil']
 
 # So o que a fonte de preco realmente cota. `1st-edition` e `unlimited` sao
 # tiragens da era WotC e tem preco separado no TCGplayer.
@@ -342,6 +344,12 @@ def testar_totais_impressos() -> None:
         return
     real = dict(cat.execute("SELECT card_id, set_id FROM cards"))
     cat.close()
+    # Os outros jogos usam a mesma derivacao (prefixo + groupId, ultimo
+    # hifen), e o set deles vive em jogos.db, nao em cards.db.
+    jog = abrir("jogos.db") if (DADOS / "jogos.db").exists() else None
+    if jog:
+        real.update(dict(jog.execute("SELECT card_id, set_id FROM cards")))
+        jog.close()
 
     def set_do(card_id: str) -> str:
         corte = card_id.rfind("-")
@@ -359,6 +367,104 @@ def testar_totais_impressos() -> None:
             if s in totais and totais.get(s) != n}
     checar(not fora, "os totais batem com o número impresso na carta",
            f"divergem: {fora}")
+
+
+def testar_jogos() -> None:
+    """One Piece, Lorcana e Riftbound: o mesmo rigor do indice Pokemon.
+
+    Os tres entram no MESMO index.bin e no MESMO cards.json. Um defeito
+    aqui nao aparece como erro: aparece como Pokemon reconhecido onde havia
+    uma carta de Lorcana, ou como jogo que some do leitor sem aviso.
+    """
+    print("\nOUTROS JOGOS")
+    j = abrir("jogos.db")
+    if not j:
+        return
+    q = lambda s: j.execute(s).fetchone()[0]  # noqa: E731
+
+    # Pisos medidos em 24/10/2026 (3.612 / 7.082 / 1.760 no catalogo), com
+    # folga. Um piso que cai e o sinal de que a fonte mudou de formato.
+    pisos = {"lorcana": 3000, "onepiece": 6000, "riftbound": 1200}
+    por_jogo = dict(j.execute("""SELECT c.jogo, COUNT(*) FROM hashes h
+                                 JOIN cards c USING(card_id) GROUP BY c.jogo"""))
+    for jogo, piso in pisos.items():
+        n = por_jogo.get(jogo, 0)
+        checar(n > piso, f"{jogo}: {n} cartas com hash (esperado > {piso})")
+
+    orfaos = q("""SELECT COUNT(*) FROM hashes h LEFT JOIN cards c USING(card_id)
+                  WHERE c.card_id IS NULL""")
+    checar(orfaos == 0, "nenhum hash de jogo apontando para carta inexistente",
+           f"{orfaos} orfaos")
+
+    # O prefixo do card_id e o que impede colisao com set Pokemon, e o que o
+    # app usa para saber de qual jogo e a carta. Prefixo trocado poria uma
+    # carta de One Piece com cor e preco de outra.
+    prefixo = {"lorcana": "lor", "onepiece": "op", "riftbound": "rb"}
+    trocados = [cid for cid, jogo, set_id in j.execute(
+                    "SELECT card_id, jogo, set_id FROM cards")
+                if not (set_id.startswith(prefixo.get(jogo, "?"))
+                        and cid.startswith(set_id + "-"))]
+    checar(not trocados, "todo card_id de jogo tem o prefixo e o set do proprio jogo",
+           f"{len(trocados)} divergem, ex.: {trocados[:3]}")
+
+    fora = q("""SELECT COUNT(*) FROM hashes
+                WHERE src_url NOT LIKE 'https://tcgplayer-cdn.tcgplayer.com/product/%'""")
+    checar(fora == 0, "todo hash de jogo veio do CDN do TCGplayer",
+           f"{fora} com outra origem — a proveniencia deixaria de ser verificavel")
+
+    maior = q("SELECT COALESCE(MAX(tamanho), 0) FROM art_groups")
+    checar(maior <= 20, f"maior grupo de reimpressoes tem {maior} cartas (limite 20)",
+           "limiar frouxo em `jogos.py grupos`")
+
+    cats = abrir("cards.db")
+    if cats:
+        pokemon = {r[0] for r in cats.execute("SELECT card_id FROM cards")}
+        cats.close()
+        colisao = [r[0] for r in j.execute("SELECT card_id FROM cards") if r[0] in pokemon]
+        checar(not colisao, "nenhum card_id de jogo colide com um Pokemon", str(colisao[:3]))
+
+    # O que foi publicado tem que bater com o banco: carta no cards.json com
+    # regiao trocada viraria selo e cor do jogo errado.
+    caminho = RAIZ / "web" / "data" / "cards.json"
+    if caminho.exists():
+        dados = json.loads(caminho.read_text(encoding="utf-8"))
+        jogo_de = dict(j.execute("SELECT card_id, jogo FROM cards"))
+        regiao_errada = [cid for cid, m in zip(dados["ids"], dados["meta"])
+                         if cid in jogo_de and m[4] != jogo_de[cid]]
+        checar(not regiao_errada, "cards.json marca cada carta com o jogo certo",
+               f"{len(regiao_errada)} divergem, ex.: {regiao_errada[:3]}")
+        arte = [cid for cid, m in zip(dados["ids"], dados["meta"])
+                if cid in jogo_de and not str(m[7]).startswith("tcgp:")]
+        checar(not arte, "toda carta de jogo publicada aponta arte no TCGplayer",
+               f"{len(arte)} sem `tcgp:`, ex.: {arte[:3]}")
+    j.close()
+
+
+def testar_contagem_do_index() -> None:
+    """O header do index.bin conta as MESMAS cartas que o cards.json lista.
+
+    A contagem e escrita no header antes de o exportador anexar os outros
+    jogos. Se ela nao for reescrita, o matcher le so as primeiras N cartas:
+    Pokemon funciona, e One Piece, Lorcana e Riftbound nunca sao propostos.
+    Nenhum erro, nenhum aviso — so tres jogos que deixam de existir.
+    """
+    print("\nCONTAGEM DO INDEX.BIN")
+    pb, pj = RAIZ / "web" / "data" / "index.bin", RAIZ / "web" / "data" / "cards.json"
+    if not (pb.exists() and pj.exists()):
+        print("  (index.bin ou cards.json ainda nao exportados)")
+        return
+    import struct
+    bruto = pb.read_bytes()
+    n = struct.unpack_from("<I", bruto, 6)[0]
+    dados = json.loads(pj.read_text(encoding="utf-8"))
+    checar(n == len(dados["ids"]) == len(dados["meta"]),
+           f"header do index.bin ({n}) = cartas do cards.json ({len(dados['ids'])})")
+    checar(len(bruto) == 16 + n * 48,
+           "index.bin tem exatamente 48 bytes por carta depois do header",
+           f"{len(bruto)} bytes para {n} cartas")
+    por = dados.get("por_regiao") or {}
+    checar(sum(por.values()) == len(dados["ids"]),
+           "`por_regiao` soma o total de cartas", f"{por}")
 
 
 def testar_preco_e_serie_batem() -> None:
@@ -512,6 +618,8 @@ if __name__ == "__main__":
     testar_traducao_variante()
     testar_formato_do_indice()
     testar_totais_impressos()
+    testar_jogos()
+    testar_contagem_do_index()
     testar_preco_e_serie_batem()
     testar_precache()
     testar_publicacao_dos_dados()
