@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-11T16:57:38+00:00",
+ "gerado_em": "2026-11-12T17:26:12+00:00",
  "catalogo": {
   "cartas": 42536,
   "sets": 570,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 361497,
-  "cartas_com_preco": 20931,
+  "linhas": 360976,
+  "cartas_com_preco": 20903,
   "intl_alvo": 24014,
   "intl_consultadas": 24014,
   "por_kind": {
-   "derived": 36674,
-   "listing": 148859,
-   "sold": 175964
+   "derived": 36615,
+   "listing": 148683,
+   "sold": 175678
   },
   "por_fonte": {
-   "cardmarket": 20303,
-   "tcgplayer": 19790
+   "cardmarket": 20270,
+   "tcgplayer": 19762
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-11-11T16:57:00+00:00",
+  "falhas_coleta": 34,
+  "ultima_coleta": "2026-11-12T17:25:28+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -148,17 +148,17 @@
     "moeda": "USD"
    },
    {
-    "card_id": "30th-R",
-    "nome": "Mew",
-    "set": "30th",
-    "valor": 4492.45,
-    "moeda": "USD"
-   },
-   {
     "card_id": "ecard2-149",
     "nome": "Lugia",
     "set": "ecard2",
     "valor": 4438.89,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "ecard3-149",
+    "nome": "Ho-oh",
+    "set": "ecard3",
+    "valor": 4299.0,
     "moeda": "EUR"
    }
   ]
