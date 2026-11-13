@@ -1,20 +1,20 @@
 {
- "gerado_em": "2026-11-12T17:26:12+00:00",
+ "gerado_em": "2026-11-13T16:59:12+00:00",
  "catalogo": {
-  "cartas": 42536,
-  "sets": 570,
+  "cartas": 42599,
+  "sets": 571,
   "cartas_por_regiao": {
-   "asia": 18522,
-   "intl": 24014
+   "asia": 18584,
+   "intl": 24015
   },
   "sets_por_regiao": {
-   "asia": 346,
+   "asia": 347,
    "intl": 224
   },
   "idiomas": [
    {
     "lang": "en",
-    "cartas": 23912
+    "cartas": 23913
    },
    {
     "lang": "pt",
@@ -22,7 +22,7 @@
    },
    {
     "lang": "ja",
-    "cartas": 13598
+    "cartas": 13660
    },
    {
     "lang": "zh-tw",
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 360976,
-  "cartas_com_preco": 20903,
-  "intl_alvo": 24014,
-  "intl_consultadas": 24014,
+  "linhas": 361872,
+  "cartas_com_preco": 20933,
+  "intl_alvo": 24015,
+  "intl_consultadas": 24015,
   "por_kind": {
-   "derived": 36615,
-   "listing": 148683,
-   "sold": 175678
+   "derived": 36674,
+   "listing": 149257,
+   "sold": 175941
   },
   "por_fonte": {
-   "cardmarket": 20270,
-   "tcgplayer": 19762
+   "cardmarket": 20303,
+   "tcgplayer": 19786
   },
-  "falhas_coleta": 34,
-  "ultima_coleta": "2026-11-12T17:25:28+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-11-13T16:58:35+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -96,13 +96,6 @@
     "nome": "Charizard",
     "set": "ecard3",
     "valor": 8149.98,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "ecard2-40",
-    "nome": "Tyranitar",
-    "set": "ecard2",
-    "valor": 6800.0,
     "moeda": "EUR"
    },
    {
@@ -160,6 +153,13 @@
     "set": "ecard3",
     "valor": 4299.0,
     "moeda": "EUR"
+   },
+   {
+    "card_id": "30th-B",
+    "nome": "Mew",
+    "set": "30th",
+    "valor": 4263.6,
+    "moeda": "USD"
    }
   ]
  }
