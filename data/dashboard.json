@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-13T16:59:12+00:00",
+ "gerado_em": "2026-11-14T15:33:27+00:00",
  "catalogo": {
   "cartas": 42599,
   "sets": 571,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 361872,
-  "cartas_com_preco": 20933,
+  "linhas": 362084,
+  "cartas_com_preco": 20924,
   "intl_alvo": 24015,
   "intl_consultadas": 24015,
   "por_kind": {
-   "derived": 36674,
-   "listing": 149257,
-   "sold": 175941
+   "derived": 36654,
+   "listing": 149580,
+   "sold": 175850
   },
   "por_fonte": {
-   "cardmarket": 20303,
-   "tcgplayer": 19786
+   "cardmarket": 20293,
+   "tcgplayer": 19781
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-11-13T16:58:35+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-14T15:32:48+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -134,6 +134,13 @@
     "moeda": "EUR"
    },
    {
+    "card_id": "30th-R",
+    "nome": "Mew",
+    "set": "30th",
+    "valor": 5000.0,
+    "moeda": "EUR"
+   },
+   {
     "card_id": "sm9-170",
     "nome": "Latias & Latios GX",
     "set": "sm9",
@@ -153,13 +160,6 @@
     "set": "ecard3",
     "valor": 4299.0,
     "moeda": "EUR"
-   },
-   {
-    "card_id": "30th-B",
-    "nome": "Mew",
-    "set": "30th",
-    "valor": 4263.6,
-    "moeda": "USD"
    }
   ]
  }
