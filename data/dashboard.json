@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-15T16:11:51+00:00",
+ "gerado_em": "2026-11-16T19:18:32+00:00",
  "catalogo": {
   "cartas": 42599,
   "sets": 571,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 362850,
-  "cartas_com_preco": 20935,
+  "linhas": 361666,
+  "cartas_com_preco": 20895,
   "intl_alvo": 24015,
   "intl_consultadas": 24015,
   "por_kind": {
-   "derived": 36674,
-   "listing": 150225,
-   "sold": 175951
+   "derived": 36619,
+   "listing": 149346,
+   "sold": 175701
   },
   "por_fonte": {
-   "cardmarket": 20303,
-   "tcgplayer": 19793
+   "cardmarket": 20263,
+   "tcgplayer": 19753
   },
-  "falhas_coleta": 0,
-  "ultima_coleta": "2026-11-15T16:11:05+00:00",
+  "falhas_coleta": 60,
+  "ultima_coleta": "2026-11-16T19:18:03+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -96,6 +96,13 @@
     "nome": "Charizard",
     "set": "ecard3",
     "valor": 8149.98,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-165",
+    "nome": "Gengar & Mimikyu GX",
+    "set": "sm9",
+    "valor": 6000.0,
     "moeda": "EUR"
    },
    {
@@ -134,24 +141,17 @@
     "moeda": "EUR"
    },
    {
-    "card_id": "30th-R",
-    "nome": "Mew",
-    "set": "30th",
-    "valor": 5000.0,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "sm9-170",
     "nome": "Latias & Latios GX",
     "set": "sm9",
-    "valor": 4619.79,
+    "valor": 4699.75,
     "moeda": "USD"
    },
    {
     "card_id": "ecard2-149",
     "nome": "Lugia",
     "set": "ecard2",
-    "valor": 4438.89,
+    "valor": 4500.0,
     "moeda": "EUR"
    },
    {
