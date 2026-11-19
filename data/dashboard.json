@@ -1,11 +1,11 @@
 {
- "gerado_em": "2026-11-18T17:52:37+00:00",
+ "gerado_em": "2026-11-19T18:00:45+00:00",
  "catalogo": {
-  "cartas": 42599,
+  "cartas": 42681,
   "sets": 571,
   "cartas_por_regiao": {
-   "asia": 18584,
-   "intl": 24015
+   "asia": 18660,
+   "intl": 24021
   },
   "sets_por_regiao": {
    "asia": 347,
@@ -14,15 +14,15 @@
   "idiomas": [
    {
     "lang": "en",
-    "cartas": 23913
+    "cartas": 23919
    },
    {
     "lang": "pt",
-    "cartas": 14676
+    "cartas": 14683
    },
    {
     "lang": "ja",
-    "cartas": 13660
+    "cartas": 13803
    },
    {
     "lang": "zh-tw",
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 361057,
-  "cartas_com_preco": 20897,
-  "intl_alvo": 24015,
-  "intl_consultadas": 24015,
+  "linhas": 361568,
+  "cartas_com_preco": 20937,
+  "intl_alvo": 24021,
+  "intl_consultadas": 24021,
   "por_kind": {
-   "derived": 36596,
-   "listing": 148833,
-   "sold": 175628
+   "derived": 36664,
+   "listing": 148948,
+   "sold": 175956
   },
   "por_fonte": {
-   "cardmarket": 20253,
-   "tcgplayer": 19757
+   "cardmarket": 20293,
+   "tcgplayer": 19805
   },
-  "falhas_coleta": 50,
-  "ultima_coleta": "2026-11-18T17:52:08+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-19T18:00:04+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
