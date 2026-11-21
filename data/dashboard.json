@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-20T17:39:13+00:00",
+ "gerado_em": "2026-11-21T16:45:09+00:00",
  "catalogo": {
   "cartas": 42681,
   "sets": 571,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 361403,
+  "linhas": 362291,
   "cartas_com_preco": 20937,
   "intl_alvo": 24021,
   "intl_consultadas": 24021,
   "por_kind": {
-   "derived": 36656,
-   "listing": 148802,
-   "sold": 175945
+   "derived": 36654,
+   "listing": 149670,
+   "sold": 175967
   },
   "por_fonte": {
    "cardmarket": 20293,
-   "tcgplayer": 19800
+   "tcgplayer": 19803
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-11-20T17:38:31+00:00",
+  "falhas_coleta": 20,
+  "ultima_coleta": "2026-11-21T16:44:20+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -83,6 +83,13 @@
     "set": "ecard3",
     "valor": 12312.5,
     "moeda": "EUR"
+   },
+   {
+    "card_id": "ex13-103",
+    "nome": "Mewtwo Star",
+    "set": "ex13",
+    "valor": 9200.0,
+    "moeda": "USD"
    },
    {
     "card_id": "ex5.5-4",
@@ -153,13 +160,6 @@
     "set": "ecard3",
     "valor": 4299.0,
     "moeda": "EUR"
-   },
-   {
-    "card_id": "30th-B",
-    "nome": "Mew",
-    "set": "30th",
-    "valor": 4276.56,
-    "moeda": "USD"
    }
   ]
  }
