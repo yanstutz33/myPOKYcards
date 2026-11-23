@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-22T17:03:18+00:00",
+ "gerado_em": "2026-11-23T20:59:49+00:00",
  "catalogo": {
   "cartas": 42681,
   "sets": 571,
@@ -61,21 +61,21 @@
   ]
  },
  "precos": {
-  "linhas": 361688,
-  "cartas_com_preco": 20898,
+  "linhas": 361856,
+  "cartas_com_preco": 20939,
   "intl_alvo": 24021,
   "intl_consultadas": 24021,
   "por_kind": {
-   "derived": 36583,
-   "listing": 149500,
-   "sold": 175605
+   "derived": 36667,
+   "listing": 149169,
+   "sold": 176020
   },
   "por_fonte": {
-   "cardmarket": 20254,
-   "tcgplayer": 19765
+   "cardmarket": 20295,
+   "tcgplayer": 19814
   },
-  "falhas_coleta": 49,
-  "ultima_coleta": "2026-11-22T17:02:38+00:00",
+  "falhas_coleta": 10,
+  "ultima_coleta": "2026-11-23T20:59:08+00:00",
   "mais_caras": [
    {
     "card_id": "ecard3-10",
@@ -103,13 +103,6 @@
     "nome": "Charizard",
     "set": "ecard3",
     "valor": 8149.98,
-    "moeda": "EUR"
-   },
-   {
-    "card_id": "sm9-165",
-    "nome": "Gengar & Mimikyu GX",
-    "set": "sm9",
-    "valor": 6000.0,
     "moeda": "EUR"
    },
    {
@@ -160,6 +153,13 @@
     "set": "ecard3",
     "valor": 4299.0,
     "moeda": "EUR"
+   },
+   {
+    "card_id": "30th-B",
+    "nome": "Mew",
+    "set": "30th",
+    "valor": 4276.56,
+    "moeda": "USD"
    }
   ]
  }
