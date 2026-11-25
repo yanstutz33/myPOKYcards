@@ -1,5 +1,5 @@
 {
- "gerado_em": "2026-11-24T19:58:30+00:00",
+ "gerado_em": "2026-11-25T19:04:15+00:00",
  "catalogo": {
   "cartas": 42681,
   "sets": 570,
@@ -61,29 +61,22 @@
   ]
  },
  "precos": {
-  "linhas": 361298,
-  "cartas_com_preco": 20937,
+  "linhas": 361940,
+  "cartas_com_preco": 20947,
   "intl_alvo": 24021,
   "intl_consultadas": 24021,
   "por_kind": {
-   "derived": 36655,
-   "listing": 148652,
-   "sold": 175991
+   "derived": 36675,
+   "listing": 149159,
+   "sold": 176106
   },
   "por_fonte": {
-   "cardmarket": 20293,
-   "tcgplayer": 19805
+   "cardmarket": 20303,
+   "tcgplayer": 19816
   },
-  "falhas_coleta": 10,
-  "ultima_coleta": "2026-11-24T19:57:40+00:00",
+  "falhas_coleta": 0,
+  "ultima_coleta": "2026-11-25T19:03:35+00:00",
   "mais_caras": [
-   {
-    "card_id": "ecard3-10",
-    "nome": "Gengar",
-    "set": "ecard3",
-    "valor": 12312.5,
-    "moeda": "EUR"
-   },
    {
     "card_id": "ex13-103",
     "nome": "Mewtwo Star",
@@ -148,17 +141,24 @@
     "moeda": "USD"
    },
    {
-    "card_id": "ecard3-149",
-    "nome": "Ho-oh",
-    "set": "ecard3",
-    "valor": 4299.0,
-    "moeda": "EUR"
-   },
-   {
     "card_id": "30th-B",
     "nome": "Mew",
     "set": "30th",
     "valor": 4276.56,
+    "moeda": "USD"
+   },
+   {
+    "card_id": "ecard3-32",
+    "nome": "Umbreon",
+    "set": "ecard3",
+    "valor": 3930.0,
+    "moeda": "EUR"
+   },
+   {
+    "card_id": "sm9-170",
+    "nome": "Latias & Latios GX",
+    "set": "sm9",
+    "valor": 3857.8,
     "moeda": "USD"
    }
   ]
