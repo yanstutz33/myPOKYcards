@@ -10,8 +10,8 @@ decisão com o número que a justificou. Este arquivo é o mínimo operacional.
 
 ## O que é
 
-App web que reconhece carta Pokémon pela câmera, mostra o preço e guarda a
-coleção. Roda inteiro no navegador — **não há servidor**, e isso é decisão
+App web que reconhece carta pela câmera — **Pokémon, One Piece, Disney
+Lorcana e Riftbound** —, mostra o preço e guarda a coleção. Roda inteiro no navegador — **não há servidor**, e isso é decisão
 do dono, não limitação. Publicado em GitHub Pages, dados atualizados por um
 robô do GitHub Actions.
 
@@ -32,6 +32,13 @@ Baixa o índice da release pública e o preço do site publicado. Depois:
 
 ```bash
 python pipeline/servir.py --porta 8137
+```
+
+Os outros três jogos vêm na mesma release (`jogos.db`). Se a cópia
+restaurada for anterior a 24/10/2026 e não trouxer, monte em ~12 min:
+
+```bash
+python pipeline/jogos.py tudo
 ```
 
 Não rode `--construir` sem motivo forte: são horas baixando 30 mil imagens
@@ -96,13 +103,33 @@ resto.
 remova essa preservação: sem ela, publicar apaga a série histórica
 acumulada, e o sintoma é mudo (o gráfico só encolhe).
 
-`data/hashes.db` não está no git. Ele vive numa release de tag fixa:
+`data/hashes.db` e `data/jogos.db` não estão no git. Vivem numa release de
+tag fixa:
 
 ```bash
 python pipeline/salvar_indice.py --conferir
 ```
 
 ---
+
+## Os outros jogos (One Piece, Lorcana, Riftbound)
+
+Uma fonte para os três: **TCGCSV**, espelho diário da API do TCGplayer. O
+mesmo `productId` é catálogo, imagem e preço — join nativo, como o TCGdex
+para Pokémon. `pipeline/jogos.py` faz tudo; a interface decide o que exibir
+por jogo em `web/jogos.js`, e o resto do app não tem ramo por jogo.
+
+- `card_id` = `<prefixo><groupId>-<productId>` (`lor`, `op`, `rb`). O app
+  deriva o set cortando no último hífen; o prefixo impede colisão com set
+  Pokémon. Há invariante para os dois.
+- A `regiao` do cards.json é o jogo (`onepiece`, `lorcana`, `riftbound`).
+  Pokémon continua `intl`/`asia`.
+- Arte: `caminho_arte` = `tcgp:<productId>`, resolvido por `urlArte()`.
+- Carta em paisagem (campos de batalha do Riftbound) **fica fora do índice**
+  de propósito: o recorte da câmera é em pé, e a arte chegaria girada para
+  um lado ou para o outro.
+- OCR de nome e número continua só Pokémon: a geometria foi medida naquele
+  rodapé. Nos outros jogos as impressões irmãs aparecem para escolha manual.
 
 ## Becos sem saída — já medidos, não repita
 

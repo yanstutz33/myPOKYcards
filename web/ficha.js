@@ -15,6 +15,7 @@
 import * as colecao from "./colecao.js";
 import * as mercado from "./mercado.js";
 import * as grafico from "./grafico.js";
+import { selo, nomeRegiao, urlArte, urlTcgplayer, ePokemon, jogoDaRegiao } from "./jogos.js";
 
 const SIMBOLO = { USD: "US$", EUR: "€", BRL: "R$", JPY: "¥" };
 
@@ -22,6 +23,13 @@ const NOME_IDIOMA = {
   en: "inglês", pt: "português", "pt-br": "português (BR)", ja: "japonês",
   ko: "coreano", "zh-tw": "chinês tradicional", "zh-cn": "chinês simplificado",
   es: "espanhol", fr: "francês", de: "alemão", it: "italiano",
+};
+
+// O campo `tipos` guarda a cor da carta em cada jogo, e cada jogo dá a ela
+// um nome: energia no Pokémon, tinta no Lorcana, cor no One Piece, domínio
+// no Riftbound.
+const TIPOS_ROTULO = {
+  pokemon: "Tipos", lorcana: "Tinta", onepiece: "Cor", riftbound: "Domínio",
 };
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
@@ -76,9 +84,9 @@ function irmasHtml(i) {
       const p = ctx.prices[id]?.[0];
       return `<button class="ficha-irma" data-ir="${esc(id)}">
         ${caminho ? `<img alt="" loading="lazy" decoding="async"
-             src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">` : ""}
+             src="${esc(urlArte(ctx.catalog, caminho))}">` : ""}
         <span class="ir-nome">${esc(nome)}</span>
-        <span class="ir-meta">${esc(set)} · ${esc(numero)} · ${regiao === "asia" ? "JA" : "INTL"}</span>
+        <span class="ir-meta">${esc(set)} · ${esc(numero)} · ${selo(regiao)}</span>
         <span class="ir-preco">${p ? `${SIMBOLO[p.c] || p.c} ${p.ref.toFixed(2)}` : "sem preço"}</span>
       </button>`;
     }).join("")}</div>
@@ -111,7 +119,8 @@ export function abrir(cardId) {
 
       <div class="ficha-acoes">
         ${(variantes?.length ? variantes : ["normal"])
-          .filter((v) => ["normal", "holo", "reverse", "1st-edition", "unlimited"].includes(v))
+          .filter((v) => ["normal", "holo", "reverse", "1st-edition", "unlimited",
+                          "foil", "holofoil", "cold-foil"].includes(v))
           .map((v) => {
             const n = colecao.quantidade(cardId, v);
             return `<button class="fa-guardar${n ? " feito" : ""}"
@@ -124,7 +133,7 @@ export function abrir(cardId) {
       <div class="ficha-corpo">
         ${caminho ? `<figure class="ficha-arte-caixa" data-arte="${esc(caminho)}">
              <img class="ficha-arte" alt="${esc(nome)}" decoding="async"
-                  src="${ctx.catalog.cdn}/${esc(caminho)}/low.png">
+                  src="${esc(urlArte(ctx.catalog, caminho))}">
            </figure>` : `<p class="ficha-sem-arte">Sem arte para esta carta.</p>`}
 
         <section class="ficha-bloco">
@@ -146,18 +155,19 @@ export function abrir(cardId) {
             ${linha("Raridade", raridade ? esc(raridade) : null)}
             ${linha("Categoria", categoria ? esc(categoria) : null)}
             ${linha("HP", hp || null)}
-            ${linha("Tipos", tipos?.length ? esc(tipos.join(" · ")) : null)}
+            ${linha(TIPOS_ROTULO[jogoDaRegiao(regiao)],
+                    tipos?.length ? esc(tipos.join(" · ")) : null)}
             ${linha("Pokédex", dex || null)}
             ${linha("Ilustração", ilustrador ? esc(ilustrador) : null)}
             ${linha("Marca de regulação", regulacao ? esc(regulacao) : null)}
-            ${linha("Região", regiao === "asia" ? "Ásia (japonês e afins)" : "Internacional")}
+            ${linha(ePokemon(regiao) ? "Região" : "Jogo", esc(nomeRegiao(regiao)))}
             ${linha("Variantes", variantes?.length ? esc(variantes.join(" · ")) : null)}
             ${linha("Idiomas impressos", idiomas.map((l) =>
               esc(NOME_IDIOMA[l] || l)).join(" · "))}
           </dl>
         </section>
 
-        ${mercado.blocoHtml(nome, set, numero)}
+        ${mercado.blocoHtml(nome, set, numero, regiao, urlTcgplayer(caminho))}
 
         ${ctx.gradedHtml ? (() => {
           const g = ctx.gradedHtml(cardId);
@@ -232,7 +242,7 @@ function melhorarArte(raiz) {
   grande.onload = () => {
     if (grande.naturalWidth > img.naturalWidth) img.src = grande.src;
   };
-  grande.src = `${ctx.catalog.cdn}/${caixa.dataset.arte}/high.png`;
+  grande.src = urlArte(ctx.catalog, caixa.dataset.arte, "high");
 }
 
 export function fechar() {

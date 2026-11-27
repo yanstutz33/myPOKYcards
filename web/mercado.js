@@ -41,9 +41,11 @@ export const AFILIADO = {
   shopee: "",         // id do Shopee Affiliate Program
 };
 
+import { JOGOS, jogoDaRegiao, ePokemon } from "./jogos.js";
+
 /** Termo de busca: nome + número + expansão é o que separa uma carta de outra. */
-function termo(nome, set, numero) {
-  return [nome, numero, set, "pokemon", "carta"]
+function termo(nome, set, numero, regiao) {
+  return [nome, numero, set, JOGOS[jogoDaRegiao(regiao)].termo, "carta"]
     .filter(Boolean).join(" ");
 }
 
@@ -99,9 +101,30 @@ const LOJAS = [
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+/**
+ * Terceiro botão: onde se negocia AQUELE jogo.
+ *
+ * Pokémon tem a Liga Pokémon. Para One Piece, Lorcana e Riftbound o link é a
+ * página do produto no TCGplayer — de onde vem a cotação que a ficha mostra,
+ * então quem quer conferir o número chega na fonte dele. As Ligas dos outros
+ * jogos existem, mas respondem 403 a qualquer verificação automática, e um
+ * formato de link que eu não consegui ver funcionando é um link que pode
+ * estar quebrado (conferido em 24/10/2026).
+ */
+function terceiro(nome, regiao, tcgplayer) {
+  if (ePokemon(regiao)) {
+    return `<a class="mkt-loja mkt-liga" target="_blank" rel="noopener"
+         href="${esc(ligaPokemon(nome))}">Liga Pokémon</a>`;
+  }
+  return tcgplayer
+    ? `<a class="mkt-loja mkt-liga" target="_blank" rel="noopener"
+         href="${esc(tcgplayer)}">TCGplayer (fonte do preço)</a>`
+    : "";
+}
+
 /** Bloco pronto para a ficha. */
-export function blocoHtml(nome, set, numero) {
-  const q = termo(nome, set, numero);
+export function blocoHtml(nome, set, numero, regiao = "intl", tcgplayer = null) {
+  const q = termo(nome, set, numero, regiao);
   const temAfiliado = Boolean(AFILIADO.mercadolivre || AFILIADO.shopee);
 
   const botoes = LOJAS.map((l) => `<a class="mkt-loja" target="_blank"
@@ -115,8 +138,7 @@ export function blocoHtml(nome, set, numero) {
       carta — não é o mesmo que a cotação internacional acima.</p>
     <div class="mkt-lojas">
       ${botoes}
-      <a class="mkt-loja mkt-liga" target="_blank" rel="noopener"
-         href="${esc(ligaPokemon(nome))}">Liga Pokémon</a>
+      ${terceiro(nome, regiao, tcgplayer)}
     </div>
     ${temAfiliado ? `<p class="mkt-aviso">${
       LOJAS.filter((l) => l.afiliado()).map((l) => l.nome).join(" e ")
@@ -124,7 +146,8 @@ export function blocoHtml(nome, set, numero) {
       de afiliado: se você comprar por ${
         LOJAS.filter((l) => l.afiliado()).length > 1 ? "eles" : "ele"
       }, este app ganha uma comissão da loja, sem custo a mais para você.
-      A Liga Pokémon entra sem comissão, porque é onde o mercado brasileiro
-      de fato negocia.</p>` : ""}
+      ${ePokemon(regiao) ? `A Liga Pokémon entra sem comissão, porque é onde o
+      mercado brasileiro de fato negocia.` : `O TCGplayer entra sem comissão: é a
+      fonte da cotação mostrada acima.`}</p>` : ""}
   </section>`;
 }

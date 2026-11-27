@@ -61,6 +61,10 @@ RAIZ = Path(__file__).resolve().parent.parent
 DADOS = RAIZ / "data"
 TAG = "indice"
 BANCOS = ("hashes.db", "cards.db")
+# Lorcana, One Piece e Riftbound (pipeline/jogos.py): catalogo e hashes no
+# mesmo arquivo. Opcional porque copias guardadas antes de 24/10/2026 nao o
+# tem, e restaurar uma delas nao pode falhar por um banco que nunca existiu.
+OPCIONAIS = ("jogos.db",)
 MANIFESTO = "manifesto.json"
 
 
@@ -111,9 +115,11 @@ def montar_manifesto() -> dict:
         "commit": r.stdout.strip() if r.returncode == 0 else "?",
         "bancos": {},
     }
-    for nome in BANCOS:
+    for nome in BANCOS + OPCIONAIS:
         p = DADOS / nome
         if not p.exists():
+            if nome in OPCIONAIS:
+                continue
             raise SystemExit(f"banco ausente: {p}")
         m["bancos"][nome] = {
             "bytes": p.stat().st_size,
@@ -130,7 +136,7 @@ def salvar() -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
         envios = []
-        for nome in BANCOS:
+        for nome in m["bancos"]:
             destino = tmp / f"{nome}.gz"
             # mtime=0 para o .gz nao mudar quando o conteudo nao mudou —
             # sem isso toda execucao subiria bytes diferentes por nada.
@@ -195,7 +201,7 @@ def baixar_publico(arquivo: str, destino) -> bool:
 
 
 def restaurar(forcar: bool) -> None:
-    presentes = [n for n in BANCOS if (DADOS / n).exists()]
+    presentes = [n for n in BANCOS + OPCIONAIS if (DADOS / n).exists()]
     if presentes and not forcar:
         raise SystemExit(
             f"ja existem aqui: {', '.join(presentes)}\n"
@@ -203,7 +209,13 @@ def restaurar(forcar: bool) -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
-        falhou = [a for a in (MANIFESTO, *(f"{n}.gz" for n in BANCOS))
+        if not baixar_publico(MANIFESTO, tmp / MANIFESTO):
+            raise SystemExit(f"nao consegui baixar {MANIFESTO} da release '{TAG}'")
+        m = json.loads((tmp / MANIFESTO).read_text(encoding="utf-8"))
+        # O manifesto diz o que a copia TEM. Pedir jogos.db a uma copia antiga
+        # daria 404 e abortaria a restauracao do Pokemon, que estava inteira.
+        guardados = list(m["bancos"])
+        falhou = [a for a in (f"{n}.gz" for n in guardados)
                   if not baixar_publico(a, tmp / a)]
         if falhou:
             faltando = ", ".join(falhou)
@@ -212,11 +224,10 @@ def restaurar(forcar: bool) -> None:
                 f"nao consegui baixar: {faltando}"
                 + "\n"
                 + f"A release '{TAG}' existe? Confira em {onde}")
-        m = json.loads((tmp / MANIFESTO).read_text(encoding="utf-8"))
         print(f"copia de {m['gerado_em']} (commit {m['commit']})")
 
         DADOS.mkdir(parents=True, exist_ok=True)
-        for nome in BANCOS:
+        for nome in guardados:
             origem = tmp / f"{nome}.gz"
             destino = DADOS / nome
             with gzip.open(origem, "rb") as e, open(destino, "wb") as s:
@@ -247,10 +258,15 @@ def conferir() -> None:
 
     print(f"guardado : {guardado['gerado_em']}  commit {guardado['commit']}")
     igual = True
-    for nome in BANCOS:
+    for nome in BANCOS + tuple(n for n in OPCIONAIS
+                               if n in guardado["bancos"] or (DADOS / n).exists()):
         p = DADOS / nome
         if not p.exists():
             print(f"  {nome:12} AUSENTE aqui")
+            igual = False
+            continue
+        if nome not in guardado["bancos"]:
+            print(f"  {nome:12} so existe aqui")
             igual = False
             continue
         aqui, la = soma(p), guardado["bancos"][nome]["sha256"]
@@ -273,6 +289,7 @@ e sempre "o indice atual".
 
 - `hashes.db.gz` — pHash/dHash/aHash de cada carta, com a fonte da arte
 - `cards.db.gz`  — o catalogo que da sentido aos card_id do indice
+- `jogos.db.gz`  — Lorcana, One Piece e Riftbound: catalogo e hashes juntos
 - `manifesto.json` — sha256, tamanhos e contagem de linhas
 
 Para restaurar numa maquina limpa:

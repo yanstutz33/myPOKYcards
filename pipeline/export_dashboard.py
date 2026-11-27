@@ -22,7 +22,39 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path) -> dict:
+def _jogos(jogos_db: Path, prices_db: Path) -> dict | None:
+    """Um bloco por jogo, cada numero com o seu denominador.
+
+    `com_hash` e `paisagem` dependem das imagens, que o robo diario nao
+    baixa; la eles saem zerados e `refresh_prices.py` os traz do painel ja
+    publicado — mesma regra do bloco de reconhecimento do Pokemon.
+    """
+    if not jogos_db.exists():
+        return None
+    j = sqlite3.connect(f"file:{jogos_db}?mode=ro", uri=True)
+    if prices_db.exists():
+        j.execute(f"ATTACH DATABASE 'file:{prices_db}?mode=ro' AS px")
+    fora = {}
+    for jogo, cartas, com_img in j.execute(
+            "SELECT jogo, COUNT(*), SUM(tem_imagem) FROM cards GROUP BY jogo"):
+        q = lambda s, jogo=jogo: j.execute(s, (jogo,)).fetchone()[0]  # noqa: E731
+        fora[jogo] = {
+            "cartas": cartas,
+            "com_imagem": com_img or 0,
+            "com_hash": q("""SELECT COUNT(*) FROM hashes h JOIN cards c USING(card_id)
+                             WHERE c.jogo = ?"""),
+            "paisagem": q("""SELECT COUNT(*) FROM failures f JOIN cards c USING(card_id)
+                             WHERE c.jogo = ? AND f.reason LIKE 'paisagem%'"""),
+            "com_preco": q("""SELECT COUNT(DISTINCT p.card_id) FROM px.prices p
+                              JOIN cards c ON c.card_id = p.card_id WHERE c.jogo = ?""")
+            if prices_db.exists() else 0,
+        }
+    j.close()
+    return fora
+
+
+def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path,
+          jogos_db: Path = Path("data/jogos.db")) -> dict:
     c = sqlite3.connect(f"file:{cards_db}?mode=ro", uri=True)
     if hashes_db.exists():
         c.execute(f"ATTACH DATABASE 'file:{hashes_db}?mode=ro' AS hx")
@@ -111,6 +143,7 @@ def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path) -> dict:
         "catalogo": catalogo,
         "reconhecimento": reconhecimento,
         "precos": precos,
+        "jogos": _jogos(jogos_db, prices_db),
     }
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -124,6 +157,9 @@ def build(cards_db: Path, hashes_db: Path, prices_db: Path, out: Path) -> dict:
         "hashes": (reconhecimento or {}).get("com_hash", 0),
         "cartas_preco": (precos or {}).get("cartas_com_preco", 0),
         "cotacoes": (precos or {}).get("linhas", 0),
+        # Os outros jogos a parte: somar ao `cartas` do Pokemon faria a landing
+        # dizer "54 mil cartas" sobre um catalogo que nao e um so.
+        "jogos": {k: v["com_hash"] for k, v in (data["jogos"] or {}).items()},
     }
     (out.parent / "numeros.json").write_text(
         json.dumps(resumo, ensure_ascii=False, indent=1), encoding="utf-8")

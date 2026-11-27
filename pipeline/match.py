@@ -8,6 +8,9 @@ canais de cor desempatam.
 Uso:
     python match.py --image foto.jpg
     python match.py --selftest          # prova que o indice discrimina
+    python match.py --selftest --jogos data/jogos.db --amostra-jogos
+                                        # One Piece/Lorcana/Riftbound contra o
+                                        # indice COMBINADO, como no navegador
 """
 
 from __future__ import annotations
@@ -41,14 +44,23 @@ def _popcount64(x: np.ndarray) -> np.ndarray:
 
 
 class Index:
-    def __init__(self, db: Path):
-        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
-        rows = conn.execute(
-            f"SELECT card_id, lang, {', '.join(FIELDS)} FROM hashes"
-        ).fetchall()
-        conn.close()
+    def __init__(self, *dbs: Path):
+        # Varios bancos num indice so, porque e assim que o navegador busca:
+        # medir os outros jogos contra o proprio banco deles esconderia a
+        # pergunta que importa — uma carta de Lorcana perde para um Pokemon
+        # parecido?
+        rows = []
+        for db in dbs:
+            conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+            colunas = {r[1] for r in conn.execute("PRAGMA table_info(hashes)")}
+            # jogos.db nao tem `lang`: a fonte e uma so, o TCGplayer.
+            lang = "lang" if "lang" in colunas else "'tcgp'"
+            rows += conn.execute(
+                f"SELECT card_id, {lang}, {', '.join(FIELDS)} FROM hashes"
+            ).fetchall()
+            conn.close()
         if not rows:
-            raise SystemExit(f"indice vazio: {db}")
+            raise SystemExit(f"indice vazio: {dbs}")
         self.card_ids = [r[0] for r in rows]
         self.langs = [r[1] for r in rows]
         # (n_cartas, 6) de uint64
@@ -117,6 +129,10 @@ def selftest(index: Index, hashes_db: Path, n_cards: int, seed: int = 7) -> int:
     numero descrevia aquele cluster, nao o catalogo.
     """
     conn = sqlite3.connect(f"file:{hashes_db}?mode=ro", uri=True)
+    try:
+        grupos = dict(conn.execute("SELECT card_id, group_id FROM art_groups"))
+    except sqlite3.OperationalError:
+        grupos = {}
     # Embaralhamento deterministico: multiplicador de Knuth sobre o rowid.
     # Mesma semente -> mesma amostra, entao a metrica e comparavel entre
     # rodadas sem ficar presa a uma fatia do alfabeto.
@@ -130,7 +146,7 @@ def selftest(index: Index, hashes_db: Path, n_cards: int, seed: int = 7) -> int:
     print(f"indice: {len(index)} cartas | testando {len(sample)} cartas "
           f"x {len(kinds)} degradacoes\n")
 
-    tally = {k: {"hit": 0, "n": 0, "conf": []} for k in kinds}
+    tally = {k: {"hit": 0, "irma": 0, "n": 0, "conf": []} for k in kinds}
     misses = []
     for card_id, url in sample:
         try:
@@ -142,6 +158,12 @@ def selftest(index: Index, hashes_db: Path, n_cards: int, seed: int = 7) -> int:
             got = index.query(hashes_for(_degrade(raw, kind)), k=3)
             t = tally[kind]
             t["n"] += 1
+            # Reimpressao da MESMA arte vai numa coluna a parte. Ela e o grupo
+            # que a tela apresenta para a escolha pelo numero; contar como
+            # acerto na coluna principal mudaria o significado do numero que o
+            # README publica desde agosto.
+            if got[0][0] != card_id and grupos.get(got[0][0], -1) == grupos.get(card_id, -2):
+                t["irma"] += 1
             if got[0][0] == card_id:
                 t["hit"] += 1
                 t["conf"].append(got[0][3])
@@ -149,8 +171,8 @@ def selftest(index: Index, hashes_db: Path, n_cards: int, seed: int = 7) -> int:
                 rank = next((i for i, g in enumerate(got) if g[0] == card_id), None)
                 misses.append((card_id, kind, got[0][0], rank))
 
-    print(f"{'degradacao':<12} {'acerto top-1':>13} {'confianca media':>17}")
-    print("-" * 45)
+    print(f"{'degradacao':<12} {'acerto top-1':>13} {'+ irmas':>9} {'confianca media':>17}")
+    print("-" * 55)
     worst = 1.0
     for kind in kinds:
         t = tally[kind]
@@ -159,7 +181,7 @@ def selftest(index: Index, hashes_db: Path, n_cards: int, seed: int = 7) -> int:
         acc = t["hit"] / t["n"]
         worst = min(worst, acc)
         conf = np.mean(t["conf"]) if t["conf"] else float("nan")
-        print(f"{kind:<12} {acc:>12.1%} {conf:>17.1%}")
+        print(f"{kind:<12} {acc:>12.1%} {(t['hit'] + t['irma']) / t['n']:>9.1%} {conf:>17.1%}")
 
     if misses:
         print(f"\n{len(misses)} erros de top-1:")
@@ -179,11 +201,16 @@ if __name__ == "__main__":
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--sample", default=25, type=int)
     ap.add_argument("--seed", default=7, type=int)
+    ap.add_argument("--jogos", type=Path, default=None,
+                    help="junta data/jogos.db ao indice, como no navegador")
+    ap.add_argument("--amostra-jogos", action="store_true",
+                    help="sorteia as cartas do autoteste em jogos.db")
     a = ap.parse_args()
 
-    idx = Index(a.hashes)
+    idx = Index(a.hashes, *([a.jogos] if a.jogos else []))
     if a.selftest:
-        sys.exit(selftest(idx, a.hashes, a.sample, a.seed))
+        fonte = a.jogos if (a.amostra_jogos and a.jogos) else a.hashes
+        sys.exit(selftest(idx, fonte, a.sample, a.seed))
     if not a.image:
         sys.exit("informe --image ou --selftest")
 

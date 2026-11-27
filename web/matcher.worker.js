@@ -10,7 +10,7 @@
 // Layout do index.bin que este leitor sabe ler. Precisa acompanhar
 // VERSION em pipeline/export_web_index.py e FORMATO_DADOS em sw.js — os
 // três são checados juntos por um teste de invariante.
-const FORMATO = 1;
+const FORMATO = 2;
 
 const FIELDS = 6; // phash, dhash, ahash, dhash_r, dhash_g, dhash_b
 const WEIGHTS = [1.0, 1.0, 0.4, 0.4, 0.4, 0.4];
@@ -18,6 +18,10 @@ const MAX_DIST = WEIGHTS.reduce((a, b) => a + b, 0) * 64;
 
 let index = null; // Uint32Array, 2 palavras por hash (little-endian)
 let count = 0;
+// Uint8Array com 1 nas cartas do jogo escolhido, ou null para todos. Fica
+// no worker, e não vai em cada pedido: são 45 mil bytes que seriam copiados
+// a cada quadro para dizer a mesma coisa.
+let mascara = null;
 
 /** Popcount de 32 bits (Hacker's Delight). */
 function popcount32(v) {
@@ -144,6 +148,7 @@ function computeHashes({ p32, p98, p8 }) {
 function search(query, k) {
   const best = [];
   for (let c = 0; c < count; c++) {
+    if (mascara && !mascara[c]) continue;
     const base = c * FIELDS * 2;
     let score = 0;
     for (let f = 0; f < FIELDS; f++) {
@@ -196,6 +201,14 @@ self.onmessage = (ev) => {
     // múltiplo de 4, e os dados úteis começam logo depois.
     index = new Uint32Array(msg.buffer, 16, count * FIELDS * 2);
     self.postMessage({ type: "ready", count });
+    return;
+  }
+  if (msg.type === "filtro") {
+    // Máscara de tamanho errado filtraria as cartas erradas em silêncio —
+    // acontece se o cards.json e o index.bin vierem de publicações
+    // diferentes. Melhor buscar em tudo do que no lugar errado.
+    mascara = msg.mascara && msg.mascara.length === count ? msg.mascara : null;
+    self.postMessage({ type: "filtrado", ativo: Boolean(mascara) });
     return;
   }
   // Diagnóstico: quantos bits cada hash diverge do que está no índice.

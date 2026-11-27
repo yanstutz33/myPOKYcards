@@ -1,7 +1,7 @@
 {
-  "name": "myPOKYcards · Leitor de cartas Pokémon",
+  "name": "myPOKYcards · Leitor de cartas colecionáveis",
   "short_name": "myPOKYcards",
-  "description": "Reconhece cartas Pokémon pela câmera e mostra o preço. Funciona offline.",
+  "description": "Reconhece cartas Pokémon, One Piece, Lorcana e Riftbound pela câmera e mostra o preço. Funciona offline.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
